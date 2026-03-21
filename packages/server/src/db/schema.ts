@@ -87,9 +87,7 @@ export const leagueMemberships = pgTable(
   {
     id: serial("id").primaryKey(),
     week_start: date("week_start").notNull(),
-    user_id: integer("user_id")
-      .notNull()
-      .references(() => users.id),
+    user_id: integer("user_id"),
     github_username: varchar("github_username", { length: 255 }).notNull(),
     tier: varchar("tier", { length: 20 }).notNull().default("bronze"),
     group_number: integer("group_number").notNull().default(0),
@@ -99,7 +97,7 @@ export const leagueMemberships = pgTable(
     demoted: boolean("demoted").default(false),
     created_at: timestamp("created_at").defaultNow().notNull(),
   },
-  (t) => [unique().on(t.week_start, t.user_id)]
+  (t) => [unique().on(t.week_start, t.github_username)]
 );
 
 export const famousDevs = pgTable("famous_devs", {
