@@ -20,9 +20,11 @@ export default function Leaderboard() {
   const [period, setPeriod] = useState<Period>("week");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [visible, setVisible] = useState(10);
 
   useEffect(() => {
     setLoading(true);
+    setVisible(10);
     api<LeaderboardEntry[]>(`/leaderboard?period=${period}&limit=100`)
       .then(setEntries)
       .catch(() => setEntries([]))
@@ -61,7 +63,7 @@ export default function Leaderboard() {
         </div>
       ) : (
         <div className="space-y-1.5">
-          {entries.map((entry, i) => {
+          {entries.slice(0, visible).map((entry, i) => {
             const barWidth = maxCommits > 0 ? (entry.commit_count / maxCommits) * 100 : 0;
             return (
               <div
@@ -116,6 +118,14 @@ export default function Leaderboard() {
               </div>
             );
           })}
+          {visible < entries.length && (
+            <button
+              onClick={() => setVisible((v) => v + 10)}
+              className="w-full py-2.5 rounded-lg bg-gray-900 border border-gray-800 text-sm text-gray-400 hover:text-white hover:border-gray-700 transition-colors"
+            >
+              + Show more
+            </button>
+          )}
         </div>
       )}
     </div>
