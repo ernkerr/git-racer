@@ -49,23 +49,23 @@ export default function Dashboard() {
       )}
 
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">Active Challenges</h2>
+        <h2 className="text-xl font-bold">Active Races</h2>
         <Link
           to="/challenges/new"
           className="text-sm bg-green-600 hover:bg-green-500 px-3 py-1.5 rounded-md transition-colors"
         >
-          New Challenge
+          New Race
         </Link>
       </div>
 
       {challenges.length === 0 ? (
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 text-center">
-          <p className="text-gray-400 mb-4">No active challenges yet.</p>
+          <p className="text-gray-400 mb-4">No active races yet.</p>
           <Link
             to="/challenges/new"
             className="text-green-400 hover:text-green-300 font-medium"
           >
-            Create your first challenge
+            Create your first race
           </Link>
         </div>
       ) : (

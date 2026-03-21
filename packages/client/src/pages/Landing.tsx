@@ -15,7 +15,7 @@ export default function Landing() {
           Race your commits.
         </h1>
         <p className="text-xl text-gray-400 max-w-lg mb-8">
-          Challenge friends, race famous developers, and turn your GitHub
+          Race your friends, race famous developers, and turn your GitHub
           contributions into a competitive sport.
         </p>
         <button

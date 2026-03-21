@@ -48,8 +48,8 @@ export default function Challenge() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (loading) return <div className="text-gray-400">Loading challenge...</div>;
-  if (!challenge) return <div className="text-gray-400">Challenge not found.</div>;
+  if (loading) return <div className="text-gray-400">Loading race...</div>;
+  if (!challenge) return <div className="text-gray-400">Race not found.</div>;
 
   const isParticipant = user && challenge.participants.some(
     (p) => p.github_username === user.github_username

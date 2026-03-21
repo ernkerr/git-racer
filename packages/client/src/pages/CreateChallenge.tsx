@@ -50,7 +50,7 @@ export default function CreateChallenge() {
       });
       navigate(`/c/${result.share_slug}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create challenge");
+      setError(err instanceof Error ? err.message : "Failed to create race");
     } finally {
       setSubmitting(false);
     }
@@ -66,11 +66,11 @@ export default function CreateChallenge() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Create a Challenge</h1>
+      <h1 className="text-2xl font-bold mb-6">Create a Race</h1>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm text-gray-400 mb-1.5">Challenge Name</label>
+          <label className="block text-sm text-gray-400 mb-1.5">Race Name</label>
           <input
             type="text"
             value={name}
@@ -81,7 +81,7 @@ export default function CreateChallenge() {
           />
         </div>
 
-        {/* Challenge Type */}
+        {/* Race Type */}
         <div>
           <label className="block text-sm text-gray-400 mb-1.5">Type</label>
           <div className="flex gap-3">
@@ -202,7 +202,7 @@ export default function CreateChallenge() {
           disabled={submitting}
           className="w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 py-2.5 rounded-md font-semibold transition-colors"
         >
-          {submitting ? "Creating..." : "Start Challenge"}
+          {submitting ? "Creating..." : "Start Race"}
         </button>
       </form>
     </div>

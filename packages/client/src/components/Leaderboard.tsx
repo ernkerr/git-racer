@@ -55,7 +55,7 @@ export default function Leaderboard() {
         <div className="text-gray-400 text-center py-12">Loading leaderboard...</div>
       ) : entries.length === 0 ? (
         <div className="text-gray-500 text-center py-12">
-          No contribution data yet. Start a challenge to see rankings!
+          No contribution data yet. Start a race to see rankings!
         </div>
       ) : (
         <div className="space-y-2">

@@ -18,7 +18,7 @@ export default function Layout() {
                   to="/challenges/new"
                   className="text-sm bg-green-600 hover:bg-green-500 px-3 py-1.5 rounded-md transition-colors"
                 >
-                  New Challenge
+                  New Race
                 </Link>
                 <div className="flex items-center gap-2">
                   <img
