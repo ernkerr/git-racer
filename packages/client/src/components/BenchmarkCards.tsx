@@ -25,7 +25,6 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
   const [input, setInput] = useState("");
   const [adding, setAdding] = useState(false);
 
-  // Which category tabs to show (only ones that have data)
   const categories = new Set(benchmarks.map((b) => b.category || "other"));
   const tabs = CATEGORY_ORDER.filter((c) => c === "all" || categories.has(c));
 
@@ -57,9 +56,17 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
     }
   }
 
+  if (benchmarks.length === 0) {
+    return (
+      <div className="text-gray-500 text-center py-6 text-sm">
+        Benchmark data populates as contributions are tracked. Check back soon!
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      {/* Category tabs */}
+      {/* Category filter pills */}
       <div className="flex gap-1.5 overflow-x-auto pb-1">
         {tabs.map((cat) => (
           <button
@@ -76,48 +83,70 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
         ))}
       </div>
 
-      {/* Single horizontal scroll of compact cards */}
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+      {/* Horizontal scroll of cards — original card layout */}
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
         {filtered.map((b) => (
           <div
             key={b.github_username}
-            className={`flex-shrink-0 flex items-center gap-3 rounded-lg border px-3 py-2.5 ${
+            className={`flex-shrink-0 w-64 rounded-xl border p-4 ${
               b.you_beat_them
                 ? "bg-green-600/10 border-green-500/30"
                 : "bg-gray-900 border-gray-800"
             }`}
           >
-            <img
-              src={b.avatar_url ?? `https://github.com/${b.github_username}.png`}
-              alt={b.github_username}
-              className="w-8 h-8 rounded-full flex-shrink-0"
-            />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold truncate leading-tight">{b.display_name}</p>
-              <p className="text-[10px] text-gray-500 truncate">{b.known_for}</p>
-            </div>
-            <div className="flex items-center gap-2 pl-2 border-l border-gray-800 ml-1">
-              <div className="text-right">
-                <p className="text-xs font-bold tabular-nums text-gray-400">{b.their_commits}</p>
-                <p className="text-[9px] text-gray-600">them</p>
+            {/* Dev info */}
+            <div className="flex items-center gap-3 mb-3">
+              <img
+                src={b.avatar_url ?? `https://github.com/${b.github_username}.png`}
+                alt={b.github_username}
+                className="w-10 h-10 rounded-full"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-sm truncate">{b.display_name}</p>
+                <p className="text-xs text-gray-500 truncate">{b.known_for}</p>
               </div>
-              <span className={`text-sm font-bold ${b.you_beat_them ? "text-green-400" : "text-gray-600"}`}>
-                {b.you_beat_them ? ">" : "<"}
-              </span>
+              {b.is_custom && (
+                <button
+                  onClick={() => handleRemove(b.github_username)}
+                  className="text-gray-600 hover:text-red-400 text-xs flex-shrink-0"
+                  title="Remove"
+                >
+                  x
+                </button>
+              )}
+            </div>
+
+            {/* Comparison */}
+            <div className="flex items-end justify-between">
               <div>
-                <p className={`text-xs font-bold tabular-nums ${b.you_beat_them ? "text-green-400" : "text-white"}`}>{b.your_commits}</p>
-                <p className="text-[9px] text-gray-600">you</p>
+                <p className="text-xs text-gray-500">Their commits</p>
+                <p className="text-lg font-bold tabular-nums text-gray-400">
+                  {b.their_commits}
+                </p>
+              </div>
+              <div className="text-center px-2">
+                <span className={`text-lg font-bold ${b.you_beat_them ? "text-green-400" : "text-gray-500"}`}>
+                  {b.you_beat_them ? ">" : "<"}
+                </span>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">You</p>
+                <p className={`text-lg font-bold tabular-nums ${b.you_beat_them ? "text-green-400" : "text-white"}`}>
+                  {b.your_commits}
+                </p>
               </div>
             </div>
-            {b.is_custom && (
-              <button
-                onClick={() => handleRemove(b.github_username)}
-                className="text-gray-600 hover:text-red-400 text-xs ml-1"
-                title="Remove"
-              >
-                x
-              </button>
-            )}
+
+            {/* Status */}
+            <div className={`mt-3 text-xs font-medium text-center py-1 rounded ${
+              b.you_beat_them
+                ? "bg-green-600/20 text-green-400"
+                : "bg-gray-800 text-gray-400"
+            }`}>
+              {b.you_beat_them
+                ? `You beat ${b.display_name}!`
+                : `${b.their_commits - b.your_commits} more to beat them`}
+            </div>
           </div>
         ))}
       </div>
@@ -130,12 +159,12 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           placeholder="Add a GitHub username..."
-          className="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gray-600"
+          className="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gray-600"
         />
         <button
           onClick={handleAdd}
           disabled={adding || !input.trim()}
-          className="bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-sm px-3 py-1.5 rounded-lg transition-colors"
+          className="bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-sm px-4 py-2 rounded-lg transition-colors"
         >
           {adding ? "..." : "Add"}
         </button>
