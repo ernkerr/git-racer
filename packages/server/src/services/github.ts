@@ -205,69 +205,83 @@ export async function fetchTopGitHubUsers(
   return users.slice(0, count);
 }
 
-export async function fetchBatchContributions(
+/**
+ * Batch-fetch day-by-day contribution data for multiple users.
+ * Processes batches sequentially to avoid rate limits. Stops early on 403/429.
+ */
+export async function fetchBatchContributionDays(
   usernames: string[],
   from: Date,
   to: Date,
   batchSize: number = 25
-): Promise<Record<string, number>> {
+): Promise<Map<string, { date: string; count: number }[]>> {
   const token = env.GITHUB_APP_TOKEN || "";
-  if (!token) throw new Error("No GitHub token available");
+  if (!token) return new Map();
 
-  const batches: string[][] = [];
+  const results = new Map<string, { date: string; count: number }[]>();
+
   for (let i = 0; i < usernames.length; i += batchSize) {
-    batches.push(usernames.slice(i, i + batchSize));
-  }
+    const batch = usernames.slice(i, i + batchSize);
 
-  const batchResults = await Promise.all(
-    batches.map(async (batch) => {
-      const fragments = batch.map((username, idx) =>
-        `u${idx}: user(login: "${username}") {
-          contributionsCollection(from: "${from.toISOString()}", to: "${to.toISOString()}") {
-            contributionCalendar { totalContributions }
+    const fragments = batch.map((username, idx) =>
+      `u${idx}: user(login: "${username}") {
+        contributionsCollection(from: "${from.toISOString()}", to: "${to.toISOString()}") {
+          contributionCalendar {
+            weeks {
+              contributionDays {
+                date
+                contributionCount
+              }
+            }
           }
-        }`
-      );
+        }
+      }`
+    );
 
-      const query = `query { ${fragments.join("\n")} }`;
+    const query = `query { ${fragments.join("\n")} }`;
 
-      try {
-        const res = await fetch("https://api.github.com/graphql", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ query }),
-        });
+    try {
+      const res = await fetch("https://api.github.com/graphql", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query }),
+      });
 
-        if (!res.ok) return {};
-
-        const data = (await res.json()) as {
-          data: Record<string, {
-            contributionsCollection: {
-              contributionCalendar: { totalContributions: number };
-            };
-          } | null>;
-        };
-
-        const result: Record<string, number> = {};
-        batch.forEach((username, idx) => {
-          const userData = data.data?.[`u${idx}`];
-          if (userData) {
-            result[username] = userData.contributionsCollection.contributionCalendar.totalContributions;
-          }
-        });
-        return result;
-      } catch {
-        return {};
+      if (res.status === 403 || res.status === 429) {
+        break; // Rate limited — return what we have so far
       }
-    })
-  );
 
-  const results: Record<string, number> = {};
-  for (const r of batchResults) {
-    Object.assign(results, r);
+      if (!res.ok) continue;
+
+      const data = (await res.json()) as {
+        data: Record<string, {
+          contributionsCollection: {
+            contributionCalendar: {
+              weeks: { contributionDays: ContributionDay[] }[];
+            };
+          };
+        } | null>;
+      };
+
+      batch.forEach((username, idx) => {
+        const userData = data.data?.[`u${idx}`];
+        if (userData) {
+          const days: { date: string; count: number }[] = [];
+          for (const week of userData.contributionsCollection.contributionCalendar.weeks) {
+            for (const day of week.contributionDays) {
+              days.push({ date: day.date, count: day.contributionCount });
+            }
+          }
+          results.set(username, days);
+        }
+      });
+    } catch {
+      continue;
+    }
   }
+
   return results;
 }

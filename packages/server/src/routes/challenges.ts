@@ -63,7 +63,12 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
 
   const leaderboard = await Promise.all(
     participants.map(async (p) => {
-      await refreshCommitData(p.github_username);
+      // Non-fatal: don't let a GitHub API failure break the entire page
+      try {
+        await refreshCommitData(p.github_username);
+      } catch {
+        // Continue with whatever data we have cached
+      }
 
       // Get avatar URL
       let avatarUrl: string | null = null;
@@ -104,10 +109,38 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
     end_date: challenge.end_date?.toISOString() ?? null,
     goal_target: challenge.goal_target,
     goal_metric: challenge.goal_metric,
+    created_by: challenge.created_by,
     share_slug: challenge.share_slug,
     created_at: challenge.created_at.toISOString(),
     participants: leaderboard,
   });
+});
+
+// Delete a challenge (creator only)
+challengeRoutes.delete("/:slug", requireAuth, async (c) => {
+  const { sub: userId } = c.get("user");
+  const slug = c.req.param("slug");
+
+  const [challenge] = await db
+    .select()
+    .from(challenges)
+    .where(eq(challenges.share_slug, slug))
+    .limit(1);
+
+  if (!challenge) return c.json({ error: "Challenge not found" }, 404);
+  if (challenge.created_by !== userId) {
+    return c.json({ error: "Only the creator can delete this race" }, 403);
+  }
+
+  // Delete participants first (foreign key), then the challenge
+  await db
+    .delete(challengeParticipants)
+    .where(eq(challengeParticipants.challenge_id, challenge.id));
+  await db
+    .delete(challenges)
+    .where(eq(challenges.id, challenge.id));
+
+  return c.json({ ok: true });
 });
 
 // Join a challenge

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api.ts";
 import { useAuth } from "../lib/auth.tsx";
 import { CHALLENGE_REFRESH_MS } from "@git-racer/shared";
@@ -7,10 +7,12 @@ import type { ChallengeWithLeaderboard } from "@git-racer/shared";
 
 export default function Challenge() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [challenge, setChallenge] = useState<ChallengeWithLeaderboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const fetchChallenge = async () => {
@@ -18,7 +20,7 @@ export default function Challenge() {
       const data = await api<ChallengeWithLeaderboard>(`/challenges/${slug}`);
       setChallenge(data);
     } catch {
-      // Challenge not found
+      // Challenge not found or API error
     } finally {
       setLoading(false);
     }
@@ -42,6 +44,17 @@ export default function Challenge() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm("Delete this race? This cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      await api(`/challenges/${slug}`, { method: "DELETE" });
+      navigate("/dashboard");
+    } catch {
+      setDeleting(false);
+    }
+  };
+
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
@@ -51,6 +64,7 @@ export default function Challenge() {
   if (loading) return <div className="text-gray-400">Loading race...</div>;
   if (!challenge) return <div className="text-gray-400">Race not found.</div>;
 
+  const isCreator = user && challenge.created_by === user.id;
   const isParticipant = user && challenge.participants.some(
     (p) => p.github_username === user.github_username
   );
@@ -98,6 +112,15 @@ export default function Challenge() {
           >
             {copied ? "Copied!" : "Share"}
           </button>
+          {isCreator && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-sm bg-red-600/20 hover:bg-red-600/40 text-red-400 disabled:opacity-50 px-4 py-1.5 rounded-md transition-colors"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </button>
+          )}
         </div>
       </div>
 

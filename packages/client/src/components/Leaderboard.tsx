@@ -7,13 +7,13 @@ interface LeaderboardEntry {
   commit_count: number;
 }
 
-type Period = "day" | "week" | "month" | "all";
+type Period = "day" | "week" | "month" | "yearly";
 
 const PERIOD_LABELS: Record<Period, string> = {
   day: "Today",
   week: "This Week",
   month: "This Month",
-  all: "All Time",
+  yearly: "Yearly",
 };
 
 export default function Leaderboard() {
