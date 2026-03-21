@@ -4,9 +4,9 @@ import { api } from "../lib/api.ts";
 import type {
   UserStats,
   ActiveChallenge,
+  LeagueGroup,
   FamousDevBenchmark,
   SocialCircleData,
-  LeagueGroup,
   UserStreakInfo,
   ContributionGraphData,
 } from "@git-racer/shared";
@@ -30,44 +30,43 @@ function StatsCard({ label, value }: { label: string; value: number }) {
 export default function Dashboard() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [challenges, setChallenges] = useState<ActiveChallenge[]>([]);
+  const [league, setLeague] = useState<LeagueGroup | null>(null);
   const [benchmarks, setBenchmarks] = useState<FamousDevBenchmark[]>([]);
   const [socialData, setSocialData] = useState<SocialCircleData>({ entries: [], your_rank: 0, total: 0 });
-  const [league, setLeague] = useState<LeagueGroup | null>(null);
   const [streaks, setStreaks] = useState<UserStreakInfo | null>(null);
   const [contributions, setContributions] = useState<ContributionGraphData | null>(null);
   const [loading, setLoading] = useState(true);
   const [socialLoading, setSocialLoading] = useState(true);
 
   const loadBenchmarks = useCallback(() => {
-    api<FamousDevBenchmark[]>("/benchmarks").then(setBenchmarks).catch(() => {});
+    api<FamousDevBenchmark[]>("/benchmarks?period=week").then(setBenchmarks).catch(() => {});
   }, []);
 
   useEffect(() => {
+    // Load core data in parallel
     Promise.all([
       api<UserStats>("/me/stats"),
       api<ActiveChallenge[]>("/me/challenges"),
       api<UserStreakInfo>("/me/streaks"),
       api<ContributionGraphData>("/me/contributions"),
-      api<FamousDevBenchmark[]>("/benchmarks"),
+      api<LeagueGroup>("/leagues/current").catch(() => null),
+      api<FamousDevBenchmark[]>("/benchmarks?period=week").catch(() => []),
     ])
-      .then(([s, c, st, cont, b]) => {
+      .then(([s, c, st, cont, l, b]) => {
         setStats(s);
         setChallenges(c);
         setStreaks(st);
         setContributions(cont);
+        setLeague(l);
         setBenchmarks(b);
       })
       .finally(() => setLoading(false));
 
-    // Social + league load separately (slower)
+    // Load social circle separately (slower — needs GitHub API)
     api<SocialCircleData>("/social/circle")
       .then(setSocialData)
       .catch(() => {})
       .finally(() => setSocialLoading(false));
-
-    api<LeagueGroup>("/leagues/current")
-      .then(setLeague)
-      .catch(() => {});
   }, []);
 
   if (loading) {
@@ -94,17 +93,12 @@ export default function Dashboard() {
       )}
 
       {/* Streaks & Records */}
-      {streaks && (
-        <StreakCard
-          streaks={streaks}
-          dailyCounts={contributions ? getThisWeekCounts(contributions.days) : undefined}
-        />
-      )}
+      {streaks && <StreakCard streaks={streaks} />}
 
-      {/* Your Races */}
+      {/* Active Races */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">Your Races</h2>
+          <h2 className="text-lg font-bold">Active Races</h2>
           <Link
             to="/challenges/new"
             className="text-sm bg-green-600 hover:bg-green-500 px-3 py-1.5 rounded-md transition-colors"
@@ -114,62 +108,52 @@ export default function Dashboard() {
         </div>
 
         {challenges.length === 0 ? (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
-            <p className="text-gray-500 text-sm mb-3">No active races yet</p>
+          <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 text-center">
+            <p className="text-gray-400 mb-4">No active races yet.</p>
             <Link
               to="/challenges/new"
-              className="text-green-400 hover:text-green-300 text-sm font-medium"
+              className="text-green-400 hover:text-green-300 font-medium"
             >
-              Start a race
+              Create your first race
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {challenges.map((ch) => {
-              const winning = ch.your_commits >= ch.leader_commits || ch.leader_username === "";
-              return (
-                <Link
-                  key={ch.id}
-                  to={`/c/${ch.share_slug}`}
-                  className={`block rounded-xl border p-4 transition-colors ${
-                    winning
-                      ? "bg-green-600/5 border-green-500/20 hover:border-green-500/40"
-                      : "bg-gray-900 border-gray-800 hover:border-gray-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold truncate">{ch.name}</h3>
-                    <span className={`text-2xl font-bold tabular-nums ${winning ? "text-green-400" : "text-white"}`}>
+          <div className="space-y-3">
+            {challenges.map((ch) => (
+              <Link
+                key={ch.id}
+                to={`/c/${ch.share_slug}`}
+                className="block bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold">{ch.name}</h3>
+                    <p className="text-sm text-gray-400">
+                      {ch.participant_count} participants
+                      {ch.end_date &&
+                        ` \u00b7 ends ${new Date(ch.end_date).toLocaleDateString()}`}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold tabular-nums">
                       {ch.your_commits}
-                    </span>
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {ch.leader_username === "" ? "" : ch.leader_commits > ch.your_commits
+                        ? `${ch.leader_username} leads with ${ch.leader_commits}`
+                        : "You're in the lead!"}
+                    </p>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>{ch.participant_count} participants</span>
-                    {ch.end_date && (
-                      <span>ends {new Date(ch.end_date).toLocaleDateString()}</span>
-                    )}
-                  </div>
-                  {ch.leader_username && ch.leader_commits > ch.your_commits && (
-                    <div className="mt-2 text-xs text-gray-500">
-                      {ch.leader_username} leads with {ch.leader_commits}
-                    </div>
-                  )}
-                  {winning && ch.leader_username !== "" && (
-                    <div className="mt-2 text-xs text-green-400 font-medium">
-                      You're in the lead
-                    </div>
-                  )}
-                </Link>
-              );
-            })}
+                </div>
+              </Link>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Compare with devs */}
+      {/* Famous Dev Benchmarks */}
       <div>
-        <h2 className="text-lg font-bold mb-1">How You Stack Up</h2>
-        <p className="text-xs text-gray-500 mb-4">Your commits this week vs notable developers</p>
+        <h2 className="text-lg font-bold mb-3">vs Famous Devs</h2>
         <BenchmarkCards
           benchmarks={benchmarks}
           onAdded={loadBenchmarks}
@@ -186,23 +170,25 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Your Circle — rank among people you follow */}
-      <div>
-        <h2 className="text-lg font-bold mb-3">Your Circle</h2>
-        <p className="text-xs text-gray-500 mb-3">How you rank among developers you follow on GitHub this week</p>
-        <SocialCircle data={socialData} loading={socialLoading} />
-      </div>
+      {/* Two-column layout: League + Social */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Weekly League */}
+        <div>
+          <h2 className="text-lg font-bold mb-3">Weekly League</h2>
+          {league ? (
+            <LeagueCard league={league} />
+          ) : (
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center text-gray-500 text-sm">
+              Your league is being set up. Check back soon!
+            </div>
+          )}
+        </div>
 
-      {/* Weekly League — at the bottom */}
-      <div>
-        <h2 className="text-lg font-bold mb-3">Weekly League</h2>
-        {league ? (
-          <LeagueCard league={league} />
-        ) : (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center text-gray-500 text-sm">
-            Your league is being set up. Check back soon!
-          </div>
-        )}
+        {/* Social Circle */}
+        <div>
+          <h2 className="text-lg font-bold mb-3">Your Circle</h2>
+          <SocialCircle data={socialData} loading={socialLoading} />
+        </div>
       </div>
 
       {/* Global Leaderboard */}
@@ -211,22 +197,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
-
-function getThisWeekCounts(days: { date: string; count: number }[]): number[] {
-  const now = new Date();
-  const dayOfWeek = now.getDay() || 7;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - dayOfWeek + 1);
-
-  const counts: number[] = [];
-  const dayMap = new Map(days.map((d) => [d.date, d.count]));
-
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(monday);
-    d.setDate(d.getDate() + i);
-    const key = d.toISOString().slice(0, 10);
-    counts.push(dayMap.get(key) ?? 0);
-  }
-  return counts;
 }
