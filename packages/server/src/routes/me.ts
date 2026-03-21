@@ -218,14 +218,13 @@ meRoutes.get("/share", async (c) => {
 
   const streakInfo = await computeStreaks(username);
 
-  // Build squares for each day of the week so far
-  const squares = [];
+  // Build activity bar for each day of the week so far
+  const dailyCounts: number[] = [];
   const cursor = new Date(monday);
   while (cursor <= now) {
     const dateKey = cursor.toISOString().slice(0, 10);
     const dayData = days.find((d) => d.date === dateKey);
-    const count = dayData?.count ?? 0;
-    squares.push(count > 0 ? "\u{1f7e9}" : "\u2b1b"); // green or black square
+    dailyCounts.push(dayData?.count ?? 0);
     cursor.setDate(cursor.getDate() + 1);
   }
 
@@ -234,17 +233,23 @@ meRoutes.get("/share", async (c) => {
     ? `+${streakInfo.trend_percent}%`
     : `${streakInfo.trend_percent}%`;
 
+  const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
+  const activityLine = dailyCounts
+    .map((c, i) => `${dayLabels[i]}:${c}`)
+    .join(" ");
+
   const lines = [
     `Git Racer ${weekLabel}`,
     "",
-    `${squares.join("")}  ${totalWeek} contributions`,
+    `${totalWeek} contributions this week`,
+    activityLine,
   ];
 
   if (streakInfo.current_streak > 0) {
-    lines.push(`\u{1f525} ${streakInfo.current_streak}-day streak`);
+    lines.push(`${streakInfo.current_streak}-day streak`);
   }
   if (streakInfo.last_week > 0) {
-    lines.push(`\u{1f4c8} ${trendStr} vs last week`);
+    lines.push(`${trendStr} vs last week`);
   }
 
   return c.json({ text: lines.join("\n"), week_label: weekLabel });

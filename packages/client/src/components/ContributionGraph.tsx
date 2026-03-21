@@ -2,15 +2,14 @@ import { useState } from "react";
 import type { ContributionDay } from "@git-racer/shared";
 
 const LEVEL_COLORS = [
-  "bg-gray-800",        // level 0: no contributions
-  "bg-green-900",       // level 1
-  "bg-green-700",       // level 2
-  "bg-green-500",       // level 3
-  "bg-green-400",       // level 4
+  "bg-gray-800",
+  "bg-green-900",
+  "bg-green-700",
+  "bg-green-500",
+  "bg-green-400",
 ];
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
 interface Props {
   days: ContributionDay[];
@@ -26,111 +25,133 @@ export default function ContributionGraph({ days, totalYear }: Props) {
     );
   }
 
-  // Organize days into weeks (columns) of 7 days (rows: Sun-Sat)
-  // Start from the first Sunday on or before the first day
-  const firstDate = new Date(days[0].date + "T00:00:00");
-  const startDay = firstDate.getDay(); // 0=Sun
-  const paddedDays: (ContributionDay | null)[] = [];
+  // Build a 7-row (Sun-Sat) x N-column (weeks) grid
+  const firstDate = new Date(days[0].date + "T12:00:00");
+  const startDow = firstDate.getDay(); // 0=Sun
 
-  // Pad beginning to align to Sunday
-  for (let i = 0; i < startDay; i++) {
-    paddedDays.push(null);
-  }
-  paddedDays.push(...days);
+  // Pad front so first day lands on the correct row
+  const cells: (ContributionDay | null)[] = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  cells.push(...days);
+  // Pad end to fill last column
+  while (cells.length % 7 !== 0) cells.push(null);
 
-  // Pad end to complete the last week
-  while (paddedDays.length % 7 !== 0) {
-    paddedDays.push(null);
-  }
+  const numWeeks = cells.length / 7;
 
+  // Build week columns
   const weeks: (ContributionDay | null)[][] = [];
-  for (let i = 0; i < paddedDays.length; i += 7) {
-    weeks.push(paddedDays.slice(i, i + 7));
+  for (let w = 0; w < numWeeks; w++) {
+    weeks.push(cells.slice(w * 7, w * 7 + 7));
   }
 
-  // Compute month labels
-  const monthPositions: { label: string; col: number }[] = [];
-  let lastMonth = -1;
+  // Month label positions (which column index a new month starts)
+  const monthLabels: { label: string; col: number }[] = [];
+  let prevMonth = -1;
   for (let col = 0; col < weeks.length; col++) {
-    // Find first non-null day in the week
     const firstDay = weeks[col].find((d) => d !== null);
     if (firstDay) {
-      const month = new Date(firstDay.date + "T00:00:00").getMonth();
-      if (month !== lastMonth) {
-        monthPositions.push({ label: MONTH_LABELS[month], col });
-        lastMonth = month;
+      const m = new Date(firstDay.date + "T12:00:00").getMonth();
+      if (m !== prevMonth) {
+        monthLabels.push({ label: MONTH_LABELS[m], col });
+        prevMonth = m;
       }
     }
   }
 
+  const cellSize = 11;
+  const gap = 2;
+  const step = cellSize + gap;
+  const labelWidth = 28;
+  const headerHeight = 14;
+  const svgWidth = labelWidth + numWeeks * step;
+  const svgHeight = headerHeight + 7 * step;
+
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-400">
+        <p className="text-sm font-medium text-gray-400">
           {totalYear.toLocaleString()} contributions in the last year
-        </h3>
+        </p>
       </div>
 
       <div className="overflow-x-auto">
-        <div className="inline-flex gap-0.5" style={{ position: "relative" }}>
+        <svg
+          width={svgWidth}
+          height={svgHeight}
+          className="block"
+          style={{ minWidth: svgWidth }}
+        >
+          {/* Month labels */}
+          {monthLabels.map((m, i) => (
+            <text
+              key={i}
+              x={labelWidth + m.col * step}
+              y={10}
+              className="fill-gray-500"
+              fontSize={9}
+            >
+              {m.label}
+            </text>
+          ))}
+
           {/* Day labels */}
-          <div className="flex flex-col gap-0.5 mr-1 flex-shrink-0">
-            {DAY_LABELS.map((label, i) => (
-              <div key={i} className="h-[11px] text-[9px] text-gray-500 leading-[11px] w-6 text-right pr-1">
-                {label}
-              </div>
-            ))}
-          </div>
+          {["Mon", "Wed", "Fri"].map((label, i) => (
+            <text
+              key={label}
+              x={labelWidth - 4}
+              y={headerHeight + [1, 3, 5][i] * step + cellSize - 1}
+              className="fill-gray-500"
+              fontSize={9}
+              textAnchor="end"
+            >
+              {label}
+            </text>
+          ))}
 
-          {/* Grid */}
-          <div>
-            {/* Month labels */}
-            <div className="flex gap-0.5 mb-0.5" style={{ height: "12px" }}>
-              {weeks.map((_, col) => {
-                const monthLabel = monthPositions.find((m) => m.col === col);
-                return (
-                  <div key={col} className="w-[11px] text-[9px] text-gray-500 flex-shrink-0">
-                    {monthLabel?.label ?? ""}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Contribution squares */}
-            {[0, 1, 2, 3, 4, 5, 6].map((row) => (
-              <div key={row} className="flex gap-0.5">
-                {weeks.map((week, col) => {
-                  const day = week[row];
-                  if (!day) {
-                    return <div key={col} className="w-[11px] h-[11px]" />;
-                  }
-                  return (
-                    <div
-                      key={col}
-                      className={`w-[11px] h-[11px] rounded-[2px] ${LEVEL_COLORS[day.level]} cursor-pointer`}
-                      onMouseEnter={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setTooltip({
-                          text: `${day.count} contribution${day.count !== 1 ? "s" : ""} on ${formatDate(day.date)}`,
-                          x: rect.left + rect.width / 2,
-                          y: rect.top - 8,
-                        });
-                      }}
-                      onMouseLeave={() => setTooltip(null)}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
+          {/* Squares */}
+          {weeks.map((week, col) =>
+            week.map((day, row) => {
+              if (!day) return null;
+              const x = labelWidth + col * step;
+              const y = headerHeight + row * step;
+              const colorClass = LEVEL_COLORS[day.level];
+              // Map tailwind colors to hex for SVG
+              const fill = levelToColor(day.level);
+              return (
+                <rect
+                  key={`${col}-${row}`}
+                  x={x}
+                  y={y}
+                  width={cellSize}
+                  height={cellSize}
+                  rx={2}
+                  fill={fill}
+                  className="cursor-pointer"
+                  onMouseEnter={(e) => {
+                    const rect = (e.target as SVGRectElement).getBoundingClientRect();
+                    setTooltip({
+                      text: `${day.count} contribution${day.count !== 1 ? "s" : ""} on ${formatDate(day.date)}`,
+                      x: rect.left + rect.width / 2,
+                      y: rect.top - 8,
+                    });
+                  }}
+                  onMouseLeave={() => setTooltip(null)}
+                />
+              );
+            })
+          )}
+        </svg>
       </div>
 
       {/* Legend */}
       <div className="flex items-center justify-end gap-1 mt-2 text-[10px] text-gray-500">
         <span>Less</span>
-        {LEVEL_COLORS.map((color, i) => (
-          <div key={i} className={`w-[10px] h-[10px] rounded-[2px] ${color}`} />
+        {[0, 1, 2, 3, 4].map((level) => (
+          <div
+            key={level}
+            className="w-[10px] h-[10px] rounded-[2px]"
+            style={{ backgroundColor: levelToColor(level) }}
+          />
         ))}
         <span>More</span>
       </div>
@@ -152,7 +173,18 @@ export default function ContributionGraph({ days, totalYear }: Props) {
   );
 }
 
+function levelToColor(level: number): string {
+  switch (level) {
+    case 0: return "#1f2937"; // gray-800
+    case 1: return "#14532d"; // green-900
+    case 2: return "#15803d"; // green-700
+    case 3: return "#22c55e"; // green-500
+    case 4: return "#4ade80"; // green-400
+    default: return "#1f2937";
+  }
+}
+
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
+  const d = new Date(dateStr + "T12:00:00");
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }

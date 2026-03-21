@@ -89,7 +89,12 @@ export default function Dashboard() {
       )}
 
       {/* Streaks & Records */}
-      {streaks && <StreakCard streaks={streaks} />}
+      {streaks && (
+        <StreakCard
+          streaks={streaks}
+          dailyCounts={contributions ? getThisWeekCounts(contributions.days) : undefined}
+        />
+      )}
 
       {/* Contribution Graph */}
       {contributions && (
@@ -187,4 +192,22 @@ export default function Dashboard() {
       </div>
     </div>
   );
+}
+
+function getThisWeekCounts(days: { date: string; count: number }[]): number[] {
+  const now = new Date();
+  const dayOfWeek = now.getDay() || 7;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - dayOfWeek + 1);
+
+  const counts: number[] = [];
+  const dayMap = new Map(days.map((d) => [d.date, d.count]));
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    counts.push(dayMap.get(key) ?? 0);
+  }
+  return counts;
 }

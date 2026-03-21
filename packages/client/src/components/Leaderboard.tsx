@@ -10,10 +10,10 @@ interface LeaderboardEntry {
 type Period = "day" | "week" | "month" | "yearly";
 
 const PERIOD_LABELS: Record<Period, string> = {
-  day: "Today",
+  day: "Yesterday",
   week: "This Week",
   month: "This Month",
-  yearly: "Yearly",
+  yearly: "This Year",
 };
 
 export default function Leaderboard() {
@@ -28,6 +28,8 @@ export default function Leaderboard() {
       .catch(() => setEntries([]))
       .finally(() => setLoading(false));
   }, [period]);
+
+  const maxCommits = entries.length > 0 ? entries[0].commit_count : 1;
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -58,54 +60,62 @@ export default function Leaderboard() {
           Leaderboard updates daily. Check back soon!
         </div>
       ) : (
-        <div className="space-y-2">
-          {entries.map((entry, i) => (
-            <div
-              key={entry.github_username}
-              className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                i === 0
-                  ? "bg-yellow-500/10 border border-yellow-500/30"
-                  : i === 1
-                    ? "bg-gray-400/10 border border-gray-400/30"
-                    : i === 2
-                      ? "bg-amber-600/10 border border-amber-600/30"
-                      : "bg-gray-900 border border-gray-800"
-              }`}
-            >
-              {/* Rank */}
-              <span
-                className={`w-8 text-center font-bold text-lg ${
+        <div className="space-y-1.5">
+          {entries.map((entry, i) => {
+            const barWidth = maxCommits > 0 ? (entry.commit_count / maxCommits) * 100 : 0;
+            return (
+              <div
+                key={entry.github_username}
+                className={`relative flex items-center gap-3 px-4 py-2.5 rounded-lg overflow-hidden ${
                   i === 0
-                    ? "text-yellow-400"
+                    ? "bg-yellow-500/10 border border-yellow-500/30"
                     : i === 1
-                      ? "text-gray-300"
+                      ? "bg-gray-400/10 border border-gray-400/30"
                       : i === 2
-                        ? "text-amber-500"
-                        : "text-gray-500"
+                        ? "bg-amber-600/10 border border-amber-600/30"
+                        : "bg-gray-900 border border-gray-800"
                 }`}
               >
-                {i + 1}
-              </span>
+                {/* Background bar */}
+                <div
+                  className="absolute inset-y-0 left-0 bg-green-500/8 transition-all duration-500"
+                  style={{ width: `${barWidth}%` }}
+                />
 
-              {/* Avatar */}
-              <img
-                src={entry.avatar_url}
-                alt={entry.github_username}
-                className="w-10 h-10 rounded-full flex-shrink-0"
-              />
+                {/* Rank */}
+                <span
+                  className={`relative w-7 text-center font-bold text-sm ${
+                    i === 0
+                      ? "text-yellow-400"
+                      : i === 1
+                        ? "text-gray-300"
+                        : i === 2
+                          ? "text-amber-500"
+                          : "text-gray-500"
+                  }`}
+                >
+                  {i + 1}
+                </span>
 
-              {/* Username */}
-              <span className="font-medium flex-1 truncate">{entry.github_username}</span>
+                {/* Avatar */}
+                <img
+                  src={entry.avatar_url}
+                  alt={entry.github_username}
+                  className="relative w-8 h-8 rounded-full flex-shrink-0"
+                />
 
-              {/* Commit count */}
-              <span className="text-xl font-bold tabular-nums text-green-400">
-                {entry.commit_count.toLocaleString()}
-              </span>
-              <span className="text-xs text-gray-500 w-20">
-                {entry.commit_count === 1 ? "contribution" : "contributions"}
-              </span>
-            </div>
-          ))}
+                {/* Username */}
+                <span className="relative font-medium flex-1 truncate text-sm">
+                  {entry.github_username}
+                </span>
+
+                {/* Commit count */}
+                <span className="relative text-lg font-bold tabular-nums text-green-400">
+                  {entry.commit_count.toLocaleString()}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

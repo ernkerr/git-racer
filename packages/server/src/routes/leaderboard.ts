@@ -11,7 +11,11 @@ function getPeriodRange(period: string): { start: string; end: string } {
 
   switch (period) {
     case "day": {
-      return { start: end, end };
+      // Use yesterday since the cron fetches the previous day's data
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yStr = yesterday.toISOString().slice(0, 10);
+      return { start: yStr, end: yStr };
     }
     case "week": {
       const dayOfWeek = now.getDay() || 7;
