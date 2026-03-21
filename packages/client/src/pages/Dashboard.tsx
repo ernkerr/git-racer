@@ -85,20 +85,6 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Contribution Graph */}
-      {contributions && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <ContributionGraph days={contributions.days} totalYear={contributions.total_year} />
-        </div>
-      )}
-
-      {/* Your Circle — rank among people you follow */}
-      <div>
-        <h2 className="text-lg font-bold mb-3">Your Circle</h2>
-        <p className="text-xs text-gray-500 mb-3">How you rank among developers you follow on GitHub this week</p>
-        <SocialCircle data={socialData} loading={socialLoading} />
-      </div>
-
       {/* Active Races */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -153,6 +139,20 @@ export default function Dashboard() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Contribution Graph */}
+      {contributions && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <ContributionGraph days={contributions.days} totalYear={contributions.total_year} />
+        </div>
+      )}
+
+      {/* Your Circle — rank among people you follow */}
+      <div>
+        <h2 className="text-lg font-bold mb-3">Your Circle</h2>
+        <p className="text-xs text-gray-500 mb-3">How you rank among developers you follow on GitHub this week</p>
+        <SocialCircle data={socialData} loading={socialLoading} />
       </div>
 
       {/* Global Leaderboard */}
