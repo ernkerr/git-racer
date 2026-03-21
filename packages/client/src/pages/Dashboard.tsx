@@ -5,16 +5,12 @@ import type {
   UserStats,
   ActiveChallenge,
   LeagueGroup,
-  FamousDevBenchmark,
-  SocialCircleData,
   UserStreakInfo,
   ContributionGraphData,
 } from "@git-racer/shared";
 import ContributionGraph from "../components/ContributionGraph.tsx";
 import LeagueCard from "../components/LeagueCard.tsx";
-import BenchmarkCards from "../components/BenchmarkCards.tsx";
 import StreakCard from "../components/StreakCard.tsx";
-import SocialCircle from "../components/SocialCircle.tsx";
 import ShareButton from "../components/ShareButton.tsx";
 import Leaderboard from "../components/Leaderboard.tsx";
 
@@ -31,38 +27,26 @@ export default function Dashboard() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [challenges, setChallenges] = useState<ActiveChallenge[]>([]);
   const [league, setLeague] = useState<LeagueGroup | null>(null);
-  const [benchmarks, setBenchmarks] = useState<FamousDevBenchmark[]>([]);
-  const [socialData, setSocialData] = useState<SocialCircleData>({ entries: [], your_rank: 0, total: 0 });
   const [streaks, setStreaks] = useState<UserStreakInfo | null>(null);
   const [contributions, setContributions] = useState<ContributionGraphData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [socialLoading, setSocialLoading] = useState(true);
 
   useEffect(() => {
-    // Load core data in parallel
     Promise.all([
       api<UserStats>("/me/stats"),
       api<ActiveChallenge[]>("/me/challenges"),
       api<UserStreakInfo>("/me/streaks"),
       api<ContributionGraphData>("/me/contributions"),
       api<LeagueGroup>("/leagues/current").catch(() => null),
-      api<FamousDevBenchmark[]>("/benchmarks?period=week").catch(() => []),
     ])
-      .then(([s, c, st, cont, l, b]) => {
+      .then(([s, c, st, cont, l]) => {
         setStats(s);
         setChallenges(c);
         setStreaks(st);
         setContributions(cont);
         setLeague(l);
-        setBenchmarks(b);
       })
       .finally(() => setLoading(false));
-
-    // Load social circle separately (slower — needs GitHub API)
-    api<SocialCircleData>("/social/circle")
-      .then(setSocialData)
-      .catch(() => {})
-      .finally(() => setSocialLoading(false));
   }, []);
 
   if (loading) {
@@ -103,31 +87,16 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Two-column layout: League + Social */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Weekly League */}
-        <div>
-          <h2 className="text-lg font-bold mb-3">Weekly League</h2>
-          {league ? (
-            <LeagueCard league={league} />
-          ) : (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center text-gray-500 text-sm">
-              Your league is being set up. Check back soon!
-            </div>
-          )}
-        </div>
-
-        {/* Social Circle */}
-        <div>
-          <h2 className="text-lg font-bold mb-3">Your Circle</h2>
-          <SocialCircle data={socialData} loading={socialLoading} />
-        </div>
-      </div>
-
-      {/* Famous Dev Benchmarks */}
+      {/* Weekly League */}
       <div>
-        <h2 className="text-lg font-bold mb-3">vs Famous Devs</h2>
-        <BenchmarkCards benchmarks={benchmarks} />
+        <h2 className="text-lg font-bold mb-3">Weekly League</h2>
+        {league ? (
+          <LeagueCard league={league} />
+        ) : (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center text-gray-500 text-sm">
+            Your league is being set up. Check back soon!
+          </div>
+        )}
       </div>
 
       {/* Active Races */}
