@@ -172,7 +172,7 @@ export async function searchGitHubUsers(
 
 export async function fetchTopGitHubUsers(
   count: number = 150
-): Promise<{ login: string; avatar_url: string }[]> {
+): Promise<{ login: string; avatar_url: string; followers: number }[]> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
   };
@@ -180,7 +180,7 @@ export async function fetchTopGitHubUsers(
     headers.Authorization = `Bearer ${env.GITHUB_APP_TOKEN}`;
   }
 
-  const users: { login: string; avatar_url: string }[] = [];
+  const result: { login: string; avatar_url: string; followers: number }[] = [];
   const perPage = Math.min(count, 100);
   const pages = Math.ceil(count / perPage);
 
@@ -197,28 +197,34 @@ export async function fetchTopGitHubUsers(
     if (!res.ok) break;
 
     const data = (await res.json()) as {
-      items: { login: string; avatar_url: string }[];
+      items: { login: string; avatar_url: string; followers: number }[];
     };
-    users.push(...data.items.map((u) => ({ login: u.login, avatar_url: u.avatar_url })));
+    result.push(...data.items.map((u) => ({
+      login: u.login,
+      avatar_url: u.avatar_url,
+      followers: u.followers ?? 0,
+    })));
   }
 
-  return users.slice(0, count);
+  return result.slice(0, count);
 }
 
 /**
  * Batch-fetch day-by-day contribution data for multiple users.
  * Processes batches sequentially to avoid rate limits. Stops early on 403/429.
+ * Returns the data map and the number of users successfully processed (for cursor tracking).
  */
 export async function fetchBatchContributionDays(
   usernames: string[],
   from: Date,
   to: Date,
   batchSize: number = 25
-): Promise<Map<string, { date: string; count: number }[]>> {
+): Promise<{ data: Map<string, { date: string; count: number }[]>; processed: number }> {
   const token = env.GITHUB_APP_TOKEN || "";
-  if (!token) return new Map();
+  if (!token) return { data: new Map(), processed: 0 };
 
   const results = new Map<string, { date: string; count: number }[]>();
+  let processed = 0;
 
   for (let i = 0; i < usernames.length; i += batchSize) {
     const batch = usernames.slice(i, i + batchSize);
@@ -278,10 +284,12 @@ export async function fetchBatchContributionDays(
           results.set(username, days);
         }
       });
+
+      processed = i + batch.length;
     } catch {
       continue;
     }
   }
 
-  return results;
+  return { data: results, processed };
 }

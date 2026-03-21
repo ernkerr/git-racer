@@ -8,6 +8,13 @@
       "when": 1774054052172,
       "tag": "0000_young_dragon_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774113045118,
+      "tag": "0001_overrated_korath",
+      "breakpoints": true
     }
   ]
 }

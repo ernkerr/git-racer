@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api.ts";
-import type { ChallengeType, DurationType } from "@git-racer/shared";
+import type { ChallengeType, DurationType, SuggestedOpponent } from "@git-racer/shared";
 import GitHubUserSearch from "../components/GitHubUserSearch.tsx";
 
 export default function CreateChallenge() {
@@ -14,8 +14,15 @@ export default function CreateChallenge() {
   const [goalTarget, setGoalTarget] = useState(100);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [suggested, setSuggested] = useState<SuggestedOpponent[]>([]);
 
   const defaultEnd = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+
+  useEffect(() => {
+    api<SuggestedOpponent[]>("/suggested-opponents?limit=20")
+      .then(setSuggested)
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +69,18 @@ export default function CreateChallenge() {
     const next = [...opponents];
     next[i] = val;
     setOpponents(next);
+  };
+
+  const selectSuggested = (username: string) => {
+    // Fill the first empty slot, or add a new one
+    const emptyIdx = opponents.findIndex((o) => !o.trim());
+    if (emptyIdx >= 0) {
+      updateOpponent(emptyIdx, username);
+    } else if (type === "team") {
+      setOpponents([...opponents, username]);
+    } else {
+      updateOpponent(0, username);
+    }
   };
 
   return (
@@ -131,6 +150,35 @@ export default function CreateChallenge() {
           <label className="block text-sm text-gray-400 mb-1.5">
             {type === "1v1" ? "Opponent" : "Participants"} (GitHub username)
           </label>
+
+          {/* Suggested opponents */}
+          {suggested.length > 0 && (
+            <div className="mb-3">
+              <p className="text-xs text-gray-500 mb-2">Suggested</p>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {suggested.map((s) => (
+                  <button
+                    key={s.github_username}
+                    type="button"
+                    onClick={() => selectSuggested(s.github_username)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors flex-shrink-0 ${
+                      opponents.includes(s.github_username)
+                        ? "bg-green-600/20 border border-green-500/40 text-green-400"
+                        : "bg-gray-800 border border-gray-700 text-gray-300 hover:border-gray-500"
+                    }`}
+                  >
+                    <img
+                      src={s.avatar_url || `https://github.com/${s.github_username}.png`}
+                      alt={s.github_username}
+                      className="w-5 h-5 rounded-full"
+                    />
+                    {s.github_username}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {opponents.map((opp, i) => (
             <div key={i} className="flex gap-2 mb-2">
               <div className="flex-1">

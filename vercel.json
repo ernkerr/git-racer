@@ -5,12 +5,19 @@
   "framework": "vite",
   "functions": {
     "api/index.ts": {
-      "includeFiles": "packages/{server,shared}/src/**"
+      "includeFiles": "packages/{server,shared}/src/**",
+      "maxDuration": 60
     }
   },
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.ts" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/daily-seed",
+      "schedule": "0 6 * * *"
+    }
   ]
 }

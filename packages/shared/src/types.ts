@@ -59,6 +59,12 @@ export interface ChallengeWithLeaderboard extends Challenge {
   participants: LeaderboardEntry[];
 }
 
+export interface SuggestedOpponent {
+  github_username: string;
+  avatar_url: string | null;
+  followers: number;
+}
+
 export interface ActiveChallenge {
   id: number;
   name: string;

@@ -132,13 +132,14 @@ challengeRoutes.delete("/:slug", requireAuth, async (c) => {
     return c.json({ error: "Only the creator can delete this race" }, 403);
   }
 
-  // Delete participants first (foreign key), then the challenge
-  await db
-    .delete(challengeParticipants)
-    .where(eq(challengeParticipants.challenge_id, challenge.id));
-  await db
-    .delete(challenges)
-    .where(eq(challenges.id, challenge.id));
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(challengeParticipants)
+      .where(eq(challengeParticipants.challenge_id, challenge.id));
+    await tx
+      .delete(challenges)
+      .where(eq(challenges.id, challenge.id));
+  });
 
   return c.json({ ok: true });
 });

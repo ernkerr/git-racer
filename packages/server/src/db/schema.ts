@@ -7,6 +7,7 @@ import {
   boolean,
   timestamp,
   date,
+  jsonb,
   unique,
 } from "drizzle-orm/pg-core";
 
@@ -63,3 +64,20 @@ export const commitSnapshots = pgTable(
   },
   (t) => [unique().on(t.github_username, t.date)]
 );
+
+export const suggestedOpponents = pgTable("suggested_opponents", {
+  id: serial("id").primaryKey(),
+  github_username: varchar("github_username", { length: 255 }).notNull().unique(),
+  avatar_url: text("avatar_url"),
+  followers: integer("followers").notNull().default(0),
+  fetched_at: timestamp("fetched_at").defaultNow().notNull(),
+});
+
+export const seedState = pgTable("seed_state", {
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 50 }).notNull().unique(),
+  last_run_at: timestamp("last_run_at"),
+  cursor: integer("cursor").notNull().default(0),
+  metadata: jsonb("metadata"),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});

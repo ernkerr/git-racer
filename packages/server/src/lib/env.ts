@@ -4,6 +4,7 @@ const envSchema = z.object({
   GITHUB_CLIENT_ID: z.string().min(1),
   GITHUB_CLIENT_SECRET: z.string().min(1),
   GITHUB_APP_TOKEN: z.string().optional(),
+  CRON_SECRET: z.string().min(1).optional(),
   DATABASE_URL: z.string().min(1),
   SESSION_SECRET: z.string().min(16),
   JWT_EXPIRY: z.string().default("7d"),
