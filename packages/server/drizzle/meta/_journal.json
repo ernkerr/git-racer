@@ -15,6 +15,13 @@
       "when": 1774113045118,
       "tag": "0001_overrated_korath",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774119719553,
+      "tag": "0002_dry_krista_starr",
+      "breakpoints": true
     }
   ]
 }

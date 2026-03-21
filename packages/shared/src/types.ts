@@ -76,3 +76,85 @@ export interface ActiveChallenge {
   leader_commits: number;
   participant_count: number;
 }
+
+// --- League types ---
+
+export type LeagueTier = "bronze" | "silver" | "gold" | "platinum" | "diamond";
+
+export interface LeagueGroupMember {
+  github_username: string;
+  avatar_url: string | null;
+  weekly_commits: number;
+  rank: number;
+  is_you: boolean;
+}
+
+export interface LeagueGroup {
+  tier: LeagueTier;
+  group_number: number;
+  week_start: string;
+  week_end: string;
+  members: LeagueGroupMember[];
+  your_rank: number;
+  days_left: number;
+}
+
+// --- Benchmark types ---
+
+export interface FamousDevBenchmark {
+  github_username: string;
+  display_name: string;
+  known_for: string;
+  avatar_url: string | null;
+  their_commits: number;
+  your_commits: number;
+  you_beat_them: boolean;
+}
+
+// --- Social circle types ---
+
+export interface SocialCircleEntry {
+  github_username: string;
+  avatar_url: string | null;
+  commit_count: number;
+  rank: number;
+  is_you: boolean;
+}
+
+export interface SocialCircleData {
+  entries: SocialCircleEntry[];
+  your_rank: number;
+  total: number;
+}
+
+// --- Streak types ---
+
+export interface UserStreakInfo {
+  current_streak: number;
+  longest_streak: number;
+  best_week_commits: number;
+  best_week_start: string | null;
+  this_week: number;
+  last_week: number;
+  trend_percent: number;
+}
+
+// --- Contribution graph types ---
+
+export interface ContributionDay {
+  date: string;
+  count: number;
+  level: number; // 0-4 intensity
+}
+
+export interface ContributionGraphData {
+  days: ContributionDay[];
+  total_year: number;
+}
+
+// --- Share types ---
+
+export interface ShareData {
+  text: string;
+  week_label: string;
+}

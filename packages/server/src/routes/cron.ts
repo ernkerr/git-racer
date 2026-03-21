@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import { env } from "../lib/env.js";
 import { db } from "../db/index.js";
-import { seedState, suggestedOpponents, commitSnapshots } from "../db/schema.js";
+import { seedState, suggestedOpponents, commitSnapshots, famousDevs } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
 import { fetchTopGitHubUsers, fetchBatchContributionDays } from "../services/github.js";
+import { seedFamousDevs, FAMOUS_DEV_LIST } from "../services/famous-devs.js";
+import { finalizeWeek } from "../services/leagues.js";
 
 export const cronRoutes = new Hono();
 
@@ -260,4 +262,61 @@ cronRoutes.post("/backfill", async (c) => {
     users_total: usernames.length,
     snapshots_stored: rows.length,
   });
+});
+
+/**
+ * Weekly league finalization + new week setup.
+ * Should run every Monday morning.
+ */
+cronRoutes.post("/weekly-leagues", async (c) => {
+  if (!verifyCronSecret(c.req.header("authorization"))) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  // Finalize last week
+  const now = new Date();
+  const dayOfWeek = now.getDay() || 7;
+  const lastMonday = new Date(now);
+  lastMonday.setDate(now.getDate() - dayOfWeek + 1 - 7);
+  const lastWeekStart = lastMonday.toISOString().slice(0, 10);
+
+  const result = await finalizeWeek(lastWeekStart);
+
+  return c.json({
+    status: "completed",
+    finalized_week: lastWeekStart,
+    ...result,
+  });
+});
+
+/**
+ * Seed famous devs table and ensure their contribution data is fetched.
+ * Can be run once or periodically to refresh.
+ */
+cronRoutes.post("/seed-famous-devs", async (c) => {
+  if (!verifyCronSecret(c.req.header("authorization"))) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  // Seed the famous_devs table
+  const seeded = await seedFamousDevs();
+
+  // Also add them to suggested_opponents so daily-seed fetches their contributions
+  const devUsernames = FAMOUS_DEV_LIST.map((d) => d.github_username);
+  const chunkSize = 50;
+  for (let i = 0; i < devUsernames.length; i += chunkSize) {
+    const chunk = devUsernames.slice(i, i + chunkSize);
+    await db
+      .insert(suggestedOpponents)
+      .values(
+        chunk.map((username) => ({
+          github_username: username,
+          avatar_url: `https://github.com/${username}.png`,
+          followers: 0,
+        }))
+      )
+      .onConflictDoNothing();
+  }
+
+  return c.json({ status: "completed", famous_devs_seeded: seeded });
 });
