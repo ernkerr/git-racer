@@ -23,7 +23,7 @@ export default function Leaderboard() {
 
   useEffect(() => {
     setLoading(true);
-    api<LeaderboardEntry[]>(`/leaderboard?period=${period}&limit=25`)
+    api<LeaderboardEntry[]>(`/leaderboard?period=${period}&limit=100`)
       .then(setEntries)
       .catch(() => setEntries([]))
       .finally(() => setLoading(false));
@@ -101,8 +101,8 @@ export default function Leaderboard() {
               <span className="text-xl font-bold tabular-nums text-green-400">
                 {entry.commit_count.toLocaleString()}
               </span>
-              <span className="text-xs text-gray-500 w-16">
-                {entry.commit_count === 1 ? "commit" : "commits"}
+              <span className="text-xs text-gray-500 w-20">
+                {entry.commit_count === 1 ? "contribution" : "contributions"}
               </span>
             </div>
           ))}

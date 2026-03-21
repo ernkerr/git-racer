@@ -169,3 +169,105 @@ export async function searchGitHubUsers(
     id: u.id,
   }));
 }
+
+export async function fetchTopGitHubUsers(
+  count: number = 150
+): Promise<{ login: string; avatar_url: string }[]> {
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+  };
+  if (env.GITHUB_APP_TOKEN) {
+    headers.Authorization = `Bearer ${env.GITHUB_APP_TOKEN}`;
+  }
+
+  const users: { login: string; avatar_url: string }[] = [];
+  const perPage = Math.min(count, 100);
+  const pages = Math.ceil(count / perPage);
+
+  for (let page = 1; page <= pages; page++) {
+    const params = new URLSearchParams({
+      q: "followers:>1000 type:user",
+      sort: "followers",
+      order: "desc",
+      per_page: String(perPage),
+      page: String(page),
+    });
+
+    const res = await fetch(`https://api.github.com/search/users?${params}`, { headers });
+    if (!res.ok) break;
+
+    const data = (await res.json()) as {
+      items: { login: string; avatar_url: string }[];
+    };
+    users.push(...data.items.map((u) => ({ login: u.login, avatar_url: u.avatar_url })));
+  }
+
+  return users.slice(0, count);
+}
+
+export async function fetchBatchContributions(
+  usernames: string[],
+  from: Date,
+  to: Date,
+  batchSize: number = 25
+): Promise<Record<string, number>> {
+  const token = env.GITHUB_APP_TOKEN || "";
+  if (!token) throw new Error("No GitHub token available");
+
+  const batches: string[][] = [];
+  for (let i = 0; i < usernames.length; i += batchSize) {
+    batches.push(usernames.slice(i, i + batchSize));
+  }
+
+  const batchResults = await Promise.all(
+    batches.map(async (batch) => {
+      const fragments = batch.map((username, idx) =>
+        `u${idx}: user(login: "${username}") {
+          contributionsCollection(from: "${from.toISOString()}", to: "${to.toISOString()}") {
+            contributionCalendar { totalContributions }
+          }
+        }`
+      );
+
+      const query = `query { ${fragments.join("\n")} }`;
+
+      try {
+        const res = await fetch("https://api.github.com/graphql", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query }),
+        });
+
+        if (!res.ok) return {};
+
+        const data = (await res.json()) as {
+          data: Record<string, {
+            contributionsCollection: {
+              contributionCalendar: { totalContributions: number };
+            };
+          } | null>;
+        };
+
+        const result: Record<string, number> = {};
+        batch.forEach((username, idx) => {
+          const userData = data.data?.[`u${idx}`];
+          if (userData) {
+            result[username] = userData.contributionsCollection.contributionCalendar.totalContributions;
+          }
+        });
+        return result;
+      } catch {
+        return {};
+      }
+    })
+  );
+
+  const results: Record<string, number> = {};
+  for (const r of batchResults) {
+    Object.assign(results, r);
+  }
+  return results;
+}
