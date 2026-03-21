@@ -106,10 +106,18 @@ export interface FamousDevBenchmark {
   display_name: string;
   known_for: string;
   avatar_url: string | null;
+  category: string;
   their_commits: number;
   your_commits: number;
   you_beat_them: boolean;
+  is_custom: boolean;
 }
+
+export type BenchmarkCategory = {
+  key: string;
+  label: string;
+  benchmarks: FamousDevBenchmark[];
+};
 
 // --- Social circle types ---
 

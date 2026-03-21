@@ -123,6 +123,20 @@ export const userStreaks = pgTable("user_streaks", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const userBenchmarks = pgTable(
+  "user_benchmarks",
+  {
+    id: serial("id").primaryKey(),
+    user_id: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    github_username: varchar("github_username", { length: 255 }).notNull(),
+    display_name: varchar("display_name", { length: 255 }),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [unique().on(t.user_id, t.github_username)]
+);
+
 export const socialCircles = pgTable(
   "social_circles",
   {

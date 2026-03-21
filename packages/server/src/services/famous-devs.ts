@@ -1,5 +1,5 @@
 import { db } from "../db/index.js";
-import { famousDevs, commitSnapshots } from "../db/schema.js";
+import { famousDevs, commitSnapshots, userBenchmarks } from "../db/schema.js";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 
 /**
@@ -7,59 +7,24 @@ import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
  * These are well-known enough that beating them is meaningful and shareable.
  */
 export const FAMOUS_DEV_LIST = [
-  // JavaScript / TypeScript ecosystem
-  { github_username: "sindresorhus", display_name: "Sindre Sorhus", known_for: "1000+ npm packages", category: "open-source" },
-  { github_username: "gaearon", display_name: "Dan Abramov", known_for: "React core team", category: "framework-authors" },
-  { github_username: "tj", display_name: "TJ Holowaychuk", known_for: "Express.js creator", category: "framework-authors" },
-  { github_username: "yyx990803", display_name: "Evan You", known_for: "Vue.js creator", category: "framework-authors" },
-  { github_username: "timneutkens", display_name: "Tim Neutkens", known_for: "Next.js lead", category: "framework-authors" },
-  { github_username: "kentcdodds", display_name: "Kent C. Dodds", known_for: "Testing Library creator", category: "educators" },
-  { github_username: "antfu", display_name: "Anthony Fu", known_for: "Vite / Vue core team", category: "open-source" },
-  { github_username: "Rich-Harris", display_name: "Rich Harris", known_for: "Svelte creator", category: "framework-authors" },
-  { github_username: "rauchg", display_name: "Guillermo Rauch", known_for: "Vercel CEO, Socket.io", category: "founders" },
-  { github_username: "colinhacks", display_name: "Colin McDonnell", known_for: "Zod creator", category: "open-source" },
-
-  // Systems / Infrastructure
+  // Legends
   { github_username: "torvalds", display_name: "Linus Torvalds", known_for: "Linux & Git creator", category: "legends" },
-  { github_username: "antirez", display_name: "Salvatore Sanfilippo", known_for: "Redis creator", category: "legends" },
-  { github_username: "mitchellh", display_name: "Mitchell Hashimoto", known_for: "HashiCorp founder", category: "founders" },
-  { github_username: "FiloSottile", display_name: "Filippo Valsorda", known_for: "Go security team", category: "open-source" },
-  { github_username: "BurntSushi", display_name: "Andrew Gallant", known_for: "ripgrep creator", category: "open-source" },
+  { github_username: "dhh", display_name: "DHH", known_for: "Ruby on Rails creator", category: "legends" },
 
-  // Python / ML
-  { github_username: "guido", display_name: "Guido van Rossum", known_for: "Python creator", category: "legends" },
-  { github_username: "tiangolo", display_name: "Sebastián Ramírez", known_for: "FastAPI creator", category: "framework-authors" },
-  { github_username: "karpathy", display_name: "Andrej Karpathy", known_for: "AI researcher, Tesla", category: "ai" },
+  // CEOs
+  { github_username: "rauchg", display_name: "Guillermo Rauch", known_for: "Vercel CEO", category: "ceos" },
+  { github_username: "garrytan", display_name: "Gary Tan", known_for: "Y Combinator President", category: "ceos" },
+  { github_username: "hwchase17", display_name: "Harrison Chase", known_for: "LangChain CEO", category: "ceos" },
 
-  // Rust
-  { github_username: "dtolnay", display_name: "David Tolnay", known_for: "Rust serde/syn author", category: "open-source" },
-  { github_username: "matklad", display_name: "Alex Kladov", known_for: "rust-analyzer creator", category: "open-source" },
+  // Indie Hackers
+  { github_username: "levelsio", display_name: "Pieter Levels", known_for: "Nomad List, Photo AI", category: "indie-hackers" },
+  { github_username: "sindresorhus", display_name: "Sindre Sorhus", known_for: "1000+ npm packages", category: "indie-hackers" },
 
-  // DevTools / Community
-  { github_username: "sharkdp", display_name: "David Peter", known_for: "bat, fd, hyperfine", category: "open-source" },
-  { github_username: "jessfraz", display_name: "Jess Frazelle", known_for: "Docker / containers", category: "open-source" },
-  { github_username: "ThePrimeagen", display_name: "ThePrimeagen", known_for: "Developer content creator", category: "educators" },
-  { github_username: "cassidoo", display_name: "Cassidy Williams", known_for: "Developer advocate", category: "educators" },
-  { github_username: "wesbos", display_name: "Wes Bos", known_for: "JavaScript educator", category: "educators" },
+  // Framework Builders
+  { github_username: "taylorotwell", display_name: "Taylor Otwell", known_for: "Laravel creator", category: "framework-builders" },
 
-  // Go
-  { github_username: "bradfitz", display_name: "Brad Fitzpatrick", known_for: "Go team, LiveJournal", category: "legends" },
-  { github_username: "rsc", display_name: "Russ Cox", known_for: "Go language lead", category: "open-source" },
-
-  // Founders / Leaders
-  { github_username: "maboroshi", display_name: "Maboroshi", known_for: "Open source contributor", category: "open-source" },
-  { github_username: "mojombo", display_name: "Tom Preston-Werner", known_for: "GitHub co-founder", category: "founders" },
-  { github_username: "natfriedman", display_name: "Nat Friedman", known_for: "Former GitHub CEO", category: "founders" },
-
-  // Web Standards / CSS
-  { github_username: "addyosmani", display_name: "Addy Osmani", known_for: "Chrome DevTools lead", category: "open-source" },
-  { github_username: "paulirish", display_name: "Paul Irish", known_for: "Chrome DevTools, Lighthouse", category: "open-source" },
-
-  // More prolific contributors
-  { github_username: "developit", display_name: "Jason Miller", known_for: "Preact creator", category: "framework-authors" },
-  { github_username: "mrdoob", display_name: "Ricardo Cabello", known_for: "Three.js creator", category: "open-source" },
-  { github_username: "isaacs", display_name: "Isaac Z. Schlueter", known_for: "npm creator", category: "founders" },
-  { github_username: "brendangregg", display_name: "Brendan Gregg", known_for: "Performance engineering", category: "legends" },
+  // Founders
+  { github_username: "steipete", display_name: "Peter Steinberger", known_for: "PSPDFKit founder", category: "founders" },
 ] as const;
 
 /**
@@ -103,15 +68,18 @@ export async function seedFamousDevs(): Promise<number> {
  */
 export async function getBenchmarks(
   username: string,
+  userId: number,
   period: "week" | "month" | "yearly"
 ): Promise<{
   github_username: string;
   display_name: string;
   known_for: string;
   avatar_url: string | null;
+  category: string;
   their_commits: number;
   your_commits: number;
   you_beat_them: boolean;
+  is_custom: boolean;
 }[]> {
   const { start, end } = getPeriodRange(period);
 
@@ -136,7 +104,19 @@ export async function getBenchmarks(
     .from(famousDevs)
     .where(eq(famousDevs.active, true));
 
-  if (devs.length === 0) return [];
+  // Get user's custom benchmarks
+  const customDevs = await db
+    .select()
+    .from(userBenchmarks)
+    .where(eq(userBenchmarks.user_id, userId));
+
+  // Combine all dev usernames for commit lookup
+  const allUsernames = [
+    ...devs.map((d) => d.github_username),
+    ...customDevs.map((d) => d.github_username),
+  ];
+
+  if (allUsernames.length === 0) return [];
 
   // Get their commits in bulk
   const devCommits = await db
@@ -150,7 +130,7 @@ export async function getBenchmarks(
         gte(commitSnapshots.date, start),
         lte(commitSnapshots.date, end),
         sql`${commitSnapshots.github_username} IN (${sql.join(
-          devs.map((d) => sql`${d.github_username}`),
+          allUsernames.map((u) => sql`${u}`),
           sql`, `
         )})`
       )
@@ -158,8 +138,9 @@ export async function getBenchmarks(
     .groupBy(commitSnapshots.github_username);
 
   const commitMap = new Map(devCommits.map((r) => [r.github_username, Number(r.total)]));
+  const customSet = new Set(customDevs.map((d) => d.github_username));
 
-  // Build results
+  // Build results from famous devs
   const results = devs.map((dev) => {
     const theirCommits = commitMap.get(dev.github_username) ?? 0;
     return {
@@ -167,31 +148,33 @@ export async function getBenchmarks(
       display_name: dev.display_name,
       known_for: dev.known_for,
       avatar_url: dev.avatar_url,
+      category: dev.category ?? "other",
       their_commits: theirCommits,
       your_commits: yourCommits,
       you_beat_them: yourCommits > theirCommits,
+      is_custom: false,
     };
   });
 
-  // Sort: show devs you beat first, then by closest matchup
-  results.sort((a, b) => {
-    // Prioritize devs you beat (or are close to beating)
-    const aDiff = a.your_commits - a.their_commits;
-    const bDiff = b.your_commits - b.their_commits;
+  // Add custom devs (that aren't already in famous devs)
+  const famousSet = new Set(devs.map((d) => d.github_username));
+  for (const custom of customDevs) {
+    if (famousSet.has(custom.github_username)) continue;
+    const theirCommits = commitMap.get(custom.github_username) ?? 0;
+    results.push({
+      github_username: custom.github_username,
+      display_name: custom.display_name ?? custom.github_username,
+      known_for: "Custom",
+      avatar_url: `https://github.com/${custom.github_username}.png`,
+      category: "your-picks",
+      their_commits: theirCommits,
+      your_commits: yourCommits,
+      you_beat_them: yourCommits > theirCommits,
+      is_custom: true,
+    });
+  }
 
-    // You beat them — show the most impressive wins first (highest their_commits)
-    if (aDiff > 0 && bDiff > 0) return b.their_commits - a.their_commits;
-    if (aDiff > 0) return -1;
-    if (bDiff > 0) return 1;
-
-    // You haven't beat them — show the closest ones first
-    return bDiff - aDiff;
-  });
-
-  // Filter out devs with 0 commits (inactive this period) — keep max 20
-  return results
-    .filter((r) => r.their_commits > 0 || r.you_beat_them)
-    .slice(0, 20);
+  return results;
 }
 
 function getPeriodRange(period: string): { start: string; end: string } {

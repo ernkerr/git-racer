@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api.ts";
 import type {
   UserStats,
   ActiveChallenge,
+  FamousDevBenchmark,
   SocialCircleData,
+  LeagueGroup,
   UserStreakInfo,
   ContributionGraphData,
 } from "@git-racer/shared";
 import ContributionGraph from "../components/ContributionGraph.tsx";
+import LeagueCard from "../components/LeagueCard.tsx";
+import BenchmarkCards from "../components/BenchmarkCards.tsx";
 import StreakCard from "../components/StreakCard.tsx";
 import SocialCircle from "../components/SocialCircle.tsx";
 import ShareButton from "../components/ShareButton.tsx";
@@ -26,11 +30,17 @@ function StatsCard({ label, value }: { label: string; value: number }) {
 export default function Dashboard() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [challenges, setChallenges] = useState<ActiveChallenge[]>([]);
+  const [benchmarks, setBenchmarks] = useState<FamousDevBenchmark[]>([]);
   const [socialData, setSocialData] = useState<SocialCircleData>({ entries: [], your_rank: 0, total: 0 });
+  const [league, setLeague] = useState<LeagueGroup | null>(null);
   const [streaks, setStreaks] = useState<UserStreakInfo | null>(null);
   const [contributions, setContributions] = useState<ContributionGraphData | null>(null);
   const [loading, setLoading] = useState(true);
   const [socialLoading, setSocialLoading] = useState(true);
+
+  const loadBenchmarks = useCallback(() => {
+    api<FamousDevBenchmark[]>("/benchmarks").then(setBenchmarks).catch(() => {});
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -38,20 +48,26 @@ export default function Dashboard() {
       api<ActiveChallenge[]>("/me/challenges"),
       api<UserStreakInfo>("/me/streaks"),
       api<ContributionGraphData>("/me/contributions"),
+      api<FamousDevBenchmark[]>("/benchmarks"),
     ])
-      .then(([s, c, st, cont]) => {
+      .then(([s, c, st, cont, b]) => {
         setStats(s);
         setChallenges(c);
         setStreaks(st);
         setContributions(cont);
+        setBenchmarks(b);
       })
       .finally(() => setLoading(false));
 
-    // Social circle loads separately (needs GitHub API calls)
+    // Social + league load separately (slower)
     api<SocialCircleData>("/social/circle")
       .then(setSocialData)
       .catch(() => {})
       .finally(() => setSocialLoading(false));
+
+    api<LeagueGroup>("/leagues/current")
+      .then(setLeague)
+      .catch(() => {});
   }, []);
 
   if (loading) {
@@ -85,10 +101,10 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Active Races */}
+      {/* Your Races */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">Active Races</h2>
+          <h2 className="text-lg font-bold">Your Races</h2>
           <Link
             to="/challenges/new"
             className="text-sm bg-green-600 hover:bg-green-500 px-3 py-1.5 rounded-md transition-colors"
@@ -98,47 +114,69 @@ export default function Dashboard() {
         </div>
 
         {challenges.length === 0 ? (
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 text-center">
-            <p className="text-gray-400 mb-4">No active races yet.</p>
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
+            <p className="text-gray-500 text-sm mb-3">No active races yet</p>
             <Link
               to="/challenges/new"
-              className="text-green-400 hover:text-green-300 font-medium"
+              className="text-green-400 hover:text-green-300 text-sm font-medium"
             >
-              Create your first race
+              Start a race
             </Link>
           </div>
         ) : (
-          <div className="space-y-3">
-            {challenges.map((ch) => (
-              <Link
-                key={ch.id}
-                to={`/c/${ch.share_slug}`}
-                className="block bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold">{ch.name}</h3>
-                    <p className="text-sm text-gray-400">
-                      {ch.participant_count} participants
-                      {ch.end_date &&
-                        ` \u00b7 ends ${new Date(ch.end_date).toLocaleDateString()}`}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold tabular-nums">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {challenges.map((ch) => {
+              const winning = ch.your_commits >= ch.leader_commits || ch.leader_username === "";
+              return (
+                <Link
+                  key={ch.id}
+                  to={`/c/${ch.share_slug}`}
+                  className={`block rounded-xl border p-4 transition-colors ${
+                    winning
+                      ? "bg-green-600/5 border-green-500/20 hover:border-green-500/40"
+                      : "bg-gray-900 border-gray-800 hover:border-gray-700"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold truncate">{ch.name}</h3>
+                    <span className={`text-2xl font-bold tabular-nums ${winning ? "text-green-400" : "text-white"}`}>
                       {ch.your_commits}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {ch.leader_username === "" ? "" : ch.leader_commits > ch.your_commits
-                        ? `${ch.leader_username} leads with ${ch.leader_commits}`
-                        : "You're in the lead!"}
-                    </p>
+                    </span>
                   </div>
-                </div>
-              </Link>
-            ))}
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{ch.participant_count} participants</span>
+                    {ch.end_date && (
+                      <span>ends {new Date(ch.end_date).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                  {ch.leader_username && ch.leader_commits > ch.your_commits && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      {ch.leader_username} leads with {ch.leader_commits}
+                    </div>
+                  )}
+                  {winning && ch.leader_username !== "" && (
+                    <div className="mt-2 text-xs text-green-400 font-medium">
+                      You're in the lead
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
           </div>
         )}
+      </div>
+
+      {/* Compare with devs */}
+      <div>
+        <h2 className="text-lg font-bold mb-1">How You Stack Up</h2>
+        <p className="text-xs text-gray-500 mb-4">Your commits this week vs notable developers</p>
+        <BenchmarkCards
+          benchmarks={benchmarks}
+          onAdded={loadBenchmarks}
+          onRemoved={(username) => {
+            setBenchmarks((prev) => prev.filter((b) => b.github_username !== username));
+          }}
+        />
       </div>
 
       {/* Contribution Graph */}
@@ -153,6 +191,18 @@ export default function Dashboard() {
         <h2 className="text-lg font-bold mb-3">Your Circle</h2>
         <p className="text-xs text-gray-500 mb-3">How you rank among developers you follow on GitHub this week</p>
         <SocialCircle data={socialData} loading={socialLoading} />
+      </div>
+
+      {/* Weekly League — at the bottom */}
+      <div>
+        <h2 className="text-lg font-bold mb-3">Weekly League</h2>
+        {league ? (
+          <LeagueCard league={league} />
+        ) : (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center text-gray-500 text-sm">
+            Your league is being set up. Check back soon!
+          </div>
+        )}
       </div>
 
       {/* Global Leaderboard */}
