@@ -1,0 +1,36 @@
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
+import { authRoutes } from "./routes/auth.js";
+import { meRoutes } from "./routes/me.js";
+import { challengeRoutes } from "./routes/challenges.js";
+import { userRoutes } from "./routes/users.js";
+import { githubRoutes } from "./routes/github.js";
+import { leaderboardRoutes } from "./routes/leaderboard.js";
+
+const app = new Hono().basePath("/api");
+
+app.use("*", logger());
+app.use(
+  "*",
+  cors({
+    origin: (origin) => origin || "*",
+    credentials: true,
+  })
+);
+
+app.onError((err, c) => {
+  console.error("Hono error:", err.message, err.stack);
+  return c.json({ error: err.message }, 500);
+});
+
+app.get("/health", (c) => c.json({ status: "ok" }));
+
+app.route("/auth", authRoutes);
+app.route("/me", meRoutes);
+app.route("/challenges", challengeRoutes);
+app.route("/users", userRoutes);
+app.route("/github", githubRoutes);
+app.route("/leaderboard", leaderboardRoutes);
+
+export default app;
