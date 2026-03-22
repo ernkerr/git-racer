@@ -369,9 +369,32 @@ cronRoutes.post("/ingest-events-debug", async (c) => {
       start = i + 1;
     }
     steps.push(`lines=${totalLines},pushes=${pushes},errors=${errors},users=${userMap.size}`);
+    // Sample a PushEvent to inspect structure
+    let sample: any = null;
+    start = 0;
+    for (let i = 0; i < decompressed.length; i++) {
+      if (decompressed[i] !== 10) continue;
+      if (i > start) {
+        const line = decompressed.toString("utf-8", start, i);
+        try {
+          const e = JSON.parse(line);
+          if (e.type === "PushEvent") {
+            sample = {
+              actor: e.actor,
+              payload_keys: Object.keys(e.payload || {}),
+              payload_size: e.payload?.size,
+              payload_distinct_size: e.payload?.distinct_size,
+              payload_commits_len: e.payload?.commits?.length,
+            };
+            break;
+          }
+        } catch {}
+      }
+      start = i + 1;
+    }
     // Top 5 committers
     const top5 = [...userMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-    return c.json({ ok: true, steps, top5 });
+    return c.json({ ok: true, steps, top5, sample });
   } catch (err: any) {
     steps.push(`error: ${err.message}`);
     return c.json({ ok: false, steps, error: err.message });
