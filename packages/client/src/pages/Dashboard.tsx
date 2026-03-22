@@ -59,6 +59,7 @@ export default function Dashboard() {
         setStreaks(data.streaks);
         setContributions(data.contributions);
       })
+      .catch((err) => console.error("Dashboard load failed:", err))
       .finally(() => setLoading(false));
 
     // These load independently (separate APIs / slower)
