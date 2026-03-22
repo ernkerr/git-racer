@@ -323,84 +323,10 @@ cronRoutes.post("/seed-famous-devs", async (c) => {
 /**
  * Ingest GH Archive public push events.
  * Downloads hourly archive files, extracts PushEvents, and aggregates
- * commit counts per user into event_committers.
- * Processes one hour per call; loops up to 4 hours within the time budget.
+ * push counts per user into event_committers.
+ * Processes one hour per call. Resumable — tracks which hours are done.
  * Query params: date (YYYY-MM-DD, defaults to today)
  */
-cronRoutes.post("/ingest-events-debug", async (c) => {
-  if (!verifyCronSecret(c.req.header("authorization"))) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-  const { gunzipSync } = await import("node:zlib");
-  const hour = parseInt(c.req.query("hour") || "0", 10);
-  const url = `https://data.gharchive.org/2026-03-21-${hour}.json.gz`;
-  const steps: string[] = [];
-  try {
-    steps.push("fetching...");
-    const res = await fetch(url);
-    steps.push(`status=${res.status}`);
-    const ab = await res.arrayBuffer();
-    steps.push(`arrayBuffer=${ab.byteLength}`);
-    const gzipped = Buffer.from(ab);
-    steps.push(`buffer=${gzipped.length}`);
-    const decompressed = gunzipSync(gzipped);
-    steps.push(`decompressed=${decompressed.length}`);
-    // Full parse like parsePushEvents does
-    let pushes = 0, totalLines = 0, errors = 0;
-    let start = 0;
-    const userMap = new Map<string, number>();
-    for (let i = 0; i < decompressed.length; i++) {
-      if (decompressed[i] !== 10) continue;
-      if (i > start) {
-        totalLines++;
-        const line = decompressed.toString("utf-8", start, i);
-        try {
-          const e = JSON.parse(line);
-          if (e.type === "PushEvent") {
-            pushes++;
-            const login = e.actor?.login;
-            const commits = e.payload?.distinct_size || e.payload?.size || 0;
-            if (login && commits > 0) {
-              userMap.set(login, (userMap.get(login) || 0) + commits);
-            }
-          }
-        } catch { errors++; }
-      }
-      start = i + 1;
-    }
-    steps.push(`lines=${totalLines},pushes=${pushes},errors=${errors},users=${userMap.size}`);
-    // Sample a PushEvent to inspect structure
-    let sample: any = null;
-    start = 0;
-    for (let i = 0; i < decompressed.length; i++) {
-      if (decompressed[i] !== 10) continue;
-      if (i > start) {
-        const line = decompressed.toString("utf-8", start, i);
-        try {
-          const e = JSON.parse(line);
-          if (e.type === "PushEvent") {
-            sample = {
-              actor: e.actor,
-              payload_keys: Object.keys(e.payload || {}),
-              payload_size: e.payload?.size,
-              payload_distinct_size: e.payload?.distinct_size,
-              payload_commits_len: e.payload?.commits?.length,
-            };
-            break;
-          }
-        } catch {}
-      }
-      start = i + 1;
-    }
-    // Top 5 committers
-    const top5 = [...userMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-    return c.json({ ok: true, steps, top5, sample });
-  } catch (err: any) {
-    steps.push(`error: ${err.message}`);
-    return c.json({ ok: false, steps, error: err.message });
-  }
-});
-
 cronRoutes.post("/ingest-events", async (c) => {
   if (!verifyCronSecret(c.req.header("authorization"))) {
     return c.json({ error: "Unauthorized" }, 401);

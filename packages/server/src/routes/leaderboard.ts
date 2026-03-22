@@ -10,20 +10,45 @@ leaderboardRoutes.get("/", async (c) => {
   const limit = Math.min(parseInt(c.req.query("limit") || "100", 10), 100);
   const { start, end } = periodRange(period);
 
-  // Use event_committers (real GH Archive data) as primary source,
-  // fall back to commit_snapshots if event_committers has no data for the range.
+  // For the "day" period, use the most recent date in event_committers
+  // since today's data may not be fully ingested yet.
+  // For other periods, use the full date range.
   const eventRows = await db.execute(sql`
     SELECT
       ec.github_username,
       COALESCE(SUM(ec.commit_count), 0)::int AS commit_count,
-      ec.avatar_url
+      (array_agg(ec.avatar_url ORDER BY ec.last_seen_at DESC))[1] AS avatar_url
     FROM event_committers ec
     WHERE ec.date >= ${start}
       AND ec.date <= ${end}
-    GROUP BY ec.github_username, ec.avatar_url
+    GROUP BY ec.github_username
     ORDER BY commit_count DESC
     LIMIT ${limit}
   `);
+
+  // If no event data for this range, try the most recent day available
+  if (eventRows.rows.length === 0 && period === "day") {
+    const recentRows = await db.execute(sql`
+      SELECT
+        ec.github_username,
+        ec.commit_count,
+        ec.avatar_url
+      FROM event_committers ec
+      WHERE ec.date = (SELECT MAX(date) FROM event_committers)
+      ORDER BY ec.commit_count DESC
+      LIMIT ${limit}
+    `);
+
+    if (recentRows.rows.length > 0) {
+      return c.json(
+        recentRows.rows.map((r: any) => ({
+          github_username: r.github_username,
+          avatar_url: r.avatar_url,
+          commit_count: Number(r.commit_count),
+        }))
+      );
+    }
+  }
 
   if (eventRows.rows.length > 0) {
     return c.json(
@@ -35,7 +60,7 @@ leaderboardRoutes.get("/", async (c) => {
     );
   }
 
-  // Fallback to commit_snapshots (old data source) if no event data yet
+  // Fallback to commit_snapshots if no event data at all
   const rows = await db.execute(sql`
     SELECT
       cs.github_username,
