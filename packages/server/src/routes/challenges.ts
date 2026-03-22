@@ -1,3 +1,17 @@
+/**
+ * Challenge routes -- CRUD operations for race challenges.
+ *
+ * Challenges are time-boxed commit races between GitHub users. They come in
+ * two flavors: 1v1 (invite-only) and team (joinable via a share link).
+ * Each challenge has a unique share_slug used for public URLs.
+ *
+ * Endpoints:
+ *   POST   /             Create a new challenge
+ *   GET    /:slug        Get challenge details + leaderboard (public)
+ *   PATCH  /:slug        Update challenge settings (creator only)
+ *   DELETE /:slug        Delete a challenge (creator only)
+ *   POST   /:slug/join   Join a team challenge
+ */
 import { Hono } from "hono";
 import { requireAuth, optionalAuth } from "../middleware/auth.js";
 import { db } from "../db/index.js";
@@ -10,7 +24,7 @@ import type { AppEnv } from "../types.js";
 
 export const challengeRoutes = new Hono<AppEnv>();
 
-// Create a challenge
+/** Create a new challenge. Validates input via Zod schema and delegates to the challenge service. */
 challengeRoutes.post("/", requireAuth, async (c) => {
   const { sub: userId, username } = c.get("user");
   const body = await c.req.json();
@@ -33,7 +47,10 @@ challengeRoutes.post("/", requireAuth, async (c) => {
   }
 });
 
-// Get challenge by slug (public)
+/**
+ * Get challenge details and leaderboard by share slug.
+ * Publicly accessible; if the viewer is logged in, their commit data is refreshed first.
+ */
 challengeRoutes.get("/:slug", optionalAuth, async (c) => {
   const slug = c.req.param("slug");
 
@@ -45,18 +62,23 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
 
   if (!challenge) return c.json({ error: "Challenge not found" }, 404);
 
-  // Only refresh the logged-in user's data (not all participants)
+  // Only refresh the logged-in user's commit data (not all participants)
+  // to avoid expensive GitHub API calls for every page view.
   const authedUser = c.get("user") as { username?: string } | undefined;
   if (authedUser?.username) {
     try { await refreshCommitData(authedUser.username); } catch {}
   }
 
+  // Date range for commit aggregation: challenge start -> end (or today if open-ended)
   const startDate = challenge.start_date.toISOString().slice(0, 10);
   const endDate = challenge.end_date
     ? challenge.end_date.toISOString().slice(0, 10)
     : new Date().toISOString().slice(0, 10);
 
-  // Single query: participants + commit counts + avatars
+  // Leaderboard query: joins participants with their commit snapshots in
+  // the challenge date range, plus user avatars. Ghost participants
+  // (added by the creator, not real accounts) are included and flagged.
+  // Falls back to GitHub's default avatar URL when no user record exists.
   const rows = await db.execute(sql`
     SELECT
       cp.github_username,
@@ -97,7 +119,7 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
   });
 });
 
-// Update challenge settings (creator only)
+/** Update challenge settings (name, end date). Restricted to the challenge creator. */
 challengeRoutes.patch("/:slug", requireAuth, async (c) => {
   const { sub: userId } = c.get("user");
   const slug = c.req.param("slug");
@@ -114,6 +136,7 @@ challengeRoutes.patch("/:slug", requireAuth, async (c) => {
   }
 
   const body = await c.req.json();
+  // Build a partial update object from the allowed mutable fields
   const updates: Record<string, unknown> = {};
 
   if (body.end_date !== undefined) {
@@ -133,7 +156,7 @@ challengeRoutes.patch("/:slug", requireAuth, async (c) => {
   return c.json({ ok: true });
 });
 
-// Delete a challenge (creator only)
+/** Delete a challenge and all its participants. Restricted to the challenge creator. */
 challengeRoutes.delete("/:slug", requireAuth, async (c) => {
   const { sub: userId } = c.get("user");
   const slug = c.req.param("slug");
@@ -149,6 +172,7 @@ challengeRoutes.delete("/:slug", requireAuth, async (c) => {
     return c.json({ error: "Only the creator can delete this race" }, 403);
   }
 
+  // Delete participants first (FK constraint), then the challenge itself
   await db.transaction(async (tx) => {
     await tx
       .delete(challengeParticipants)
@@ -161,7 +185,7 @@ challengeRoutes.delete("/:slug", requireAuth, async (c) => {
   return c.json({ ok: true });
 });
 
-// Join a challenge
+/** Join an existing team challenge via its share link. 1v1 challenges cannot be joined this way. */
 challengeRoutes.post("/:slug/join", requireAuth, async (c) => {
   const { sub: userId, username } = c.get("user");
   const slug = c.req.param("slug");

@@ -1,3 +1,12 @@
+/**
+ * Commit data ingestion and aggregation service.
+ *
+ * Manages the local cache of per-day commit snapshots sourced from the
+ * GitHub Contributions API. Provides functions to refresh the cache when
+ * stale, back-fill historical years, and query aggregated commit counts
+ * across various time windows (today, week, month, year, all-time).
+ */
+
 import { db } from "../db/index.js";
 import { commitSnapshots } from "../db/schema.js";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
@@ -6,8 +15,15 @@ import { fetchContributionDays, fetchContributionYears } from "./github.js";
 import { today, weekStart, monthStart, yearStart } from "../lib/dates.js";
 
 /**
- * Ensure we have fresh commit data for a user, fetching from GitHub if stale.
- * Returns true if data was already fresh (skipped refresh).
+ * Ensure we have fresh commit data for a user by checking the most recent
+ * snapshot timestamp against `CACHE_TTL_MS`. If the data is stale (or
+ * missing), fetches the current calendar year's contributions from GitHub
+ * and upserts them into the `commit_snapshots` table.
+ *
+ * @param githubUsername - The GitHub login to refresh data for.
+ * @param token - Optional OAuth token; falls back to the server app token.
+ * @returns `true` if the cached data was still fresh and no fetch was needed,
+ *          `false` if new data was fetched and stored.
  */
 export async function refreshCommitData(
   githubUsername: string,
@@ -21,22 +37,24 @@ export async function refreshCommitData(
     .limit(1);
 
   if (latest.length > 0) {
-    const age = Date.now() - latest[0].fetched_at.getTime();
-    if (age < CACHE_TTL_MS) return true; // Still fresh
+    const ageMs = Date.now() - latest[0].fetched_at.getTime();
+    if (ageMs < CACHE_TTL_MS) return true; // Still fresh
   }
 
   const now = new Date();
-  const yearStart = new Date(now.getFullYear(), 0, 1);
-  const days = await fetchContributionDays(githubUsername, yearStart, now, token);
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const contributionDays = await fetchContributionDays(githubUsername, startOfYear, now, token);
 
-  if (days.length > 0) {
+  if (contributionDays.length > 0) {
+    // Upsert each day's commit count. On conflict (same user + date),
+    // overwrite with the latest fetched values so counts stay current.
     await db
       .insert(commitSnapshots)
       .values(
-        days.map((d) => ({
+        contributionDays.map((day) => ({
           github_username: githubUsername,
-          date: d.date,
-          commit_count: d.count,
+          date: day.date,
+          commit_count: day.count,
           fetched_at: now,
         }))
       )
@@ -53,8 +71,16 @@ export async function refreshCommitData(
 }
 
 /**
- * Ensure we have all historical years loaded (for all-time stats).
- * Expensive — only call from /me/stats, not dashboard.
+ * Back-fill commit snapshots for every historical year the user has been
+ * active on GitHub. This is expensive (one GitHub API call per year) and
+ * should only be called from the full `/me/stats` endpoint, never from
+ * the dashboard hot path.
+ *
+ * Skips the current year (already covered by `refreshCommitData`) and any
+ * year that already has rows in the database.
+ *
+ * @param githubUsername - The GitHub login to back-fill history for.
+ * @param token - Optional OAuth token; falls back to the server app token.
  */
 export async function refreshAllTimeData(
   githubUsername: string,
@@ -64,9 +90,11 @@ export async function refreshAllTimeData(
   const currentYear = new Date().getFullYear();
 
   for (const year of years) {
+    // Current year is handled by refreshCommitData; skip it here.
     if (year === currentYear) continue;
 
-    const existing = await db
+    // Check if we already have any rows for this year to avoid redundant fetches.
+    const existingRows = await db
       .select({ count: sql<number>`count(*)` })
       .from(commitSnapshots)
       .where(
@@ -77,20 +105,21 @@ export async function refreshAllTimeData(
         )
       );
 
-    if (existing[0].count > 0) continue;
+    if (existingRows[0].count > 0) continue;
 
-    const from = new Date(year, 0, 1);
-    const to = new Date(year, 11, 31);
-    const days = await fetchContributionDays(githubUsername, from, to, token);
+    const yearFrom = new Date(year, 0, 1);
+    const yearTo = new Date(year, 11, 31);
+    const contributionDays = await fetchContributionDays(githubUsername, yearFrom, yearTo, token);
 
-    if (days.length > 0) {
+    if (contributionDays.length > 0) {
+      // Same upsert strategy as refreshCommitData — idempotent per (user, date).
       await db
         .insert(commitSnapshots)
         .values(
-          days.map((d) => ({
+          contributionDays.map((day) => ({
             github_username: githubUsername,
-            date: d.date,
-            commit_count: d.count,
+            date: day.date,
+            commit_count: day.count,
             fetched_at: new Date(),
           }))
         )
@@ -106,7 +135,12 @@ export async function refreshAllTimeData(
 }
 
 /**
- * Get the sum of commits between two dates for a user.
+ * Sum the cached commit counts for a user within an inclusive date range.
+ *
+ * @param githubUsername - The GitHub login to query.
+ * @param startDate - Inclusive start date in "YYYY-MM-DD" format.
+ * @param endDate - Inclusive end date in "YYYY-MM-DD" format.
+ * @returns The total number of commits in the range (0 if no data).
  */
 export async function getCommitCount(
   githubUsername: string,
@@ -128,8 +162,15 @@ export async function getCommitCount(
 }
 
 /**
- * Fast stats for dashboard — single SQL query, no all-time refresh.
- * Assumes refreshCommitData was already called by the caller.
+ * Lightweight stats lookup for the dashboard. Computes today / week / month /
+ * year / all-time commit totals in a single SQL query using conditional
+ * aggregation, avoiding multiple round-trips.
+ *
+ * Callers must ensure `refreshCommitData` has already been called so the
+ * underlying snapshot rows are up to date.
+ *
+ * @param githubUsername - The GitHub login to aggregate stats for.
+ * @returns An object with commit totals for each time window.
  */
 export async function getUserStatsFast(
   githubUsername: string
@@ -140,34 +181,43 @@ export async function getUserStatsFast(
   this_year: number;
   all_time: number;
 }> {
-  const t = today();
-  const w = weekStart();
-  const m = monthStart();
-  const y = yearStart();
+  const todayDate = today();
+  const weekStartDate = weekStart();
+  const monthStartDate = monthStart();
+  const yearStartDate = yearStart();
 
+  // Single-pass conditional aggregation: each CASE branch filters rows into
+  // the appropriate time bucket. The unfiltered SUM covers all-time.
   const result = await db.execute(sql`
     SELECT
-      COALESCE(SUM(CASE WHEN date = ${t} THEN commit_count ELSE 0 END), 0)::int AS today,
-      COALESCE(SUM(CASE WHEN date >= ${w} THEN commit_count ELSE 0 END), 0)::int AS this_week,
-      COALESCE(SUM(CASE WHEN date >= ${m} THEN commit_count ELSE 0 END), 0)::int AS this_month,
-      COALESCE(SUM(CASE WHEN date >= ${y} THEN commit_count ELSE 0 END), 0)::int AS this_year,
+      COALESCE(SUM(CASE WHEN date = ${todayDate} THEN commit_count ELSE 0 END), 0)::int AS today,
+      COALESCE(SUM(CASE WHEN date >= ${weekStartDate} THEN commit_count ELSE 0 END), 0)::int AS this_week,
+      COALESCE(SUM(CASE WHEN date >= ${monthStartDate} THEN commit_count ELSE 0 END), 0)::int AS this_month,
+      COALESCE(SUM(CASE WHEN date >= ${yearStartDate} THEN commit_count ELSE 0 END), 0)::int AS this_year,
       COALESCE(SUM(commit_count), 0)::int AS all_time
     FROM commit_snapshots
     WHERE github_username = ${githubUsername}
   `);
 
-  const r = result.rows[0] as any;
+  const row = result.rows[0] as any;
   return {
-    today: Number(r.today),
-    this_week: Number(r.this_week),
-    this_month: Number(r.this_month),
-    this_year: Number(r.this_year),
-    all_time: Number(r.all_time),
+    today: Number(row.today),
+    this_week: Number(row.this_week),
+    this_month: Number(row.this_month),
+    this_year: Number(row.this_year),
+    all_time: Number(row.all_time),
   };
 }
 
 /**
- * Full stats with all-time historical refresh — used by /me/stats endpoint.
+ * Full stats including all-time historical data. Refreshes both the current
+ * year and every historical year before aggregating, so the result includes
+ * a complete all-time total. Used by the `/me/stats` endpoint where
+ * accuracy matters more than latency.
+ *
+ * @param githubUsername - The GitHub login to compute stats for.
+ * @param token - Optional OAuth token; falls back to the server app token.
+ * @returns Commit totals for today, this week, this month, this year, and all-time.
  */
 export async function getUserStats(
   githubUsername: string,

@@ -2,22 +2,21 @@ import { sign, verify } from "hono/jwt";
 import { env } from "./env.js";
 
 export interface JWTPayload {
-  sub: number;
-  username: string;
-  exp: number;
+  sub: number; // user ID
+  username: string; // GitHub username
+  exp: number; // expiration timestamp (seconds since epoch)
   [key: string]: unknown;
 }
 
+/**
+ * Parse a duration string like "7d", "24h", "30m", "3600s" into seconds.
+ * Falls back to 7 days if the format is unrecognized.
+ */
 function parseExpiry(expiry: string): number {
   const match = expiry.match(/^(\d+)([dhms])$/);
-  if (!match) return 7 * 24 * 60 * 60;
+  if (!match) return 7 * 24 * 60 * 60; // default: 7 days
   const [, value, unit] = match;
-  const multipliers: Record<string, number> = {
-    s: 1,
-    m: 60,
-    h: 3600,
-    d: 86400,
-  };
+  const multipliers: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
   return parseInt(value) * (multipliers[unit] || 86400);
 }
 

@@ -1,3 +1,11 @@
+/**
+ * Famous developers benchmark service.
+ *
+ * Maintains a curated list of well-known open-source developers and provides
+ * commit-count comparisons between the current user and those developers.
+ * Users can also add their own custom benchmarks (stored in `user_benchmarks`),
+ * which are merged into the results alongside the curated list.
+ */
 import { db } from "../db/index.js";
 import { famousDevs, commitSnapshots, userBenchmarks } from "../db/schema.js";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
@@ -29,14 +37,22 @@ export const FAMOUS_DEV_LIST = [
 ] as const;
 
 /**
- * Seed the famous_devs table from the curated list.
+ * Seed (or update) the `famous_devs` table from the in-code curated list.
+ *
+ * Uses an upsert so that re-running the seed is safe: existing rows get their
+ * display_name, known_for, avatar_url, and category refreshed from the source
+ * of truth without creating duplicates.
+ *
+ * @returns The number of rows upserted.
  */
 export async function seedFamousDevs(): Promise<number> {
-  let count = 0;
+  let seededCount = 0;
   const chunkSize = 10;
 
   for (let i = 0; i < FAMOUS_DEV_LIST.length; i += chunkSize) {
     const chunk = FAMOUS_DEV_LIST.slice(i, i + chunkSize);
+    // ON CONFLICT on github_username: overwrite mutable fields so the curated
+    // list in code is always the source of truth for display metadata.
     await db
       .insert(famousDevs)
       .values(
@@ -57,15 +73,26 @@ export async function seedFamousDevs(): Promise<number> {
           category: sql`excluded.category`,
         },
       });
-    count += chunk.length;
+    seededCount += chunk.length;
   }
 
-  return count;
+  return seededCount;
 }
 
 /**
- * Get benchmark comparisons between a user and famous devs for a period.
- * Returns devs sorted by how close the matchup is (most interesting first).
+ * Build benchmark comparisons between a user and all famous/custom developers
+ * for a given time period.
+ *
+ * Strategy:
+ * 1. Sum the authenticated user's commits from `commit_snapshots` for the period.
+ * 2. Load all active famous devs + the user's custom benchmarks.
+ * 3. Bulk-fetch commit totals for all those developers in one query.
+ * 4. Merge results, marking each entry with whether the user beat them.
+ *
+ * @param username - GitHub login of the authenticated user.
+ * @param userId   - Internal user ID (for looking up custom benchmarks).
+ * @param period   - Time window: current week, month, or year.
+ * @returns Array of comparison objects combining famous and custom developers.
  */
 export async function getBenchmarks(
   username: string,
@@ -84,7 +111,7 @@ export async function getBenchmarks(
 }[]> {
   const { start, end } = periodRange(period);
 
-  // Get user's commits
+  // Step 1: Sum the user's own commits for the period
   const [userRow] = await db
     .select({
       total: sql<number>`coalesce(sum(${commitSnapshots.commit_count}), 0)`,
@@ -99,19 +126,19 @@ export async function getBenchmarks(
     );
   const yourCommits = Number(userRow?.total ?? 0);
 
-  // Get all active famous devs
+  // Step 2: Load all active famous devs from the curated table
   const devs = await db
     .select()
     .from(famousDevs)
     .where(eq(famousDevs.active, true));
 
-  // Get user's custom benchmarks
+  // Step 2b: Load any user-added custom benchmarks (rivals they picked themselves)
   const customDevs = await db
     .select()
     .from(userBenchmarks)
     .where(eq(userBenchmarks.user_id, userId));
 
-  // Combine all dev usernames for commit lookup
+  // Combine both sets of usernames so we can fetch their commits in one query
   const allUsernames = [
     ...devs.map((d) => d.github_username),
     ...customDevs.map((d) => d.github_username),
@@ -119,7 +146,8 @@ export async function getBenchmarks(
 
   if (allUsernames.length === 0) return [];
 
-  // Get their commits in bulk
+  // Step 3: Bulk-fetch commit totals for all benchmark developers in one query.
+  // Uses a dynamic IN clause built from the combined username list.
   const devCommits = await db
     .select({
       github_username: commitSnapshots.github_username,
@@ -138,10 +166,10 @@ export async function getBenchmarks(
     )
     .groupBy(commitSnapshots.github_username);
 
+  // Build a lookup map: username -> total commits for the period
   const commitMap = new Map(devCommits.map((r) => [r.github_username, Number(r.total)]));
-  const customSet = new Set(customDevs.map((d) => d.github_username));
 
-  // Build results from famous devs
+  // Step 4: Assemble comparison results, starting with the curated famous devs
   const results = devs.map((dev) => {
     const theirCommits = commitMap.get(dev.github_username) ?? 0;
     return {
@@ -157,7 +185,7 @@ export async function getBenchmarks(
     };
   });
 
-  // Add custom devs (that aren't already in famous devs)
+  // Append custom benchmark devs, skipping any that already appear in the famous list
   const famousSet = new Set(devs.map((d) => d.github_username));
   for (const custom of customDevs) {
     if (famousSet.has(custom.github_username)) continue;

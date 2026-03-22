@@ -1,14 +1,42 @@
+/**
+ * Streak computation and caching service.
+ *
+ * Derives streak-related metrics from the per-day commit snapshots stored in
+ * the database:
+ *   - current_streak: consecutive days with commits ending today/yesterday.
+ *   - longest_streak: the longest consecutive-day run ever recorded.
+ *   - best_week_commits / best_week_start: the rolling 7-day window with
+ *     the highest total.
+ *   - this_week / last_week / trend_percent: week-over-week comparison.
+ *
+ * Results are cached in the `user_streaks` table for up to 4 hours. Even
+ * when cached, the weekly totals are recomputed so the trend stays current.
+ */
+
 import { db } from "../db/index.js";
 import { commitSnapshots, userStreaks } from "../db/schema.js";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import type { UserStreakInfo } from "@git-racer/shared";
 import { today as getToday, weekStart, weekEnd } from "../lib/dates.js";
 
+/** How long cached streak values are considered fresh before a full recalc. */
 const STREAK_CACHE_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 /**
- * Compute and cache streak info for a user.
- * Reads from user_streaks cache if fresh; otherwise recalculates.
+ * Compute streak metrics for a GitHub user and cache them.
+ *
+ * If the `user_streaks` cache row is younger than `STREAK_CACHE_MS`, returns
+ * the cached streak/best-week values augmented with live this-week and
+ * last-week totals (which are always queried fresh from `commit_snapshots`
+ * so the trend percentage reflects today's data).
+ *
+ * When the cache is stale or missing, performs a full recalculation by
+ * loading every daily snapshot row for the user, computing all metrics
+ * in-memory, and upserting the results into `user_streaks`.
+ *
+ * @param githubUsername - GitHub login to compute streaks for.
+ * @param userId - Optional internal user ID, stored alongside the cache row.
+ * @returns The computed (or cached) streak info.
  */
 export async function computeStreaks(
   githubUsername: string,
@@ -22,6 +50,8 @@ export async function computeStreaks(
     .limit(1);
 
   if (cached && Date.now() - cached.updated_at.getTime() < STREAK_CACHE_MS) {
+    // Cache hit: streak values are still valid, but weekly totals must be
+    // computed fresh so the trend percentage reflects today's data.
     const td = getToday();
     const thisWeekStart = weekStart();
     const prevWeekDate = new Date();
@@ -29,6 +59,8 @@ export async function computeStreaks(
     const lastWeekStart = weekStart(prevWeekDate);
     const lastWeekEnd = weekEnd(prevWeekDate);
 
+    // Single query uses conditional SUM to tally this-week and last-week
+    // commits in one pass. The WHERE on lastWeekStart narrows the scan range.
     const weekResult = await db.execute(sql`
       SELECT
         COALESCE(SUM(CASE WHEN date >= ${thisWeekStart} AND date <= ${td} THEN commit_count ELSE 0 END), 0)::int AS this_week,
@@ -40,6 +72,9 @@ export async function computeStreaks(
     const wr = weekResult.rows[0] as any;
     const thisWeek = Number(wr.this_week);
     const lastWeek = Number(wr.last_week);
+
+    // Week-over-week trend: percentage change from last week to this week.
+    // If last week was zero, report +100% when there are commits, else 0%.
     const trendPercent = lastWeek > 0
       ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100)
       : thisWeek > 0 ? 100 : 0;
@@ -77,13 +112,17 @@ export async function computeStreaks(
     };
   }
 
-  // Current streak: walk backward from today
+  // --- Current streak ---
+  // Walk backward from today (or yesterday if no commits today yet).
+  // Each consecutive day with commits increments the streak counter;
+  // the first zero-commit day breaks the chain.
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
   let currentStreak = 0;
   const dayMap = new Map(days.map((d) => [d.date, d.count]));
 
-  // Start from today or yesterday (if today has no commits yet, start from yesterday)
+  // Allow a grace period: if the user hasn't committed yet today,
+  // start counting from yesterday so the streak isn't prematurely broken.
   let checkDate = new Date(today);
   if (!dayMap.has(todayStr) || dayMap.get(todayStr) === 0) {
     checkDate.setDate(checkDate.getDate() - 1);
@@ -100,7 +139,10 @@ export async function computeStreaks(
     }
   }
 
-  // Longest streak: scan all days sorted by date ascending
+  // --- Longest streak ---
+  // Sort chronologically and scan forward. For each day with commits,
+  // check if it's exactly 1 day after the previous active day. If so,
+  // extend the running streak; otherwise reset to 1. Track the maximum.
   const sortedDays = [...days].sort((a, b) => a.date.localeCompare(b.date));
   let longestStreak = 0;
   let streak = 0;
@@ -115,6 +157,8 @@ export async function computeStreaks(
 
     const d = new Date(day.date + "T00:00:00Z");
     if (prevDate) {
+      // 86400000 ms = 1 day; exact integer comparison avoids DST issues
+      // because we pin to midnight UTC.
       const diff = (d.getTime() - prevDate.getTime()) / 86400000;
       if (diff === 1) {
         streak++;
@@ -128,7 +172,10 @@ export async function computeStreaks(
     longestStreak = Math.max(longestStreak, streak);
   }
 
-  // Best week: rolling 7-day window
+  // --- Best week ---
+  // Slide a 7-day window across the chronologically sorted days and find
+  // the window with the highest total commit count. If fewer than 7 days
+  // of data exist, use all available days as a single partial window.
   let bestWeekCommits = 0;
   let bestWeekStart: string | null = null;
 
@@ -151,9 +198,11 @@ export async function computeStreaks(
     }
   }
 
-  // This week vs last week
+  // --- This week vs last week (trend calculation) ---
+  // Determine the ISO week boundaries (Monday-Sunday) for this week and
+  // last week, then sum commits in each range from the in-memory data.
   const now = new Date();
-  const dayOfWeek = now.getDay() || 7;
+  const dayOfWeek = now.getDay() || 7; // Convert Sunday (0) to 7
   const monday = new Date(now);
   monday.setDate(now.getDate() - dayOfWeek + 1);
   const thisWeekStart = monday.toISOString().slice(0, 10);
@@ -176,11 +225,15 @@ export async function computeStreaks(
     }
   }
 
+  // Percentage change: ((this - last) / last) * 100
+  // Edge cases: if last week was zero, treat any activity as +100%, none as 0%.
   const trendPercent = lastWeek > 0
     ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100)
     : thisWeek > 0 ? 100 : 0;
 
-  // Cache in user_streaks table
+  // Persist the computed streaks into user_streaks (upsert on github_username)
+  // so subsequent calls within the TTL window can skip the full recalc.
+  // `days` is sorted descending, so days[0] is the most recent active date.
   const lastActiveDate = days[0]?.date ?? null;
   await db
     .insert(userStreaks)

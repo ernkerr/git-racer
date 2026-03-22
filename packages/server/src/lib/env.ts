@@ -17,6 +17,12 @@ export type Env = z.infer<typeof envSchema>;
 
 let _env: Env | null = null;
 
+/**
+ * Lazily-validated environment variables.
+ * Proxy defers parsing until first access so the module can be imported
+ * without immediately crashing (useful for type-only imports in tests).
+ * Throws on first access if any required variable is missing.
+ */
 export const env: Env = new Proxy({} as Env, {
   get(_, prop: string) {
     if (!_env) {

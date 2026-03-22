@@ -1,10 +1,24 @@
+/**
+ * GitHub API integration layer.
+ *
+ * Wraps both the GitHub GraphQL API (for contribution/commit data) and the
+ * REST API (for user search/validation). The main complexity lives in
+ * `scaleToCommits`, which converts the all-contribution calendar counts into
+ * commit-only counts using the ratio GitHub provides, and in
+ * `fetchBatchContributionDays`, which constructs a single batched GraphQL
+ * query with aliased fragments to fetch many users at once without hitting
+ * per-request overhead.
+ */
+
 import { env } from "../lib/env.js";
 
+/** A single day from the GitHub contribution calendar. */
 interface ContributionDay {
   date: string;
   contributionCount: number;
 }
 
+/** Shape of the full contributions GraphQL response. */
 interface ContributionsResponse {
   data: {
     user: {
@@ -22,6 +36,11 @@ interface ContributionsResponse {
   };
 }
 
+/**
+ * GraphQL query to fetch the contribution calendar for a user within a date
+ * range. Returns both `totalCommitContributions` (commits only) and
+ * `totalContributions` (all contribution types) so we can compute the ratio.
+ */
 const CONTRIBUTIONS_QUERY = `
   query($username: String!, $from: DateTime!, $to: DateTime!) {
     user(login: $username) {
@@ -41,6 +60,7 @@ const CONTRIBUTIONS_QUERY = `
   }
 `;
 
+/** GraphQL query to list every year a user has had GitHub contributions. */
 const YEARS_QUERY = `
   query($username: String!) {
     user(login: $username) {
@@ -52,41 +72,54 @@ const YEARS_QUERY = `
 `;
 
 /**
- * Scale contribution calendar counts to commit-only counts using the ratio
- * of totalCommitContributions / totalContributions. Ensures the sum matches
- * the actual commit total.
+ * Scale contribution calendar counts to commit-only counts.
+ *
+ * GitHub's contribution calendar includes all contribution types (commits,
+ * PRs, issues, reviews). To isolate commits, we multiply each day's count
+ * by the ratio `totalCommitContributions / totalContributions`. After
+ * rounding, we redistribute any leftover error onto the highest-count day
+ * so the per-day values sum exactly to `totalCommits`.
+ *
+ * @param days - Raw per-day contribution counts from the calendar.
+ * @param totalCommits - The true commit-only total from the API.
+ * @param totalContribs - The all-types contribution total from the API.
+ * @returns Per-day counts scaled to represent commits only.
  */
 function scaleToCommits(
   days: { date: string; count: number }[],
   totalCommits: number,
   totalContribs: number
 ): { date: string; count: number }[] {
+  // No contributions at all, or zero commits -- zero out every day.
   if (totalContribs === 0 || totalCommits === 0) {
     return days.map((d) => ({ date: d.date, count: 0 }));
   }
   if (totalCommits >= totalContribs) {
-    // All contributions are commits
+    // Every contribution is a commit; no scaling needed.
     return days;
   }
 
-  const ratio = totalCommits / totalContribs;
-  const scaled = days.map((d) => ({
+  // Proportionally scale each day by the commit-to-contribution ratio.
+  const commitRatio = totalCommits / totalContribs;
+  const scaledDays = days.map((d) => ({
     date: d.date,
-    count: Math.round(d.count * ratio),
+    count: Math.round(d.count * commitRatio),
   }));
 
-  // Adjust rounding so the sum equals totalCommits
-  const sum = scaled.reduce((s, d) => s + d.count, 0);
-  const diff = totalCommits - sum;
-  if (diff !== 0 && scaled.length > 0) {
-    // Add/subtract the rounding error from the highest-count day
-    const maxDay = scaled.reduce((best, d) => (d.count > best.count ? d : best), scaled[0]);
-    maxDay.count += diff;
+  // Rounding can cause the scaled total to drift from the true commit count.
+  // Correct by adding/subtracting the residual on the busiest day, where
+  // the relative impact of a small adjustment is least noticeable.
+  const scaledSum = scaledDays.reduce((sum, d) => sum + d.count, 0);
+  const roundingError = totalCommits - scaledSum;
+  if (roundingError !== 0 && scaledDays.length > 0) {
+    const busiestDay = scaledDays.reduce((best, d) => (d.count > best.count ? d : best), scaledDays[0]);
+    busiestDay.count += roundingError;
   }
 
-  return scaled;
+  return scaledDays;
 }
 
+/** Send a typed GraphQL request to the GitHub API and return the parsed JSON. */
 async function graphql<T>(query: string, variables: Record<string, unknown>, token: string): Promise<T> {
   const res = await fetch("https://api.github.com/graphql", {
     method: "POST",
@@ -104,6 +137,18 @@ async function graphql<T>(query: string, variables: Record<string, unknown>, tok
   return res.json() as Promise<T>;
 }
 
+/**
+ * Fetch per-day commit counts for a single user within a date range.
+ *
+ * Queries the GitHub GraphQL API for the contribution calendar, then scales
+ * the raw counts down to commit-only values using `scaleToCommits`.
+ *
+ * @param username - GitHub login.
+ * @param from - Start of the date range (inclusive).
+ * @param to - End of the date range (inclusive).
+ * @param token - Optional OAuth token; falls back to `GITHUB_APP_TOKEN`.
+ * @returns Array of `{ date, count }` objects with commit-only counts.
+ */
 export async function fetchContributionDays(
   username: string,
   from: Date,
@@ -131,16 +176,25 @@ export async function fetchContributionDays(
   const totalCommits = collection.totalCommitContributions;
   const totalContribs = collection.contributionCalendar.totalContributions;
 
-  const days: { date: string; count: number }[] = [];
+  // Flatten the nested weeks -> days structure into a simple list.
+  const rawDays: { date: string; count: number }[] = [];
   for (const week of collection.contributionCalendar.weeks) {
     for (const day of week.contributionDays) {
-      days.push({ date: day.date, count: day.contributionCount });
+      rawDays.push({ date: day.date, count: day.contributionCount });
     }
   }
 
-  return scaleToCommits(days, totalCommits, totalContribs);
+  return scaleToCommits(rawDays, totalCommits, totalContribs);
 }
 
+/**
+ * Retrieve the list of calendar years in which the user made any GitHub
+ * contributions. Used to know which years need back-filling.
+ *
+ * @param username - GitHub login.
+ * @param token - Optional OAuth token; falls back to `GITHUB_APP_TOKEN`.
+ * @returns Array of four-digit year numbers (e.g. `[2020, 2021, 2022]`).
+ */
 export async function fetchContributionYears(
   username: string,
   token?: string
@@ -161,6 +215,13 @@ export async function fetchContributionYears(
   return data.data.user.contributionsCollection.contributionYears;
 }
 
+/**
+ * Validate that a GitHub user exists by hitting the REST API.
+ *
+ * @param username - GitHub login to look up.
+ * @returns The user's `id`, canonical `login`, and `avatar_url`, or `null`
+ *          if the user does not exist (HTTP 404).
+ */
 export async function validateGitHubUser(
   username: string
 ): Promise<{ id: number; login: string; avatar_url: string } | null> {
@@ -181,9 +242,18 @@ export async function validateGitHubUser(
   return res.json() as Promise<{ id: number; login: string; avatar_url: string }>;
 }
 
+/**
+ * Search GitHub users by a free-text query (autocomplete). Returns up to 8
+ * results. Silently returns an empty array on API errors so the UI can
+ * degrade gracefully.
+ *
+ * @param query - The search string (must be at least 2 characters).
+ * @returns Matching users with `login`, `avatar_url`, and `id`.
+ */
 export async function searchGitHubUsers(
   query: string
 ): Promise<{ login: string; avatar_url: string; id: number }[]> {
+  // Require a minimum query length to avoid overly broad searches.
   if (!query || query.length < 2) return [];
 
   const headers: Record<string, string> = {
@@ -213,6 +283,15 @@ export async function searchGitHubUsers(
   }));
 }
 
+/**
+ * Fetch the most-followed GitHub users, paginating through the search API
+ * until `count` results have been collected. Used to seed the "famous devs"
+ * suggestion list.
+ *
+ * @param count - Desired number of users (default 150). Capped by the GitHub
+ *                search API's maximum of 1000 total results.
+ * @returns Users sorted by follower count descending.
+ */
 export async function fetchTopGitHubUsers(
   count: number = 150
 ): Promise<{ login: string; avatar_url: string; followers: number }[]> {
@@ -223,11 +302,12 @@ export async function fetchTopGitHubUsers(
     headers.Authorization = `Bearer ${env.GITHUB_APP_TOKEN}`;
   }
 
-  const result: { login: string; avatar_url: string; followers: number }[] = [];
+  const accumulated: { login: string; avatar_url: string; followers: number }[] = [];
+  // GitHub REST search allows at most 100 items per page.
   const perPage = Math.min(count, 100);
-  const pages = Math.ceil(count / perPage);
+  const totalPages = Math.ceil(count / perPage);
 
-  for (let page = 1; page <= pages; page++) {
+  for (let page = 1; page <= totalPages; page++) {
     const params = new URLSearchParams({
       q: "followers:>1000 type:user",
       sort: "followers",
@@ -242,20 +322,33 @@ export async function fetchTopGitHubUsers(
     const data = (await res.json()) as {
       items: { login: string; avatar_url: string; followers: number }[];
     };
-    result.push(...data.items.map((u) => ({
+    accumulated.push(...data.items.map((u) => ({
       login: u.login,
       avatar_url: u.avatar_url,
       followers: u.followers ?? 0,
     })));
   }
 
-  return result.slice(0, count);
+  return accumulated.slice(0, count);
 }
 
 /**
- * Batch-fetch day-by-day contribution data for multiple users.
- * Processes batches sequentially to avoid rate limits. Stops early on 403/429.
- * Returns the data map and the number of users successfully processed (for cursor tracking).
+ * Batch-fetch per-day commit data for many users in as few API calls as
+ * possible by packing multiple aliased `user(login: ...)` fragments into a
+ * single GraphQL query.
+ *
+ * Users are processed in sequential batches of `batchSize` to stay under
+ * GitHub's query-complexity limits. If a 403 or 429 response is received
+ * (rate limit), processing stops early and the partial results are returned
+ * alongside the count of users that were successfully fetched, so the caller
+ * can resume from a cursor.
+ *
+ * @param usernames - GitHub logins to fetch contribution data for.
+ * @param from - Start of the date range (inclusive).
+ * @param to - End of the date range (inclusive).
+ * @param batchSize - Max users per GraphQL request (default 25).
+ * @returns `data` maps each username to its per-day commit counts;
+ *          `processed` is the number of users successfully handled.
  */
 export async function fetchBatchContributionDays(
   usernames: string[],
@@ -266,12 +359,15 @@ export async function fetchBatchContributionDays(
   const token = env.GITHUB_APP_TOKEN || "";
   if (!token) return { data: new Map(), processed: 0 };
 
-  const results = new Map<string, { date: string; count: number }[]>();
-  let processed = 0;
+  const resultsMap = new Map<string, { date: string; count: number }[]>();
+  let processedCount = 0;
 
-  for (let i = 0; i < usernames.length; i += batchSize) {
-    const batch = usernames.slice(i, i + batchSize);
+  for (let offset = 0; offset < usernames.length; offset += batchSize) {
+    const batch = usernames.slice(offset, offset + batchSize);
 
+    // Build a single GraphQL query with aliased fragments (u0, u1, u2, ...).
+    // Each alias maps to one user's contribution data, letting us query up
+    // to batchSize users in a single HTTP round-trip.
     const fragments = batch.map((username, idx) =>
       `u${idx}: user(login: "${username}") {
         contributionsCollection(from: "${from.toISOString()}", to: "${to.toISOString()}") {
@@ -307,7 +403,7 @@ export async function fetchBatchContributionDays(
 
       if (!res.ok) continue;
 
-      const data = (await res.json()) as {
+      const responseBody = (await res.json()) as {
         data: Record<string, {
           contributionsCollection: {
             totalCommitContributions: number;
@@ -319,8 +415,9 @@ export async function fetchBatchContributionDays(
         } | null>;
       };
 
+      // Map each aliased response (u0, u1, ...) back to its username.
       batch.forEach((username, idx) => {
-        const userData = data.data?.[`u${idx}`];
+        const userData = responseBody.data?.[`u${idx}`];
         if (userData) {
           const collection = userData.contributionsCollection;
           const rawDays: { date: string; count: number }[] = [];
@@ -329,7 +426,7 @@ export async function fetchBatchContributionDays(
               rawDays.push({ date: day.date, count: day.contributionCount });
             }
           }
-          results.set(
+          resultsMap.set(
             username,
             scaleToCommits(
               rawDays,
@@ -340,11 +437,12 @@ export async function fetchBatchContributionDays(
         }
       });
 
-      processed = i + batch.length;
+      processedCount = offset + batch.length;
     } catch {
+      // Non-rate-limit errors (network, parse) -- skip this batch, try the next.
       continue;
     }
   }
 
-  return { data: results, processed };
+  return { data: resultsMap, processed: processedCount };
 }

@@ -3,6 +3,7 @@ import { getCookie } from "hono/cookie";
 import { verifyJWT } from "../lib/jwt.js";
 import type { AppEnv } from "../types.js";
 
+/** Requires a valid session cookie. Returns 401 if missing or invalid. */
 export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
   const token = getCookie(c, "session");
   if (!token) {
@@ -17,6 +18,7 @@ export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
   }
 });
 
+/** Attaches user context if a valid session exists, but doesn't require it. */
 export const optionalAuth = createMiddleware<AppEnv>(async (c, next) => {
   const token = getCookie(c, "session");
   if (token) {
@@ -24,7 +26,7 @@ export const optionalAuth = createMiddleware<AppEnv>(async (c, next) => {
       const payload = await verifyJWT(token);
       c.set("user", payload);
     } catch {
-      // Invalid token — continue without auth
+      // Invalid or expired token — continue without auth context
     }
   }
   await next();
