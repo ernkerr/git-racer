@@ -3,6 +3,7 @@ import { socialCircles, commitSnapshots } from "../db/schema.js";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { SOCIAL_CIRCLE_CACHE_MS } from "@git-racer/shared";
 import type { SocialCircleData } from "@git-racer/shared";
+import { today, weekStart } from "../lib/dates.js";
 
 /**
  * Fetch a user's GitHub following list and cache it.
@@ -95,15 +96,9 @@ export async function getSocialCircleRanking(
     return { entries: [], your_rank: 0, total: 0 };
   }
 
-  // Get this week's date range
-  const now = new Date();
-  const dayOfWeek = now.getDay() || 7;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - dayOfWeek + 1);
-  const weekStart = monday.toISOString().slice(0, 10);
-  const todayStr = now.toISOString().slice(0, 10);
+  const ws = weekStart();
+  const t = today();
 
-  // Get commits for all following + the user themselves
   const allUsernames = [...followingUsernames, username];
   const commits = await db
     .select({
@@ -113,8 +108,8 @@ export async function getSocialCircleRanking(
     .from(commitSnapshots)
     .where(
       and(
-        gte(commitSnapshots.date, weekStart),
-        lte(commitSnapshots.date, todayStr),
+        gte(commitSnapshots.date, ws),
+        lte(commitSnapshots.date, t),
         sql`${commitSnapshots.github_username} IN (${sql.join(
           allUsernames.map((u) => sql`${u}`),
           sql`, `

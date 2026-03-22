@@ -2,10 +2,9 @@ import type { UserStreakInfo } from "@git-racer/shared";
 
 interface Props {
   streaks: UserStreakInfo;
-  dailyCounts?: number[]; // 7 days of commit counts for the mini chart
 }
 
-export default function StreakCard({ streaks, dailyCounts }: Props) {
+export default function StreakCard({ streaks }: Props) {
   const trendPositive = streaks.trend_percent >= 0;
 
   return (
@@ -69,22 +68,6 @@ export default function StreakCard({ streaks, dailyCounts }: Props) {
           <p className={`text-xs mt-0.5 ${trendPositive ? "text-green-400" : "text-red-400"}`}>
             {trendPositive ? "+" : ""}{streaks.trend_percent}% vs last week
           </p>
-          {/* Mini bar chart */}
-          {dailyCounts && dailyCounts.length > 0 && (
-            <div className="flex items-end gap-px mt-2 h-6">
-              {dailyCounts.map((count, i) => {
-                const max = Math.max(1, ...dailyCounts);
-                const height = count > 0 ? Math.max(3, (count / max) * 24) : 2;
-                return (
-                  <div
-                    key={i}
-                    className={`flex-1 rounded-sm ${count > 0 ? "bg-green-500" : "bg-gray-700"}`}
-                    style={{ height: `${height}px` }}
-                  />
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {/* Best week */}

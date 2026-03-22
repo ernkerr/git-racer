@@ -3,6 +3,7 @@ import { commitSnapshots } from "../db/schema.js";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { CACHE_TTL_MS } from "@git-racer/shared";
 import { fetchContributionDays, fetchContributionYears } from "./github.js";
+import { today, weekStart, monthStart, yearStart } from "../lib/dates.js";
 
 /**
  * Ensure we have fresh commit data for a user, fetching from GitHub if stale.
@@ -139,22 +140,17 @@ export async function getUserStatsFast(
   this_year: number;
   all_time: number;
 }> {
-  const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
-  const dayOfWeek = now.getDay() || 7;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - dayOfWeek + 1);
-  const weekStartStr = monday.toISOString().slice(0, 10);
-  const monthStartStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-  const yearStartStr = `${now.getFullYear()}-01-01`;
+  const t = today();
+  const w = weekStart();
+  const m = monthStart();
+  const y = yearStart();
 
-  // Single query with conditional sums
   const result = await db.execute(sql`
     SELECT
-      COALESCE(SUM(CASE WHEN date = ${todayStr} THEN commit_count ELSE 0 END), 0)::int AS today,
-      COALESCE(SUM(CASE WHEN date >= ${weekStartStr} THEN commit_count ELSE 0 END), 0)::int AS this_week,
-      COALESCE(SUM(CASE WHEN date >= ${monthStartStr} THEN commit_count ELSE 0 END), 0)::int AS this_month,
-      COALESCE(SUM(CASE WHEN date >= ${yearStartStr} THEN commit_count ELSE 0 END), 0)::int AS this_year,
+      COALESCE(SUM(CASE WHEN date = ${t} THEN commit_count ELSE 0 END), 0)::int AS today,
+      COALESCE(SUM(CASE WHEN date >= ${w} THEN commit_count ELSE 0 END), 0)::int AS this_week,
+      COALESCE(SUM(CASE WHEN date >= ${m} THEN commit_count ELSE 0 END), 0)::int AS this_month,
+      COALESCE(SUM(CASE WHEN date >= ${y} THEN commit_count ELSE 0 END), 0)::int AS this_year,
       COALESCE(SUM(commit_count), 0)::int AS all_time
     FROM commit_snapshots
     WHERE github_username = ${githubUsername}

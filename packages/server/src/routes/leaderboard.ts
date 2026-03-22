@@ -1,44 +1,15 @@
 import { Hono } from "hono";
 import { db } from "../db/index.js";
-import { commitSnapshots, suggestedOpponents, users } from "../db/schema.js";
-import { eq, gte, lte, and, sql, desc } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import { periodRange } from "../lib/dates.js";
 
 export const leaderboardRoutes = new Hono();
-
-function getPeriodRange(period: string): { start: string; end: string } {
-  const now = new Date();
-  const end = now.toISOString().slice(0, 10);
-
-  switch (period) {
-    case "day": {
-      const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yStr = yesterday.toISOString().slice(0, 10);
-      return { start: yStr, end: yStr };
-    }
-    case "week": {
-      const dayOfWeek = now.getDay() || 7;
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - dayOfWeek + 1);
-      return { start: monday.toISOString().slice(0, 10), end };
-    }
-    case "month": {
-      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-      return { start: monthStart, end };
-    }
-    case "yearly":
-    default: {
-      return { start: `${now.getFullYear()}-01-01`, end };
-    }
-  }
-}
 
 leaderboardRoutes.get("/", async (c) => {
   const period = c.req.query("period") || "week";
   const limit = Math.min(parseInt(c.req.query("limit") || "100", 10), 100);
-  const { start, end } = getPeriodRange(period);
+  const { start, end } = periodRange(period);
 
-  // Single query: aggregate commits + LEFT JOIN for avatars, filter bots
   const rows = await db.execute(sql`
     SELECT
       cs.github_username,

@@ -23,23 +23,6 @@ export interface Challenge {
   created_at: string;
 }
 
-export interface ChallengeParticipant {
-  id: number;
-  challenge_id: number;
-  user_id: number | null;
-  github_username: string;
-  is_ghost: boolean;
-  joined_at: string;
-}
-
-export interface CommitSnapshot {
-  id: number;
-  github_username: string;
-  date: string;
-  commit_count: number;
-  fetched_at: string;
-}
-
 export interface UserStats {
   today: number;
   this_week: number;
@@ -112,14 +95,6 @@ export interface FamousDevBenchmark {
   you_beat_them: boolean;
   is_custom: boolean;
 }
-
-export type BenchmarkCategory = {
-  key: string;
-  label: string;
-  benchmarks: FamousDevBenchmark[];
-};
-
-// --- Social circle types ---
 
 export interface SocialCircleEntry {
   github_username: string;

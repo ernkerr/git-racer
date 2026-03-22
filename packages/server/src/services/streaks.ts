@@ -2,6 +2,7 @@ import { db } from "../db/index.js";
 import { commitSnapshots, userStreaks } from "../db/schema.js";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import type { UserStreakInfo } from "@git-racer/shared";
+import { today as getToday, weekStart, weekEnd } from "../lib/dates.js";
 
 const STREAK_CACHE_MS = 4 * 60 * 60 * 1000; // 4 hours
 
@@ -21,24 +22,16 @@ export async function computeStreaks(
     .limit(1);
 
   if (cached && Date.now() - cached.updated_at.getTime() < STREAK_CACHE_MS) {
-    // Serve cached — only this_week/last_week/trend need fresh data
-    // Do a quick week aggregation instead of full history scan
-    const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10);
-    const dayOfWeek = now.getDay() || 7;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - dayOfWeek + 1);
-    const thisWeekStart = monday.toISOString().slice(0, 10);
-    const lastMonday = new Date(monday);
-    lastMonday.setDate(lastMonday.getDate() - 7);
-    const lastWeekStart = lastMonday.toISOString().slice(0, 10);
-    const lastSunday = new Date(lastMonday);
-    lastSunday.setDate(lastSunday.getDate() + 6);
-    const lastWeekEnd = lastSunday.toISOString().slice(0, 10);
+    const td = getToday();
+    const thisWeekStart = weekStart();
+    const prevWeekDate = new Date();
+    prevWeekDate.setDate(prevWeekDate.getDate() - 7);
+    const lastWeekStart = weekStart(prevWeekDate);
+    const lastWeekEnd = weekEnd(prevWeekDate);
 
     const weekResult = await db.execute(sql`
       SELECT
-        COALESCE(SUM(CASE WHEN date >= ${thisWeekStart} AND date <= ${todayStr} THEN commit_count ELSE 0 END), 0)::int AS this_week,
+        COALESCE(SUM(CASE WHEN date >= ${thisWeekStart} AND date <= ${td} THEN commit_count ELSE 0 END), 0)::int AS this_week,
         COALESCE(SUM(CASE WHEN date >= ${lastWeekStart} AND date <= ${lastWeekEnd} THEN commit_count ELSE 0 END), 0)::int AS last_week
       FROM commit_snapshots
       WHERE github_username = ${githubUsername}

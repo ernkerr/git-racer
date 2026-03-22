@@ -1,6 +1,7 @@
 import { db } from "../db/index.js";
 import { famousDevs, commitSnapshots, userBenchmarks } from "../db/schema.js";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
+import { periodRange } from "../lib/dates.js";
 
 /**
  * Curated list of notable open-source developers.
@@ -81,7 +82,7 @@ export async function getBenchmarks(
   you_beat_them: boolean;
   is_custom: boolean;
 }[]> {
-  const { start, end } = getPeriodRange(period);
+  const { start, end } = periodRange(period);
 
   // Get user's commits
   const [userRow] = await db
@@ -177,23 +178,3 @@ export async function getBenchmarks(
   return results;
 }
 
-function getPeriodRange(period: string): { start: string; end: string } {
-  const now = new Date();
-  const end = now.toISOString().slice(0, 10);
-
-  switch (period) {
-    case "week": {
-      const dayOfWeek = now.getDay() || 7;
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - dayOfWeek + 1);
-      return { start: monday.toISOString().slice(0, 10), end };
-    }
-    case "month": {
-      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-      return { start: monthStart, end };
-    }
-    case "yearly":
-    default:
-      return { start: `${now.getFullYear()}-01-01`, end };
-  }
-}
