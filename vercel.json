@@ -6,7 +6,8 @@
   "functions": {
     "api/index.ts": {
       "includeFiles": "packages/{server,shared}/src/**",
-      "maxDuration": 300
+      "maxDuration": 300,
+      "memory": 2048
     }
   },
   "routes": [

@@ -28,8 +28,92 @@ function isBot(username: string): boolean {
 }
 
 /**
+ * Parse decompressed NDJSON buffer line-by-line without converting
+ * the entire buffer to a string (saves ~200MB of memory).
+ */
+function parsePushEvents(buf: Buffer): Map<string, CommitterAgg> {
+  const agg = new Map<string, CommitterAgg>();
+  let start = 0;
+  let pushCount = 0;
+
+  for (let i = 0; i < buf.length; i++) {
+    if (buf[i] !== 10) continue; // 10 = '\n'
+
+    if (i > start) {
+      const line = buf.toString("utf-8", start, i);
+      try {
+        const event = JSON.parse(line);
+        if (event.type === "PushEvent") {
+          const username: string = event.actor?.login;
+          if (username && !isBot(username)) {
+            const commits =
+              event.payload?.distinct_size || event.payload?.size || 0;
+            if (commits > 0) {
+              pushCount++;
+              const existing = agg.get(username);
+              if (existing) {
+                existing.commit_count += commits;
+                existing.push_count += 1;
+              } else {
+                agg.set(username, {
+                  avatar_url:
+                    event.actor.avatar_url ||
+                    `https://github.com/${username}.png`,
+                  commit_count: commits,
+                  push_count: 1,
+                });
+              }
+            }
+          }
+        }
+      } catch {
+        // Skip malformed lines
+      }
+    }
+    start = i + 1;
+  }
+
+  // Handle last line without trailing newline
+  if (start < buf.length) {
+    const line = buf.toString("utf-8", start);
+    try {
+      const event = JSON.parse(line);
+      if (event.type === "PushEvent") {
+        const username: string = event.actor?.login;
+        if (username && !isBot(username)) {
+          const commits =
+            event.payload?.distinct_size || event.payload?.size || 0;
+          if (commits > 0) {
+            pushCount++;
+            const existing = agg.get(username);
+            if (existing) {
+              existing.commit_count += commits;
+              existing.push_count += 1;
+            } else {
+              agg.set(username, {
+                avatar_url:
+                  event.actor.avatar_url ||
+                  `https://github.com/${username}.png`,
+                commit_count: commits,
+                push_count: 1,
+              });
+            }
+          }
+        }
+      }
+    } catch {
+      // Skip
+    }
+  }
+
+  console.log(
+    `[gharchive] Parsed ${pushCount} PushEvents from ${agg.size} unique users`
+  );
+  return agg;
+}
+
+/**
  * Download, decompress, and parse a single GH Archive hourly file.
- * Downloads as buffer, decompresses synchronously, then parses lines.
  */
 async function fetchHourlyArchive(
   date: string,
@@ -42,56 +126,25 @@ async function fetchHourlyArchive(
 
   if (!res.ok) {
     if (res.status === 404) {
-      console.log(`[gharchive] 404 for ${url} — not published yet`);
+      console.log(`[gharchive] 404 — not published yet`);
       return new Map();
     }
     throw new Error(`GH Archive fetch failed: ${res.status} ${url}`);
   }
 
-  // Download entire gzipped file as buffer
   const gzipped = Buffer.from(await res.arrayBuffer());
-  console.log(`[gharchive] Downloaded ${(gzipped.length / 1024 / 1024).toFixed(1)}MB compressed`);
+  console.log(
+    `[gharchive] Downloaded ${(gzipped.length / 1024 / 1024).toFixed(1)}MB`
+  );
 
-  // Decompress
   const decompressed = gunzipSync(gzipped);
-  console.log(`[gharchive] Decompressed to ${(decompressed.length / 1024 / 1024).toFixed(1)}MB`);
+  console.log(
+    `[gharchive] Decompressed ${(decompressed.length / 1024 / 1024).toFixed(1)}MB`
+  );
 
-  // Parse line by line
-  const text = decompressed.toString("utf-8");
-  const lines = text.split("\n");
-  const agg = new Map<string, CommitterAgg>();
-  let pushCount = 0;
+  // Parse directly from buffer — no full string conversion
+  const agg = parsePushEvents(decompressed);
 
-  for (const line of lines) {
-    if (!line) continue;
-    try {
-      const event = JSON.parse(line);
-      if (event.type !== "PushEvent") continue;
-
-      const username: string = event.actor?.login;
-      if (!username || isBot(username)) continue;
-
-      const commits = event.payload?.distinct_size || event.payload?.size || 0;
-      if (commits === 0) continue;
-
-      pushCount++;
-      const existing = agg.get(username);
-      if (existing) {
-        existing.commit_count += commits;
-        existing.push_count += 1;
-      } else {
-        agg.set(username, {
-          avatar_url: event.actor.avatar_url || `https://github.com/${username}.png`,
-          commit_count: commits,
-          push_count: 1,
-        });
-      }
-    } catch {
-      // Skip malformed lines
-    }
-  }
-
-  console.log(`[gharchive] Parsed ${pushCount} PushEvents from ${agg.size} unique users`);
   return agg;
 }
 
@@ -109,7 +162,6 @@ export async function ingestGHArchive(dateStr?: string): Promise<{
 }> {
   const date = dateStr || new Date().toISOString().slice(0, 10);
 
-  // Load state: which hours have we already ingested?
   const stateKey = `gharchive_${date}`;
   const [state] = await db
     .select()
@@ -118,14 +170,14 @@ export async function ingestGHArchive(dateStr?: string): Promise<{
     .limit(1);
 
   const ingestedHours: number[] =
-    state?.metadata && typeof state.metadata === "object" && "hours" in state.metadata
+    state?.metadata &&
+    typeof state.metadata === "object" &&
+    "hours" in state.metadata
       ? (state.metadata as { hours: number[] }).hours
       : [];
 
-  // Determine which hours are available
   const now = new Date();
   const isToday = date === now.toISOString().slice(0, 10);
-  // GH Archive has ~1-2hr lag
   const maxHour = isToday ? Math.max(0, now.getUTCHours() - 2) : 23;
 
   // Find the next hour to process
@@ -146,7 +198,6 @@ export async function ingestGHArchive(dateStr?: string): Promise<{
     };
   }
 
-  // Fetch and parse this single hour
   let agg: Map<string, CommitterAgg>;
   try {
     agg = await fetchHourlyArchive(date, targetHour);
@@ -162,7 +213,6 @@ export async function ingestGHArchive(dateStr?: string): Promise<{
   }
 
   if (agg.size === 0) {
-    // Mark as done even if empty (404 / no PushEvents)
     ingestedHours.push(targetHour);
     await upsertState(stateKey, ingestedHours);
     return {

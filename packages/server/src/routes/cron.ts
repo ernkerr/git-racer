@@ -333,18 +333,6 @@ cronRoutes.post("/ingest-events", async (c) => {
   }
 
   const date = c.req.query("date") || undefined;
-  const results = [];
-  const startTime = Date.now();
-  const MAX_MS = 240_000; // 4 min budget out of 5 min max
-
-  // Process up to 4 hours per invocation
-  for (let i = 0; i < 4; i++) {
-    if (Date.now() - startTime > MAX_MS) break;
-    const result = await ingestGHArchive(date);
-    results.push(result);
-    // Stop if nothing left to process
-    if (result.hour_ingested === null) break;
-  }
-
-  return c.json({ status: "completed", rounds: results });
+  const result = await ingestGHArchive(date);
+  return c.json({ status: "completed", ...result });
 });
