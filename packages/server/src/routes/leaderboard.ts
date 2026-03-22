@@ -29,13 +29,21 @@ leaderboardRoutes.get("/", async (c) => {
   const limit = Math.min(parseInt(c.req.query("limit") || "100", 10), 100);
   const { start, end } = periodRange(period);
 
+  // GH Archive no longer includes per-push commit counts, so each push = 1
+  // "commit" in event_committers. This means archive data is really push counts,
+  // which lets green-square farmers dominate with hundreds of single-commit pushes.
+  //
+  // Solution: cap archive-only counts at a reasonable daily max (ARCHIVE_DAILY_CAP).
+  // Users with GraphQL-verified data in commit_snapshots bypass the cap via GREATEST,
+  // so real prolific developers still show their true numbers.
+  const ARCHIVE_DAILY_CAP = 50;
+
   // The query is structured as:
-  //   1. Subquery "ec": aggregate event_committers for the date range
-  //   2. Subquery "cs": aggregate commit_snapshots for the date range
-  //   3. FULL OUTER JOIN on github_username so users in either source appear
-  //   4. GREATEST picks the higher commit count (GraphQL data is more accurate)
-  //   5. Avatar resolution falls back through: event_committers -> users table -> GitHub URL
-  //   6. Bot accounts are filtered out by suffix patterns and an explicit blocklist
+  //   1. Subquery "ec": aggregate event_committers, capping per-day counts
+  //   2. Subquery "cs": aggregate commit_snapshots (GraphQL-verified, uncapped)
+  //   3. FULL OUTER JOIN so users in either source appear
+  //   4. GREATEST picks the higher count — verified GraphQL data wins over capped archive
+  //   5. Bot accounts are filtered by suffix patterns and an explicit blocklist
   const rows = await db.execute(sql`
     SELECT
       github_username,
@@ -50,14 +58,12 @@ leaderboardRoutes.get("/", async (c) => {
         )::int AS commit_count,
         COALESCE(ec.avatar_url, u.avatar_url, 'https://github.com/' || COALESCE(ec.github_username, cs.github_username) || '.png') AS avatar_url
       FROM (
-        SELECT github_username, SUM(commit_count) AS commits,
+        SELECT github_username,
+          SUM(LEAST(commit_count, ${ARCHIVE_DAILY_CAP})) AS commits,
           (array_agg(avatar_url ORDER BY last_seen_at DESC))[1] AS avatar_url
         FROM event_committers
         WHERE date >= ${start} AND date <= ${end}
         GROUP BY github_username
-        -- Filter out automated accounts that push thousands of times per day.
-        -- A real developer rarely exceeds 200 pushes in a day; 500/day is generous.
-        HAVING MAX(push_count) <= 500
       ) ec
       FULL OUTER JOIN (
         SELECT github_username, SUM(commit_count) AS commits
