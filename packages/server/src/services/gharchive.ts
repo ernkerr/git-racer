@@ -1,16 +1,7 @@
-import { createGunzip } from "node:zlib";
-import { createInterface } from "node:readline";
-import { Readable } from "node:stream";
+import { gunzipSync } from "node:zlib";
 import { db } from "../db/index.js";
 import { eventCommitters, seedState } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
-
-interface PushEvent {
-  type: string;
-  actor: { login: string; avatar_url: string };
-  payload: { size: number; distinct_size: number };
-  created_at: string;
-}
 
 interface CommitterAgg {
   avatar_url: string;
@@ -37,33 +28,42 @@ function isBot(username: string): boolean {
 }
 
 /**
- * Download and parse a single GH Archive hourly file.
- * Returns aggregated commit counts per user.
+ * Download, decompress, and parse a single GH Archive hourly file.
+ * Downloads as buffer, decompresses synchronously, then parses lines.
  */
 async function fetchHourlyArchive(
   date: string,
   hour: number
 ): Promise<Map<string, CommitterAgg>> {
   const url = `https://data.gharchive.org/${date}-${hour}.json.gz`;
+  console.log(`[gharchive] Fetching ${url}`);
+
   const res = await fetch(url);
 
   if (!res.ok) {
     if (res.status === 404) {
-      // File not published yet (GH Archive has ~1hr lag)
+      console.log(`[gharchive] 404 for ${url} — not published yet`);
       return new Map();
     }
     throw new Error(`GH Archive fetch failed: ${res.status} ${url}`);
   }
 
+  // Download entire gzipped file as buffer
+  const gzipped = Buffer.from(await res.arrayBuffer());
+  console.log(`[gharchive] Downloaded ${(gzipped.length / 1024 / 1024).toFixed(1)}MB compressed`);
+
+  // Decompress
+  const decompressed = gunzipSync(gzipped);
+  console.log(`[gharchive] Decompressed to ${(decompressed.length / 1024 / 1024).toFixed(1)}MB`);
+
+  // Parse line by line
+  const text = decompressed.toString("utf-8");
+  const lines = text.split("\n");
   const agg = new Map<string, CommitterAgg>();
-  const body = res.body;
-  if (!body) return agg;
+  let pushCount = 0;
 
-  const nodeStream = Readable.fromWeb(body as any);
-  const gunzip = createGunzip();
-  const rl = createInterface({ input: nodeStream.pipe(gunzip) });
-
-  for await (const line of rl) {
+  for (const line of lines) {
+    if (!line) continue;
     try {
       const event = JSON.parse(line);
       if (event.type !== "PushEvent") continue;
@@ -74,6 +74,7 @@ async function fetchHourlyArchive(
       const commits = event.payload?.distinct_size || event.payload?.size || 0;
       if (commits === 0) continue;
 
+      pushCount++;
       const existing = agg.get(username);
       if (existing) {
         existing.commit_count += commits;
@@ -90,19 +91,21 @@ async function fetchHourlyArchive(
     }
   }
 
+  console.log(`[gharchive] Parsed ${pushCount} PushEvents from ${agg.size} unique users`);
   return agg;
 }
 
 /**
- * Ingest available GH Archive hours for a given date.
- * Tracks which hours have been processed in seed_state.
- * Returns summary of what was ingested.
+ * Ingest GH Archive data for a given date.
+ * Processes ONE hour per invocation to stay within serverless limits.
+ * Tracks progress in seed_state so subsequent calls continue where we left off.
  */
 export async function ingestGHArchive(dateStr?: string): Promise<{
   date: string;
-  hours_ingested: number[];
-  hours_skipped: number[];
+  hour_ingested: number | null;
+  hours_done: number[];
   total_committers: number;
+  error?: string;
 }> {
   const date = dateStr || new Date().toISOString().slice(0, 10);
 
@@ -119,83 +122,111 @@ export async function ingestGHArchive(dateStr?: string): Promise<{
       ? (state.metadata as { hours: number[] }).hours
       : [];
 
-  const hoursIngested: number[] = [];
-  const hoursSkipped: number[] = [];
-  let totalNewCommitters = 0;
-
-  // Determine current hour (don't try to fetch future hours)
+  // Determine which hours are available
   const now = new Date();
   const isToday = date === now.toISOString().slice(0, 10);
-  // GH Archive has ~1-2hr lag, so skip the current and previous hour
+  // GH Archive has ~1-2hr lag
   const maxHour = isToday ? Math.max(0, now.getUTCHours() - 2) : 23;
 
-  for (let hour = 0; hour <= maxHour; hour++) {
-    if (ingestedHours.includes(hour)) {
-      hoursSkipped.push(hour);
-      continue;
+  // Find the next hour to process
+  let targetHour: number | null = null;
+  for (let h = 0; h <= maxHour; h++) {
+    if (!ingestedHours.includes(h)) {
+      targetHour = h;
+      break;
     }
+  }
 
-    const agg = await fetchHourlyArchive(date, hour);
-    if (agg.size === 0) {
-      hoursSkipped.push(hour);
-      continue;
-    }
-
-    // Upsert into event_committers
-    const rows = Array.from(agg.entries()).map(([username, data]) => ({
-      github_username: username,
-      avatar_url: data.avatar_url,
+  if (targetHour === null) {
+    return {
       date,
-      commit_count: data.commit_count,
-      push_count: data.push_count,
-      last_seen_at: new Date(),
-    }));
+      hour_ingested: null,
+      hours_done: ingestedHours,
+      total_committers: 0,
+    };
+  }
 
-    const chunkSize = 500;
-    for (let i = 0; i < rows.length; i += chunkSize) {
-      const chunk = rows.slice(i, i + chunkSize);
-      await db
-        .insert(eventCommitters)
-        .values(chunk)
-        .onConflictDoUpdate({
-          target: [eventCommitters.github_username, eventCommitters.date],
-          set: {
-            commit_count: sql`event_committers.commit_count + excluded.commit_count`,
-            push_count: sql`event_committers.push_count + excluded.push_count`,
-            avatar_url: sql`excluded.avatar_url`,
-            last_seen_at: sql`excluded.last_seen_at`,
-          },
-        });
-    }
+  // Fetch and parse this single hour
+  let agg: Map<string, CommitterAgg>;
+  try {
+    agg = await fetchHourlyArchive(date, targetHour);
+  } catch (err: any) {
+    console.error(`[gharchive] Error fetching hour ${targetHour}:`, err);
+    return {
+      date,
+      hour_ingested: targetHour,
+      hours_done: ingestedHours,
+      total_committers: 0,
+      error: err.message,
+    };
+  }
 
-    totalNewCommitters += agg.size;
-    hoursIngested.push(hour);
-    ingestedHours.push(hour);
+  if (agg.size === 0) {
+    // Mark as done even if empty (404 / no PushEvents)
+    ingestedHours.push(targetHour);
+    await upsertState(stateKey, ingestedHours);
+    return {
+      date,
+      hour_ingested: targetHour,
+      hours_done: ingestedHours,
+      total_committers: 0,
+    };
+  }
 
-    // Update state after each hour so we can resume
+  // Upsert into event_committers
+  const rows = Array.from(agg.entries()).map(([username, data]) => ({
+    github_username: username,
+    avatar_url: data.avatar_url,
+    date,
+    commit_count: data.commit_count,
+    push_count: data.push_count,
+    last_seen_at: new Date(),
+  }));
+
+  const chunkSize = 500;
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize);
     await db
-      .insert(seedState)
-      .values({
-        key: stateKey,
-        last_run_at: new Date(),
-        cursor: ingestedHours.length,
-        metadata: { hours: ingestedHours },
-      })
+      .insert(eventCommitters)
+      .values(chunk)
       .onConflictDoUpdate({
-        target: seedState.key,
+        target: [eventCommitters.github_username, eventCommitters.date],
         set: {
-          last_run_at: sql`now()`,
-          cursor: sql`${ingestedHours.length}`,
-          metadata: sql`${JSON.stringify({ hours: ingestedHours })}::jsonb`,
-          updated_at: sql`now()`,
+          commit_count: sql`event_committers.commit_count + excluded.commit_count`,
+          push_count: sql`event_committers.push_count + excluded.push_count`,
+          avatar_url: sql`excluded.avatar_url`,
+          last_seen_at: sql`excluded.last_seen_at`,
         },
       });
   }
 
+  ingestedHours.push(targetHour);
+  await upsertState(stateKey, ingestedHours);
+
   return {
     date,
-    hours_ingested: hoursIngested,
-    hours_skipped: hoursSkipped,
-    total_committers: totalNewCommitters,
+    hour_ingested: targetHour,
+    hours_done: ingestedHours,
+    total_committers: agg.size,
   };
+}
+
+async function upsertState(stateKey: string, hours: number[]) {
+  await db
+    .insert(seedState)
+    .values({
+      key: stateKey,
+      last_run_at: new Date(),
+      cursor: hours.length,
+      metadata: { hours },
+    })
+    .onConflictDoUpdate({
+      target: seedState.key,
+      set: {
+        last_run_at: sql`now()`,
+        cursor: sql`${hours.length}`,
+        metadata: sql`${JSON.stringify({ hours })}::jsonb`,
+        updated_at: sql`now()`,
+      },
+    });
 }

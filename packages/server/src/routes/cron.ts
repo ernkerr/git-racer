@@ -324,7 +324,7 @@ cronRoutes.post("/seed-famous-devs", async (c) => {
  * Ingest GH Archive public push events.
  * Downloads hourly archive files, extracts PushEvents, and aggregates
  * commit counts per user into event_committers.
- * Should run every hour. Resumable — tracks which hours are done.
+ * Processes one hour per call; loops up to 4 hours within the time budget.
  * Query params: date (YYYY-MM-DD, defaults to today)
  */
 cronRoutes.post("/ingest-events", async (c) => {
@@ -333,6 +333,18 @@ cronRoutes.post("/ingest-events", async (c) => {
   }
 
   const date = c.req.query("date") || undefined;
-  const result = await ingestGHArchive(date);
-  return c.json({ status: "completed", ...result });
+  const results = [];
+  const startTime = Date.now();
+  const MAX_MS = 240_000; // 4 min budget out of 5 min max
+
+  // Process up to 4 hours per invocation
+  for (let i = 0; i < 4; i++) {
+    if (Date.now() - startTime > MAX_MS) break;
+    const result = await ingestGHArchive(date);
+    results.push(result);
+    // Stop if nothing left to process
+    if (result.hour_ingested === null) break;
+  }
+
+  return c.json({ status: "completed", rounds: results });
 });
