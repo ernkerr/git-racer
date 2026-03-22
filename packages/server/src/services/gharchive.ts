@@ -5,7 +5,6 @@ import { eq, sql } from "drizzle-orm";
 
 interface CommitterAgg {
   avatar_url: string;
-  commit_count: number;
   push_count: number;
 }
 
@@ -28,8 +27,43 @@ function isBot(username: string): boolean {
 }
 
 /**
- * Parse decompressed NDJSON buffer line-by-line without converting
- * the entire buffer to a string (saves ~200MB of memory).
+ * Parse a PushEvent line from the buffer and accumulate into the map.
+ * GH Archive PushEvents have: actor.login, actor.avatar_url, payload.push_id.
+ * Commit counts are not included in the payload, so we count pushes.
+ */
+function processLine(
+  buf: Buffer,
+  start: number,
+  end: number,
+  agg: Map<string, CommitterAgg>
+): boolean {
+  const line = buf.toString("utf-8", start, end);
+  try {
+    const event = JSON.parse(line);
+    if (event.type !== "PushEvent") return false;
+
+    const username: string = event.actor?.login;
+    if (!username || isBot(username)) return false;
+
+    const existing = agg.get(username);
+    if (existing) {
+      existing.push_count += 1;
+    } else {
+      agg.set(username, {
+        avatar_url:
+          event.actor.avatar_url ||
+          `https://github.com/${username}.png`,
+        push_count: 1,
+      });
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Parse decompressed NDJSON buffer line-by-line, counting pushes per user.
  */
 function parsePushEvents(buf: Buffer): Map<string, CommitterAgg> {
   const agg = new Map<string, CommitterAgg>();
@@ -37,73 +71,16 @@ function parsePushEvents(buf: Buffer): Map<string, CommitterAgg> {
   let pushCount = 0;
 
   for (let i = 0; i < buf.length; i++) {
-    if (buf[i] !== 10) continue; // 10 = '\n'
-
+    if (buf[i] !== 10) continue;
     if (i > start) {
-      const line = buf.toString("utf-8", start, i);
-      try {
-        const event = JSON.parse(line);
-        if (event.type === "PushEvent") {
-          const username: string = event.actor?.login;
-          if (username && !isBot(username)) {
-            const commits =
-              event.payload?.distinct_size || event.payload?.size || 0;
-            if (commits > 0) {
-              pushCount++;
-              const existing = agg.get(username);
-              if (existing) {
-                existing.commit_count += commits;
-                existing.push_count += 1;
-              } else {
-                agg.set(username, {
-                  avatar_url:
-                    event.actor.avatar_url ||
-                    `https://github.com/${username}.png`,
-                  commit_count: commits,
-                  push_count: 1,
-                });
-              }
-            }
-          }
-        }
-      } catch {
-        // Skip malformed lines
-      }
+      if (processLine(buf, start, i, agg)) pushCount++;
     }
     start = i + 1;
   }
 
   // Handle last line without trailing newline
   if (start < buf.length) {
-    const line = buf.toString("utf-8", start);
-    try {
-      const event = JSON.parse(line);
-      if (event.type === "PushEvent") {
-        const username: string = event.actor?.login;
-        if (username && !isBot(username)) {
-          const commits =
-            event.payload?.distinct_size || event.payload?.size || 0;
-          if (commits > 0) {
-            pushCount++;
-            const existing = agg.get(username);
-            if (existing) {
-              existing.commit_count += commits;
-              existing.push_count += 1;
-            } else {
-              agg.set(username, {
-                avatar_url:
-                  event.actor.avatar_url ||
-                  `https://github.com/${username}.png`,
-                commit_count: commits,
-                push_count: 1,
-              });
-            }
-          }
-        }
-      }
-    } catch {
-      // Skip
-    }
+    if (processLine(buf, start, buf.length, agg)) pushCount++;
   }
 
   console.log(
@@ -142,22 +119,22 @@ async function fetchHourlyArchive(
     `[gharchive] Decompressed ${(decompressed.length / 1024 / 1024).toFixed(1)}MB`
   );
 
-  // Parse directly from buffer — no full string conversion
-  const agg = parsePushEvents(decompressed);
-
-  return agg;
+  return parsePushEvents(decompressed);
 }
 
 /**
  * Ingest GH Archive data for a given date.
  * Processes ONE hour per invocation to stay within serverless limits.
  * Tracks progress in seed_state so subsequent calls continue where we left off.
+ *
+ * commit_count = push_count (each push = 1 unit of activity)
+ * since GH Archive no longer includes per-push commit counts.
  */
 export async function ingestGHArchive(dateStr?: string): Promise<{
   date: string;
   hour_ingested: number | null;
   hours_done: number[];
-  total_committers: number;
+  total_users: number;
   error?: string;
 }> {
   const date = dateStr || new Date().toISOString().slice(0, 10);
@@ -194,7 +171,7 @@ export async function ingestGHArchive(dateStr?: string): Promise<{
       date,
       hour_ingested: null,
       hours_done: ingestedHours,
-      total_committers: 0,
+      total_users: 0,
     };
   }
 
@@ -207,7 +184,7 @@ export async function ingestGHArchive(dateStr?: string): Promise<{
       date,
       hour_ingested: targetHour,
       hours_done: ingestedHours,
-      total_committers: 0,
+      total_users: 0,
       error: err.message,
     };
   }
@@ -219,16 +196,18 @@ export async function ingestGHArchive(dateStr?: string): Promise<{
       date,
       hour_ingested: targetHour,
       hours_done: ingestedHours,
-      total_committers: 0,
+      total_users: 0,
     };
   }
 
   // Upsert into event_committers
+  // Use push_count for both commit_count and push_count since
+  // GH Archive doesn't provide per-push commit counts
   const rows = Array.from(agg.entries()).map(([username, data]) => ({
     github_username: username,
     avatar_url: data.avatar_url,
     date,
-    commit_count: data.commit_count,
+    commit_count: data.push_count,
     push_count: data.push_count,
     last_seen_at: new Date(),
   }));
@@ -257,7 +236,7 @@ export async function ingestGHArchive(dateStr?: string): Promise<{
     date,
     hour_ingested: targetHour,
     hours_done: ingestedHours,
-    total_committers: agg.size,
+    total_users: agg.size,
   };
 }
 
