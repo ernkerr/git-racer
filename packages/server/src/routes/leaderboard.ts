@@ -39,7 +39,7 @@ leaderboardRoutes.get("/", async (c) => {
   const limit = Math.min(parseInt(c.req.query("limit") || "100", 10), 100);
   const { start, end } = getPeriodRange(period);
 
-  // Aggregate commit counts from DB
+  // Aggregate commit counts from DB, filtering out bots
   const rows = await db
     .select({
       github_username: commitSnapshots.github_username,
@@ -49,7 +49,10 @@ leaderboardRoutes.get("/", async (c) => {
     .where(
       and(
         gte(commitSnapshots.date, start),
-        lte(commitSnapshots.date, end)
+        lte(commitSnapshots.date, end),
+        sql`${commitSnapshots.github_username} NOT LIKE '%[bot]'`,
+        sql`${commitSnapshots.github_username} NOT LIKE '%-bot'`,
+        sql`${commitSnapshots.github_username} NOT IN ('dependabot', 'renovate', 'github-actions', 'greenkeeper', 'snyk-bot', 'codecov', 'imgbot', 'netlify', 'vercel')`
       )
     )
     .groupBy(commitSnapshots.github_username)

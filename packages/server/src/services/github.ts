@@ -9,6 +9,7 @@ interface ContributionsResponse {
   data: {
     user: {
       contributionsCollection: {
+        totalCommitContributions: number;
         contributionCalendar: {
           totalContributions: number;
           weeks: {
@@ -25,6 +26,7 @@ const CONTRIBUTIONS_QUERY = `
   query($username: String!, $from: DateTime!, $to: DateTime!) {
     user(login: $username) {
       contributionsCollection(from: $from, to: $to) {
+        totalCommitContributions
         contributionCalendar {
           totalContributions
           weeks {
@@ -48,6 +50,42 @@ const YEARS_QUERY = `
     }
   }
 `;
+
+/**
+ * Scale contribution calendar counts to commit-only counts using the ratio
+ * of totalCommitContributions / totalContributions. Ensures the sum matches
+ * the actual commit total.
+ */
+function scaleToCommits(
+  days: { date: string; count: number }[],
+  totalCommits: number,
+  totalContribs: number
+): { date: string; count: number }[] {
+  if (totalContribs === 0 || totalCommits === 0) {
+    return days.map((d) => ({ date: d.date, count: 0 }));
+  }
+  if (totalCommits >= totalContribs) {
+    // All contributions are commits
+    return days;
+  }
+
+  const ratio = totalCommits / totalContribs;
+  const scaled = days.map((d) => ({
+    date: d.date,
+    count: Math.round(d.count * ratio),
+  }));
+
+  // Adjust rounding so the sum equals totalCommits
+  const sum = scaled.reduce((s, d) => s + d.count, 0);
+  const diff = totalCommits - sum;
+  if (diff !== 0 && scaled.length > 0) {
+    // Add/subtract the rounding error from the highest-count day
+    const maxDay = scaled.reduce((best, d) => (d.count > best.count ? d : best), scaled[0]);
+    maxDay.count += diff;
+  }
+
+  return scaled;
+}
 
 async function graphql<T>(query: string, variables: Record<string, unknown>, token: string): Promise<T> {
   const res = await fetch("https://api.github.com/graphql", {
@@ -89,13 +127,18 @@ export async function fetchContributionDays(
     throw new Error(`GitHub user "${username}" not found`);
   }
 
+  const collection = data.data.user.contributionsCollection;
+  const totalCommits = collection.totalCommitContributions;
+  const totalContribs = collection.contributionCalendar.totalContributions;
+
   const days: { date: string; count: number }[] = [];
-  for (const week of data.data.user.contributionsCollection.contributionCalendar.weeks) {
+  for (const week of collection.contributionCalendar.weeks) {
     for (const day of week.contributionDays) {
       days.push({ date: day.date, count: day.contributionCount });
     }
   }
-  return days;
+
+  return scaleToCommits(days, totalCommits, totalContribs);
 }
 
 export async function fetchContributionYears(
@@ -232,7 +275,9 @@ export async function fetchBatchContributionDays(
     const fragments = batch.map((username, idx) =>
       `u${idx}: user(login: "${username}") {
         contributionsCollection(from: "${from.toISOString()}", to: "${to.toISOString()}") {
+          totalCommitContributions
           contributionCalendar {
+            totalContributions
             weeks {
               contributionDays {
                 date
@@ -265,7 +310,9 @@ export async function fetchBatchContributionDays(
       const data = (await res.json()) as {
         data: Record<string, {
           contributionsCollection: {
+            totalCommitContributions: number;
             contributionCalendar: {
+              totalContributions: number;
               weeks: { contributionDays: ContributionDay[] }[];
             };
           };
@@ -275,13 +322,21 @@ export async function fetchBatchContributionDays(
       batch.forEach((username, idx) => {
         const userData = data.data?.[`u${idx}`];
         if (userData) {
-          const days: { date: string; count: number }[] = [];
-          for (const week of userData.contributionsCollection.contributionCalendar.weeks) {
+          const collection = userData.contributionsCollection;
+          const rawDays: { date: string; count: number }[] = [];
+          for (const week of collection.contributionCalendar.weeks) {
             for (const day of week.contributionDays) {
-              days.push({ date: day.date, count: day.contributionCount });
+              rawDays.push({ date: day.date, count: day.contributionCount });
             }
           }
-          results.set(username, days);
+          results.set(
+            username,
+            scaleToCommits(
+              rawDays,
+              collection.totalCommitContributions,
+              collection.contributionCalendar.totalContributions
+            )
+          );
         }
       });
 
