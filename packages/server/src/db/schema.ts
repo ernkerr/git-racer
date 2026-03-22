@@ -150,6 +150,24 @@ export const userBenchmarks = pgTable(
   (t) => [unique().on(t.user_id, t.github_username)]
 );
 
+export const eventCommitters = pgTable(
+  "event_committers",
+  {
+    id: serial("id").primaryKey(),
+    github_username: varchar("github_username", { length: 255 }).notNull(),
+    avatar_url: text("avatar_url"),
+    date: date("date").notNull(),
+    commit_count: integer("commit_count").notNull().default(0),
+    push_count: integer("push_count").notNull().default(0),
+    last_seen_at: timestamp("last_seen_at").defaultNow().notNull(),
+  },
+  (t) => [
+    unique().on(t.github_username, t.date),
+    index("idx_ec_date_commits").on(t.date, t.commit_count),
+    index("idx_ec_username").on(t.github_username),
+  ]
+);
+
 export const socialCircles = pgTable(
   "social_circles",
   {

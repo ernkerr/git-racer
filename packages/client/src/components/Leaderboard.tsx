@@ -10,7 +10,7 @@ interface LeaderboardEntry {
 type Period = "day" | "week" | "month" | "yearly";
 
 const PERIOD_LABELS: Record<Period, string> = {
-  day: "Yesterday",
+  day: "Today",
   week: "This Week",
   month: "This Month",
   yearly: "This Year",

@@ -10,6 +10,32 @@ leaderboardRoutes.get("/", async (c) => {
   const limit = Math.min(parseInt(c.req.query("limit") || "100", 10), 100);
   const { start, end } = periodRange(period);
 
+  // Use event_committers (real GH Archive data) as primary source,
+  // fall back to commit_snapshots if event_committers has no data for the range.
+  const eventRows = await db.execute(sql`
+    SELECT
+      ec.github_username,
+      COALESCE(SUM(ec.commit_count), 0)::int AS commit_count,
+      ec.avatar_url
+    FROM event_committers ec
+    WHERE ec.date >= ${start}
+      AND ec.date <= ${end}
+    GROUP BY ec.github_username, ec.avatar_url
+    ORDER BY commit_count DESC
+    LIMIT ${limit}
+  `);
+
+  if (eventRows.rows.length > 0) {
+    return c.json(
+      eventRows.rows.map((r: any) => ({
+        github_username: r.github_username,
+        avatar_url: r.avatar_url,
+        commit_count: Number(r.commit_count),
+      }))
+    );
+  }
+
+  // Fallback to commit_snapshots (old data source) if no event data yet
   const rows = await db.execute(sql`
     SELECT
       cs.github_username,

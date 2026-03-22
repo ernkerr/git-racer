@@ -51,7 +51,7 @@ export function periodRange(period: string): { start: string; end: string } {
   const end = today();
   switch (period) {
     case "day":
-      return { start: yesterday(), end: yesterday() };
+      return { start: today(), end: today() };
     case "week":
       return { start: weekStart(now), end };
     case "month":

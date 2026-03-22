@@ -6,6 +6,7 @@ import { eq, sql } from "drizzle-orm";
 import { fetchTopGitHubUsers, fetchBatchContributionDays } from "../services/github.js";
 import { seedFamousDevs, FAMOUS_DEV_LIST } from "../services/famous-devs.js";
 import { finalizeWeek } from "../services/leagues.js";
+import { ingestGHArchive } from "../services/gharchive.js";
 
 export const cronRoutes = new Hono();
 
@@ -17,7 +18,7 @@ function verifyCronSecret(authHeader: string | undefined): boolean {
 /**
  * Daily seed cron job.
  * 1. Refresh the suggested_opponents pool (top GitHub users by followers)
- * 2. Fetch yesterday's contribution data for all users in the pool
+ * 2. Fetch today's contribution data for all users in the pool
  * 3. Store in commit_snapshots, resumable via cursor on rate limit
  */
 cronRoutes.post("/daily-seed", async (c) => {
@@ -25,9 +26,7 @@ cronRoutes.post("/daily-seed", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const dateStr = yesterday.toISOString().slice(0, 10);
+  const dateStr = new Date().toISOString().slice(0, 10);
 
   // --- Step 1: Refresh suggested opponents pool ---
   const topUsers = await fetchTopGitHubUsers(150);
@@ -56,7 +55,7 @@ cronRoutes.post("/daily-seed", async (c) => {
     }
   }
 
-  // --- Step 2: Fetch yesterday's contributions ---
+  // --- Step 2: Fetch today's contributions ---
   // Get cursor from seed_state (resume from where we left off)
   const [state] = await db
     .select()
@@ -319,4 +318,21 @@ cronRoutes.post("/seed-famous-devs", async (c) => {
   }
 
   return c.json({ status: "completed", famous_devs_seeded: seeded });
+});
+
+/**
+ * Ingest GH Archive public push events.
+ * Downloads hourly archive files, extracts PushEvents, and aggregates
+ * commit counts per user into event_committers.
+ * Should run every hour. Resumable — tracks which hours are done.
+ * Query params: date (YYYY-MM-DD, defaults to today)
+ */
+cronRoutes.post("/ingest-events", async (c) => {
+  if (!verifyCronSecret(c.req.header("authorization"))) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const date = c.req.query("date") || undefined;
+  const result = await ingestGHArchive(date);
+  return c.json({ status: "completed", ...result });
 });
