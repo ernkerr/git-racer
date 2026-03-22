@@ -127,7 +127,7 @@ This is the most important design decision in the app. We need commit counts for
 
 | Source | Pros | Cons |
 |--------|------|------|
-| **GH Archive** | Covers every public GitHub user. Complete hourly snapshots. | ~2 hour delay. Only public repos. Commit counts per push are estimates. |
+| **GH Archive** | Covers every public GitHub user. Complete hourly snapshots. | ~2 hour delay. Only public repos. Per-push commit counts are often missing from the payload, so many pushes fall back to counting as 1 — archive data is an approximation, not an exact count. |
 | **GitHub GraphQL** | Exact commit counts. Includes private repos. | Rate-limited (5000 points/hr). Can only query one user at a time. |
 | **GitHub Events API** | Near-real-time (seconds old). Free with ETags. | Only ~300 events per call. Tiny sample of global activity. |
 
@@ -135,10 +135,14 @@ This is the most important design decision in the app. We need commit counts for
 
 ### Processing flow
 
-1. **Hourly**: `ingest-events` cron downloads one GH Archive hour (~100-500MB gzipped), stream-decompresses through a pipeline (`fetch body → gunzip → readline`), parses PushEvents line-by-line, aggregates commits per user, and atomically upserts into `event_committers` + marks the hour as ingested in a single transaction
-2. **Hourly**: After ingestion, `enrichTopUsers()` takes today's top 10 from `event_committers`, fetches their real commit counts via GraphQL batch query, stores in `commit_snapshots`
-3. **Every 10 min**: `poll-events` hits the GitHub Events API with ETags (304 = free), captures PushEvents, adds commit counts to `event_committers`
-4. **Daily at midnight**: `daily-seed` fetches contribution data for 150 top GitHub users, populating `commit_snapshots` for the day
+Currently (free plan, daily crons):
+
+1. **Daily at 05:00 UTC**: `ingest-events` cron downloads one GH Archive hour (~100-500MB gzipped), stream-decompresses through a pipeline (`fetch body → gunzip → readline`), parses PushEvents line-by-line, aggregates commits per user, and atomically upserts into `event_committers` + marks the hour as ingested in a single transaction
+2. **Daily at 05:00 UTC**: After ingestion, `enrichTopUsers()` takes today's top 10 from `event_committers`, fetches their real commit counts via GraphQL batch query, stores in `commit_snapshots`
+3. **Daily at 06:00 UTC**: `poll-events` hits the GitHub Events API with ETags (304 = free), captures PushEvents, adds commit counts to `event_committers`
+4. **Daily at 00:05 UTC**: `daily-seed` fetches contribution data for 150 top GitHub users, populating `commit_snapshots` for the day
+
+On a paid plan / self-hosted, steps 1–3 would run hourly and every 10 minutes respectively — see [Ideal schedule](#ideal-schedule-paid-plan--self-hosted) in the Cron Jobs section.
 
 ---
 
@@ -438,19 +442,23 @@ Two auth middlewares:
 
 ## Cron Jobs
 
+### Current schedule (Vercel free plan)
+
+Vercel's free plan only supports daily cron frequency. As a result, `ingest-events` and `poll-events` each run once per day rather than continuously.
+
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                        Cron Schedule (UTC)                        │
 ├──────────────────┬──────────────┬────────────────────────────────┤
 │ Job              │ Schedule     │ What it does                   │
 ├──────────────────┼──────────────┼────────────────────────────────┤
-│ ingest-events    │ Every hour   │ Downloads 1 GH Archive hour,   │
-│                  │ (0 * * * *)  │ parses PushEvents, upserts     │
+│ ingest-events    │ 05:00 daily  │ Downloads 1 GH Archive hour,   │
+│                  │ (0 5 * * *)  │ parses PushEvents, upserts     │
 │                  │              │ event_committers. Then enriches │
 │                  │              │ top 10 via GraphQL.             │
 ├──────────────────┼──────────────┼────────────────────────────────┤
-│ poll-events      │ Every 10 min │ Polls GitHub Events API with   │
-│                  │ (*/10 * * *) │ ETags for real-time "Today"    │
+│ poll-events      │ 06:00 daily  │ Polls GitHub Events API with   │
+│                  │ (0 6 * * *)  │ ETags for real-time "Today"    │
 │                  │              │ data. Supplements archives.     │
 ├──────────────────┼──────────────┼────────────────────────────────┤
 │ daily-seed       │ 00:05 daily  │ Refreshes pool of 150 top      │
@@ -462,9 +470,35 @@ Two auth middlewares:
 └──────────────────┴──────────────┴────────────────────────────────┘
 ```
 
+**Practical impact**: The leaderboard reflects the previous night's snapshot. The "Today" tab shows data from the single morning ingestion run rather than updating continuously throughout the day.
+
+### Ideal schedule (paid plan / self-hosted)
+
+The system is designed to run at much higher frequency — the code, advisory locks, and resumable cursors all support it. Upgrading to a paid Vercel plan (or self-hosting the cron runner) would enable:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                     Ideal Cron Schedule (UTC)                     │
+├──────────────────┬──────────────┬────────────────────────────────┤
+│ Job              │ Schedule     │ Benefit over daily              │
+├──────────────────┼──────────────┼────────────────────────────────┤
+│ ingest-events    │ Every hour   │ Full-day coverage — each GH     │
+│                  │ (0 * * * *)  │ Archive hour processed as it    │
+│                  │              │ becomes available (~2hr delay). │
+├──────────────────┼──────────────┼────────────────────────────────┤
+│ poll-events      │ Every 10 min │ Near-real-time "Today" tab.     │
+│                  │ (*/10 * * *) │ ETags make most calls free      │
+│                  │              │ (304 = no data transferred).    │
+├──────────────────┼──────────────┼────────────────────────────────┤
+│ daily-seed       │ 00:05 daily  │ No change needed.               │
+├──────────────────┼──────────────┼────────────────────────────────┤
+│ weekly-leagues   │ Mon 07:00    │ No change needed.               │
+└──────────────────┴──────────────┴────────────────────────────────┘
+```
+
 **Why hourly for archive ingestion?** GH Archive publishes files one hour after the hour ends. Each cron call processes exactly one hour. Over 24 calls, the full day is covered.
 
-**Why 10-minute polling?** The GitHub Events API is near-real-time but only returns ~300 events per call. Frequent polling catches more events throughout the day, keeping the "Today" leaderboard responsive between hourly archive ingestions.
+**Why 10-minute polling?** The GitHub Events API is near-real-time but only returns ~300 events per call. Frequent polling catches more events throughout the day, keeping the "Today" leaderboard responsive between hourly archive ingestions. Most calls return a 304 (ETag match) and cost nothing.
 
 **Why is everything resumable?** Vercel serverless functions have a 300-second timeout. Processing 150 users via GraphQL can hit rate limits. The cursor in `seed_state` lets each cron invocation pick up exactly where the last one stopped.
 
@@ -489,7 +523,7 @@ github-merge-queue
 
 ### 2. Per-push commit cap (50)
 
-Applied during GH Archive parsing and real-time event polling. A single `git push` with 1,000+ commits is almost always automated (dependency updates, generated code, CI artifacts). Capping at 50 per push lets normal development through while limiting abuse.
+Applied during GH Archive parsing and real-time event polling. Since GH Archive no longer reports per-push commit counts (each push = 1), the cap limits users who spam dozens or hundreds of tiny pushes per day — a common green-square farming pattern. Capping at 50 per day lets normal development through while preventing inflated archive scores.
 
 ### 3. Real data enrichment
 

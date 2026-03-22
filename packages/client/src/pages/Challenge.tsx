@@ -269,7 +269,7 @@ export default function Challenge() {
       </div>
 
       <p className="text-xs text-gray-500 mt-4 text-center">
-        Stats refresh automatically every 60 seconds. Commit data cached for up to 15 minutes.
+        Stats refresh automatically every 60 seconds. Commit data cached for up to 4 hours.
       </p>
     </div>
   );
