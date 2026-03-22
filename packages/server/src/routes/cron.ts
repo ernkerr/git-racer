@@ -7,6 +7,7 @@ import { fetchTopGitHubUsers, fetchBatchContributionDays } from "../services/git
 import { seedFamousDevs, FAMOUS_DEV_LIST } from "../services/famous-devs.js";
 import { finalizeWeek } from "../services/leagues.js";
 import { ingestGHArchive } from "../services/gharchive.js";
+import { ingestRealtimeEvents } from "../services/github-events.js";
 
 export const cronRoutes = new Hono();
 
@@ -334,5 +335,19 @@ cronRoutes.post("/ingest-events", async (c) => {
 
   const date = c.req.query("date") || undefined;
   const result = await ingestGHArchive(date);
+  return c.json({ status: "completed", ...result });
+});
+
+/**
+ * Poll GitHub Events API for real-time push data.
+ * Captures actual commit counts from PushEvent payloads.
+ * Should run frequently (every few minutes) for the "Today" tab.
+ */
+cronRoutes.post("/poll-events", async (c) => {
+  if (!verifyCronSecret(c.req.header("authorization"))) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const result = await ingestRealtimeEvents();
   return c.json({ status: "completed", ...result });
 });

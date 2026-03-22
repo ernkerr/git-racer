@@ -6,6 +6,7 @@ import { eq, sql } from "drizzle-orm";
 interface CommitterAgg {
   avatar_url: string;
   push_count: number;
+  commit_count: number;
 }
 
 const BOT_PATTERNS = [
@@ -30,9 +31,16 @@ function isBot(username: string): boolean {
 
 /**
  * Parse a PushEvent line from the buffer and accumulate into the map.
- * GH Archive PushEvents have: actor.login, actor.avatar_url, payload.push_id.
- * Commit counts are not included in the payload, so we count pushes.
+ * Extract commit count from PushEvent payload.
+ * Tries payload.size, then payload.commits.length, falls back to 1.
  */
+function getCommitCount(payload: any): number {
+  if (typeof payload?.size === "number" && payload.size > 0) return payload.size;
+  if (typeof payload?.distinct_size === "number" && payload.distinct_size > 0) return payload.distinct_size;
+  if (Array.isArray(payload?.commits)) return payload.commits.length || 1;
+  return 1;
+}
+
 function processLine(
   buf: Buffer,
   start: number,
@@ -47,15 +55,19 @@ function processLine(
     const username: string = event.actor?.login;
     if (!username || isBot(username)) return false;
 
+    const commits = getCommitCount(event.payload);
+
     const existing = agg.get(username);
     if (existing) {
       existing.push_count += 1;
+      existing.commit_count += commits;
     } else {
       agg.set(username, {
         avatar_url:
           event.actor.avatar_url ||
           `https://github.com/${username}.png`,
         push_count: 1,
+        commit_count: commits,
       });
     }
     return true;
@@ -209,7 +221,7 @@ export async function ingestGHArchive(dateStr?: string): Promise<{
     github_username: username,
     avatar_url: data.avatar_url,
     date,
-    commit_count: data.push_count,
+    commit_count: data.commit_count,
     push_count: data.push_count,
     last_seen_at: new Date(),
   }));

@@ -5,14 +5,15 @@ import type {
   UserStats,
   ActiveChallenge,
   LeagueGroup,
-  FamousDevBenchmark,
+  StarredUser,
+  StarSuggestion,
   SocialCircleData,
   UserStreakInfo,
   ContributionGraphData,
 } from "@git-racer/shared";
 import ContributionGraph from "../components/ContributionGraph.tsx";
 import LeagueCard from "../components/LeagueCard.tsx";
-import BenchmarkCards from "../components/BenchmarkCards.tsx";
+import StarredUsers from "../components/StarredUsers.tsx";
 import StreakCard from "../components/StreakCard.tsx";
 import SocialCircle from "../components/SocialCircle.tsx";
 import ShareButton from "../components/ShareButton.tsx";
@@ -31,15 +32,17 @@ export default function Dashboard() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [challenges, setChallenges] = useState<ActiveChallenge[]>([]);
   const [league, setLeague] = useState<LeagueGroup | null>(null);
-  const [benchmarks, setBenchmarks] = useState<FamousDevBenchmark[]>([]);
+  const [starred, setStarred] = useState<StarredUser[]>([]);
+  const [suggestions, setSuggestions] = useState<StarSuggestion[]>([]);
   const [socialData, setSocialData] = useState<SocialCircleData>({ entries: [], your_rank: 0, total: 0 });
   const [streaks, setStreaks] = useState<UserStreakInfo | null>(null);
   const [contributions, setContributions] = useState<ContributionGraphData | null>(null);
   const [loading, setLoading] = useState(true);
   const [socialLoading, setSocialLoading] = useState(true);
 
-  const loadBenchmarks = useCallback(() => {
-    api<FamousDevBenchmark[]>("/benchmarks?period=week").then(setBenchmarks).catch(() => {});
+  const loadStarred = useCallback(() => {
+    api<StarredUser[]>("/starred?period=week").then(setStarred).catch(() => {});
+    api<StarSuggestion[]>("/starred/suggestions").then(setSuggestions).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -60,7 +63,8 @@ export default function Dashboard() {
 
     // These load independently (separate APIs / slower)
     api<LeagueGroup>("/leagues/current").then(setLeague).catch(() => {});
-    api<FamousDevBenchmark[]>("/benchmarks?period=week").then(setBenchmarks).catch(() => []);
+    api<StarredUser[]>("/starred?period=week").then(setStarred).catch(() => []);
+    api<StarSuggestion[]>("/starred/suggestions").then(setSuggestions).catch(() => []);
     api<SocialCircleData>("/social/circle")
       .then(setSocialData)
       .catch(() => {})
@@ -149,14 +153,16 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Famous Dev Benchmarks */}
+      {/* Starred Users */}
       <div>
-        <h2 className="text-lg font-bold mb-3">vs Famous Devs</h2>
-        <BenchmarkCards
-          benchmarks={benchmarks}
-          onAdded={loadBenchmarks}
-          onRemoved={(username) => {
-            setBenchmarks((prev) => prev.filter((b) => b.github_username !== username));
+        <h2 className="text-lg font-bold mb-3">Starred Developers</h2>
+        <StarredUsers
+          starred={starred}
+          suggestions={suggestions}
+          onStar={loadStarred}
+          onUnstar={(username) => {
+            setStarred((prev) => prev.filter((s) => s.github_username !== username));
+            loadStarred();
           }}
         />
       </div>

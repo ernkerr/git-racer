@@ -82,19 +82,29 @@ export interface LeagueGroup {
   days_left: number;
 }
 
-// --- Benchmark types ---
+// --- Starred / Benchmark types ---
 
-export interface FamousDevBenchmark {
+export interface StarredUser {
   github_username: string;
   display_name: string;
-  known_for: string;
   avatar_url: string | null;
-  category: string;
   their_commits: number;
   your_commits: number;
   you_beat_them: boolean;
-  is_custom: boolean;
 }
+
+export interface StarSuggestion {
+  github_username: string;
+  avatar_url: string | null;
+  commit_count: number;
+}
+
+/** @deprecated Use StarredUser */
+export type FamousDevBenchmark = StarredUser & {
+  known_for: string;
+  category: string;
+  is_custom: boolean;
+};
 
 export interface SocialCircleEntry {
   github_username: string;

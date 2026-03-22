@@ -11,6 +11,7 @@ import { cronRoutes } from "./routes/cron.js";
 import { suggestedOpponentRoutes } from "./routes/suggested-opponents.js";
 import { leagueRoutes } from "./routes/leagues.js";
 import { benchmarkRoutes } from "./routes/benchmarks.js";
+import { starredRoutes } from "./routes/starred.js";
 import { socialRoutes } from "./routes/social.js";
 
 const app = new Hono().basePath("/api");
@@ -41,6 +42,7 @@ app.route("/cron", cronRoutes);
 app.route("/suggested-opponents", suggestedOpponentRoutes);
 app.route("/leagues", leagueRoutes);
 app.route("/benchmarks", benchmarkRoutes);
+app.route("/starred", starredRoutes);
 app.route("/social", socialRoutes);
 
 export default app;
