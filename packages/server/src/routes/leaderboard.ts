@@ -21,6 +21,9 @@ leaderboardRoutes.get("/", async (c) => {
     FROM event_committers ec
     WHERE ec.date >= ${start}
       AND ec.date <= ${end}
+      AND ec.github_username NOT LIKE '%[bot]'
+      AND ec.github_username NOT LIKE '%-bot'
+      AND ec.github_username NOT IN ('dependabot', 'renovate', 'github-actions', 'greenkeeper', 'snyk-bot', 'codecov', 'imgbot', 'netlify', 'vercel', 'Copilot', 'github-merge-queue')
     GROUP BY ec.github_username
     ORDER BY commit_count DESC
     LIMIT ${limit}
@@ -35,6 +38,9 @@ leaderboardRoutes.get("/", async (c) => {
         ec.avatar_url
       FROM event_committers ec
       WHERE ec.date = (SELECT MAX(date) FROM event_committers)
+        AND ec.github_username NOT LIKE '%[bot]'
+        AND ec.github_username NOT LIKE '%-bot'
+        AND ec.github_username NOT IN ('dependabot', 'renovate', 'github-actions', 'greenkeeper', 'snyk-bot', 'codecov', 'imgbot', 'netlify', 'vercel', 'Copilot', 'github-merge-queue')
       ORDER BY ec.commit_count DESC
       LIMIT ${limit}
     `);

@@ -20,6 +20,8 @@ const BOT_PATTERNS = [
   /^imgbot$/i,
   /^netlify$/i,
   /^vercel$/i,
+  /^copilot$/i,
+  /^github-merge-queue$/i,
 ];
 
 function isBot(username: string): boolean {
