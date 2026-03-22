@@ -332,7 +332,8 @@ cronRoutes.post("/ingest-events-debug", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
   const { gunzipSync } = await import("node:zlib");
-  const url = "https://data.gharchive.org/2026-03-21-12.json.gz";
+  const hour = parseInt(c.req.query("hour") || "0", 10);
+  const url = `https://data.gharchive.org/2026-03-21-${hour}.json.gz`;
   const steps: string[] = [];
   try {
     steps.push("fetching...");
@@ -344,22 +345,33 @@ cronRoutes.post("/ingest-events-debug", async (c) => {
     steps.push(`buffer=${gzipped.length}`);
     const decompressed = gunzipSync(gzipped);
     steps.push(`decompressed=${decompressed.length}`);
-    // Count PushEvents in first 1000 lines
-    let pushes = 0, lines = 0;
+    // Full parse like parsePushEvents does
+    let pushes = 0, totalLines = 0, errors = 0;
     let start = 0;
-    for (let i = 0; i < decompressed.length && lines < 1000; i++) {
-      if (decompressed[i] === 10) {
+    const userMap = new Map<string, number>();
+    for (let i = 0; i < decompressed.length; i++) {
+      if (decompressed[i] !== 10) continue;
+      if (i > start) {
+        totalLines++;
         const line = decompressed.toString("utf-8", start, i);
-        lines++;
         try {
           const e = JSON.parse(line);
-          if (e.type === "PushEvent") pushes++;
-        } catch {}
-        start = i + 1;
+          if (e.type === "PushEvent") {
+            pushes++;
+            const login = e.actor?.login;
+            const commits = e.payload?.distinct_size || e.payload?.size || 0;
+            if (login && commits > 0) {
+              userMap.set(login, (userMap.get(login) || 0) + commits);
+            }
+          }
+        } catch { errors++; }
       }
+      start = i + 1;
     }
-    steps.push(`lines=${lines},pushes=${pushes}`);
-    return c.json({ ok: true, steps });
+    steps.push(`lines=${totalLines},pushes=${pushes},errors=${errors},users=${userMap.size}`);
+    // Top 5 committers
+    const top5 = [...userMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+    return c.json({ ok: true, steps, top5 });
   } catch (err: any) {
     steps.push(`error: ${err.message}`);
     return c.json({ ok: false, steps, error: err.message });
