@@ -327,6 +327,45 @@ cronRoutes.post("/seed-famous-devs", async (c) => {
  * Processes one hour per call; loops up to 4 hours within the time budget.
  * Query params: date (YYYY-MM-DD, defaults to today)
  */
+cronRoutes.post("/ingest-events-debug", async (c) => {
+  if (!verifyCronSecret(c.req.header("authorization"))) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  const { gunzipSync } = await import("node:zlib");
+  const url = "https://data.gharchive.org/2026-03-21-12.json.gz";
+  const steps: string[] = [];
+  try {
+    steps.push("fetching...");
+    const res = await fetch(url);
+    steps.push(`status=${res.status}`);
+    const ab = await res.arrayBuffer();
+    steps.push(`arrayBuffer=${ab.byteLength}`);
+    const gzipped = Buffer.from(ab);
+    steps.push(`buffer=${gzipped.length}`);
+    const decompressed = gunzipSync(gzipped);
+    steps.push(`decompressed=${decompressed.length}`);
+    // Count PushEvents in first 1000 lines
+    let pushes = 0, lines = 0;
+    let start = 0;
+    for (let i = 0; i < decompressed.length && lines < 1000; i++) {
+      if (decompressed[i] === 10) {
+        const line = decompressed.toString("utf-8", start, i);
+        lines++;
+        try {
+          const e = JSON.parse(line);
+          if (e.type === "PushEvent") pushes++;
+        } catch {}
+        start = i + 1;
+      }
+    }
+    steps.push(`lines=${lines},pushes=${pushes}`);
+    return c.json({ ok: true, steps });
+  } catch (err: any) {
+    steps.push(`error: ${err.message}`);
+    return c.json({ ok: false, steps, error: err.message });
+  }
+});
+
 cronRoutes.post("/ingest-events", async (c) => {
   if (!verifyCronSecret(c.req.header("authorization"))) {
     return c.json({ error: "Unauthorized" }, 401);
