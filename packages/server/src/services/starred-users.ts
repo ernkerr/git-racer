@@ -1,7 +1,7 @@
 import { db } from "../db/index.js";
 import { userBenchmarks, commitSnapshots, eventCommitters } from "../db/schema.js";
-import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
-import { periodRange, today } from "../lib/dates.js";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { periodRange } from "../lib/dates.js";
 
 /**
  * Get comparisons between the user and their starred developers.
@@ -77,14 +77,29 @@ export async function getStarredComparisons(
   });
 }
 
+/** Notable developers to suggest for starring */
+const SUGGESTED_DEVS = [
+  { github_username: "torvalds", display: "Linus Torvalds" },
+  { github_username: "steipete", display: "Peter Steinberger" },
+  { github_username: "rauchg", display: "Guillermo Rauch" },
+  { github_username: "dhh", display: "DHH" },
+  { github_username: "levelsio", display: "Pieter Levels" },
+  { github_username: "sindresorhus", display: "Sindre Sorhus" },
+  { github_username: "taylorotwell", display: "Taylor Otwell" },
+  { github_username: "hwchase17", display: "Harrison Chase" },
+  { github_username: "garrytan", display: "Gary Tan" },
+  { github_username: "karpathy", display: "Andrej Karpathy" },
+  { github_username: "gaearon", display: "Dan Abramov" },
+  { github_username: "tj", display: "TJ Holowaychuk" },
+];
+
 /**
- * Get suggested users to star based on leaderboard activity.
+ * Get suggested famous devs to star, excluding already-starred ones.
  */
 export async function getStarSuggestions(
   userId: number,
-  limit: number = 5
+  limit: number = 6
 ): Promise<{ github_username: string; avatar_url: string | null; commit_count: number }[]> {
-  // Get already-starred usernames
   const starred = await db
     .select({ github_username: userBenchmarks.github_username })
     .from(userBenchmarks)
@@ -92,27 +107,12 @@ export async function getStarSuggestions(
 
   const starredSet = new Set(starred.map((s) => s.github_username));
 
-  // Get top active users from event_committers (most recent day with data)
-  const rows = await db.execute(sql`
-    SELECT
-      github_username,
-      avatar_url,
-      commit_count
-    FROM event_committers
-    WHERE date = (SELECT MAX(date) FROM event_committers)
-      AND github_username NOT LIKE '%[bot]'
-      AND github_username NOT LIKE '%-bot'
-      AND github_username NOT IN ('dependabot', 'renovate', 'github-actions', 'greenkeeper', 'snyk-bot', 'codecov', 'imgbot', 'netlify', 'vercel', 'Copilot', 'github-merge-queue')
-    ORDER BY commit_count DESC
-    LIMIT ${limit + starredSet.size + 10}
-  `);
-
-  return (rows.rows as any[])
-    .filter((r) => !starredSet.has(r.github_username))
+  return SUGGESTED_DEVS
+    .filter((d) => !starredSet.has(d.github_username))
     .slice(0, limit)
-    .map((r) => ({
-      github_username: r.github_username,
-      avatar_url: r.avatar_url,
-      commit_count: Number(r.commit_count),
+    .map((d) => ({
+      github_username: d.github_username,
+      avatar_url: `https://github.com/${d.github_username}.png`,
+      commit_count: 0,
     }));
 }

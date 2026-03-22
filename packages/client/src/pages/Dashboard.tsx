@@ -174,30 +174,27 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Two-column layout: League + Social */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Weekly League */}
-        <div>
-          <h2 className="text-lg font-bold mb-3">Weekly League</h2>
-          {league ? (
-            <LeagueCard league={league} />
-          ) : (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center text-gray-500 text-sm">
-              Your league is being set up. Check back soon!
-            </div>
-          )}
-        </div>
-
-        {/* Social Circle */}
-        <div>
-          <h2 className="text-lg font-bold mb-3">Your Circle</h2>
-          <SocialCircle data={socialData} loading={socialLoading} />
-        </div>
+      {/* Social Circle */}
+      <div>
+        <h2 className="text-lg font-bold mb-3">Your Circle</h2>
+        <SocialCircle data={socialData} loading={socialLoading} />
       </div>
 
       {/* Global Leaderboard */}
       <div>
         <Leaderboard />
+      </div>
+
+      {/* Weekly League */}
+      <div>
+        <h2 className="text-lg font-bold mb-3">Weekly League</h2>
+        {league ? (
+          <LeagueCard league={league} />
+        ) : (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center text-gray-500 text-sm">
+            Your league is being set up. Check back soon!
+          </div>
+        )}
       </div>
     </div>
   );

@@ -111,7 +111,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
       {/* Suggestions */}
       {suggestions.length > 0 && (
         <div>
-          <p className="text-xs text-gray-500 mb-2">Suggestions from the leaderboard</p>
+          <p className="text-xs text-gray-500 mb-2">Suggested developers</p>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {suggestions.map((s) => (
               <button
