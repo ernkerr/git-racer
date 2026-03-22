@@ -422,17 +422,18 @@ async function enrichTopUsers(
   topN: number = 10
 ): Promise<{ users_enriched: number }> {
   try {
-    // Find the top N committers from event_committers for the given date.
-    // We intentionally include high-push accounts here: if they're real developers,
-    // GraphQL will confirm a high count; if they're farmers, GraphQL will return a
-    // low count and the leaderboard's archive cap will limit their display rank.
+    // Enrich from the suggested_opponents pool (real developers, top by followers)
+    // rather than from event_committers (dominated by green-square farmers).
+    // Farmers have genuinely high GitHub commit counts from scripted commits,
+    // so enriching them would just confirm their inflated numbers.
+    // Real developers from the pool get their true GraphQL counts, which the
+    // leaderboard's GREATEST logic picks over the capped archive data.
     const topRows = await db.execute(sql`
-      SELECT github_username, commit_count
-      FROM event_committers
-      WHERE date = ${date}
-        AND github_username NOT LIKE '%[bot]'
-        AND github_username NOT LIKE '%-bot'
-      ORDER BY commit_count DESC
+      SELECT so.github_username
+      FROM suggested_opponents so
+      INNER JOIN event_committers ec
+        ON ec.github_username = so.github_username AND ec.date = ${date}
+      ORDER BY ec.commit_count DESC
       LIMIT ${topN}
     `);
 
