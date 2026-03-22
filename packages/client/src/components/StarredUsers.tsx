@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import type { StarredUser, StarSuggestion } from "@git-racer/shared";
 import { api } from "../lib/api.ts";
 import GitHubUserSearch from "./GitHubUserSearch.tsx";
@@ -12,7 +11,6 @@ interface Props {
 }
 
 export default function StarredUsers({ starred, suggestions, onStar, onUnstar }: Props) {
-  const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
   const [adding, setAdding] = useState(false);
 
@@ -27,7 +25,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
       });
 
       // Create a 1v1 ongoing race
-      const result = await api<{ share_slug: string }>("/challenges", {
+      await api<{ share_slug: string }>("/challenges", {
         method: "POST",
         body: JSON.stringify({
           name: `vs ${username}`,
@@ -37,9 +35,9 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
         }),
       });
 
-      navigate(`/c/${result.share_slug}`);
+      onStar(username);
+      setSearchValue("");
     } catch {
-      // If race creation fails, still refresh starred
       onStar(username);
       setSearchValue("");
     } finally {
