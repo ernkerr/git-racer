@@ -168,13 +168,6 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Contribution Graph */}
-      {contributions && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <ContributionGraph days={contributions.days} totalYear={contributions.total_year} />
-        </div>
-      )}
-
       {/* Social Circle */}
       <div>
         <h2 className="text-lg font-bold mb-3">Your Circle</h2>
@@ -197,6 +190,13 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Contribution Graph */}
+      {contributions && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <ContributionGraph days={contributions.days} totalYear={contributions.total_year} />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../lib/api.ts";
 import { useAuth } from "../lib/auth.tsx";
 import { CHALLENGE_REFRESH_MS } from "@git-racer/shared";
@@ -14,11 +14,17 @@ export default function Challenge() {
   const [joining, setJoining] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsEndDate, setSettingsEndDate] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const fetchChallenge = async () => {
     try {
       const data = await api<ChallengeWithLeaderboard>(`/challenges/${slug}`);
       setChallenge(data);
+      if (data.end_date) {
+        setSettingsEndDate(new Date(data.end_date).toISOString().slice(0, 10));
+      }
     } catch {
       // Challenge not found or API error
     } finally {
@@ -55,6 +61,26 @@ export default function Challenge() {
     }
   };
 
+  const handleSaveSettings = async () => {
+    setSaving(true);
+    try {
+      const body: Record<string, unknown> = {};
+      if (settingsEndDate) {
+        body.end_date = new Date(settingsEndDate).toISOString();
+      }
+      await api(`/challenges/${slug}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      await fetchChallenge();
+      setShowSettings(false);
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
@@ -76,6 +102,17 @@ export default function Challenge() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      {/* Back button */}
+      <Link
+        to="/dashboard"
+        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white mb-4 transition-colors"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Dashboard
+      </Link>
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -113,16 +150,57 @@ export default function Challenge() {
             {copied ? "Copied!" : "Share"}
           </button>
           {isCreator && (
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="text-sm bg-red-600/20 hover:bg-red-600/40 text-red-400 disabled:opacity-50 px-4 py-1.5 rounded-md transition-colors"
-            >
-              {deleting ? "Deleting..." : "Delete"}
-            </button>
+            <>
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className="text-sm bg-gray-800 hover:bg-gray-700 px-4 py-1.5 rounded-md transition-colors"
+              >
+                Settings
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="text-sm bg-red-600/20 hover:bg-red-600/40 text-red-400 disabled:opacity-50 px-4 py-1.5 rounded-md transition-colors"
+              >
+                {deleting ? "..." : "Delete"}
+              </button>
+            </>
           )}
         </div>
       </div>
+
+      {/* Settings panel */}
+      {showSettings && isCreator && (
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-4 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-300">Race Settings</h3>
+
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">End Date (optional)</label>
+            <input
+              type="date"
+              value={settingsEndDate}
+              onChange={(e) => setSettingsEndDate(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-green-500"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleSaveSettings}
+              disabled={saving}
+              className="text-sm bg-green-600 hover:bg-green-500 disabled:opacity-50 px-4 py-1.5 rounded-md transition-colors"
+            >
+              {saving ? "Saving..." : "Save"}
+            </button>
+            <button
+              onClick={() => setShowSettings(false)}
+              className="text-sm bg-gray-800 hover:bg-gray-700 px-4 py-1.5 rounded-md transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Goal progress bar */}
       {isGoal && challenge.goal_target && challenge.participants.length > 0 && (

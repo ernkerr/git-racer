@@ -97,6 +97,42 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
   });
 });
 
+// Update challenge settings (creator only)
+challengeRoutes.patch("/:slug", requireAuth, async (c) => {
+  const { sub: userId } = c.get("user");
+  const slug = c.req.param("slug");
+
+  const [challenge] = await db
+    .select()
+    .from(challenges)
+    .where(eq(challenges.share_slug, slug))
+    .limit(1);
+
+  if (!challenge) return c.json({ error: "Challenge not found" }, 404);
+  if (challenge.created_by !== userId) {
+    return c.json({ error: "Only the creator can update this race" }, 403);
+  }
+
+  const body = await c.req.json();
+  const updates: Record<string, unknown> = {};
+
+  if (body.end_date !== undefined) {
+    updates.end_date = body.end_date ? new Date(body.end_date) : null;
+  }
+  if (body.name !== undefined) {
+    updates.name = body.name;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await db
+      .update(challenges)
+      .set(updates)
+      .where(eq(challenges.id, challenge.id));
+  }
+
+  return c.json({ ok: true });
+});
+
 // Delete a challenge (creator only)
 challengeRoutes.delete("/:slug", requireAuth, async (c) => {
   const { sub: userId } = c.get("user");

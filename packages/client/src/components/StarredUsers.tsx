@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { StarredUser, StarSuggestion } from "@git-racer/shared";
 import { api } from "../lib/api.ts";
 import GitHubUserSearch from "./GitHubUserSearch.tsx";
@@ -11,20 +12,36 @@ interface Props {
 }
 
 export default function StarredUsers({ starred, suggestions, onStar, onUnstar }: Props) {
+  const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
   const [adding, setAdding] = useState(false);
 
-  async function handleStar(username: string) {
+  async function handleRace(username: string) {
+    if (adding) return;
     setAdding(true);
     try {
+      // Star the user
       await api("/starred", {
         method: "POST",
         body: JSON.stringify({ github_username: username }),
       });
+
+      // Create a 1v1 ongoing race
+      const result = await api<{ share_slug: string }>("/challenges", {
+        method: "POST",
+        body: JSON.stringify({
+          name: `vs ${username}`,
+          type: "1v1",
+          duration_type: "ongoing",
+          opponents: [username],
+        }),
+      });
+
+      navigate(`/c/${result.share_slug}`);
+    } catch {
+      // If race creation fails, still refresh starred
       onStar(username);
       setSearchValue("");
-    } catch {
-      // ignore
     } finally {
       setAdding(false);
     }
@@ -116,8 +133,9 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
             {suggestions.map((s) => (
               <button
                 key={s.github_username}
-                onClick={() => handleStar(s.github_username)}
-                className="flex items-center gap-2 flex-shrink-0 bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-lg px-3 py-2 transition-colors"
+                onClick={() => handleRace(s.github_username)}
+                disabled={adding}
+                className="flex items-center gap-2 flex-shrink-0 bg-gray-900 border border-gray-800 hover:border-green-500/50 rounded-lg px-3 py-2 transition-colors disabled:opacity-50"
               >
                 <img
                   src={s.avatar_url ?? `https://github.com/${s.github_username}.png`}
@@ -125,27 +143,24 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
                   className="w-6 h-6 rounded-full"
                 />
                 <span className="text-sm text-white truncate max-w-[120px]">{s.github_username}</span>
-                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
+                <span className="text-xs text-green-400">Race</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Search to star anyone */}
+      {/* Search to race anyone */}
       <div>
         <GitHubUserSearch
           value={searchValue}
           onChange={(username) => {
             setSearchValue(username);
             if (username && username.length > 2 && !username.includes(" ")) {
-              // Auto-star when a user is selected from dropdown
-              handleStar(username);
+              handleRace(username);
             }
           }}
-          placeholder="Search for a GitHub user to star..."
+          placeholder="Search for a GitHub user to race..."
         />
       </div>
     </div>
