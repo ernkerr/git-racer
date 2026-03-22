@@ -3,7 +3,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { db } from "../db/index.js";
 import { users, commitSnapshots } from "../db/schema.js";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
-import { getUserStats, refreshCommitData } from "../services/commits.js";
+import { getUserStats, getUserStatsFast, refreshCommitData } from "../services/commits.js";
 import { computeStreaks } from "../services/streaks.js";
 import type { AppEnv } from "../types.js";
 import type { ContributionDay } from "@git-racer/shared";
@@ -192,15 +192,15 @@ meRoutes.get("/dashboard", async (c) => {
 
   if (!user) return c.json({ error: "User not found" }, 404);
 
-  // Refresh commit data once (shared by stats + contributions)
+  // Refresh commit data once — shared by stats + contributions (no double refresh)
   await refreshCommitData(username, user.access_token);
 
   const now = new Date();
   const todayStr = now.toISOString().slice(0, 10);
 
-  // Run all queries in parallel
+  // Run all queries in parallel — getUserStatsFast skips all-time refresh
   const [stats, challengeRows, streakInfo, contribDays] = await Promise.all([
-    getUserStats(username),
+    getUserStatsFast(username),
     // Challenges — single SQL query
     db.execute(sql`
       WITH user_challenges AS (

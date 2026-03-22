@@ -3,14 +3,66 @@ import { commitSnapshots, userStreaks } from "../db/schema.js";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import type { UserStreakInfo } from "@git-racer/shared";
 
+const STREAK_CACHE_MS = 4 * 60 * 60 * 1000; // 4 hours
+
 /**
  * Compute and cache streak info for a user.
+ * Reads from user_streaks cache if fresh; otherwise recalculates.
  */
 export async function computeStreaks(
   githubUsername: string,
   userId?: number
 ): Promise<UserStreakInfo> {
-  // Get all daily contribution data, ordered by date descending
+  // Check cache first
+  const [cached] = await db
+    .select()
+    .from(userStreaks)
+    .where(eq(userStreaks.github_username, githubUsername))
+    .limit(1);
+
+  if (cached && Date.now() - cached.updated_at.getTime() < STREAK_CACHE_MS) {
+    // Serve cached — only this_week/last_week/trend need fresh data
+    // Do a quick week aggregation instead of full history scan
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const dayOfWeek = now.getDay() || 7;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - dayOfWeek + 1);
+    const thisWeekStart = monday.toISOString().slice(0, 10);
+    const lastMonday = new Date(monday);
+    lastMonday.setDate(lastMonday.getDate() - 7);
+    const lastWeekStart = lastMonday.toISOString().slice(0, 10);
+    const lastSunday = new Date(lastMonday);
+    lastSunday.setDate(lastSunday.getDate() + 6);
+    const lastWeekEnd = lastSunday.toISOString().slice(0, 10);
+
+    const weekResult = await db.execute(sql`
+      SELECT
+        COALESCE(SUM(CASE WHEN date >= ${thisWeekStart} AND date <= ${todayStr} THEN commit_count ELSE 0 END), 0)::int AS this_week,
+        COALESCE(SUM(CASE WHEN date >= ${lastWeekStart} AND date <= ${lastWeekEnd} THEN commit_count ELSE 0 END), 0)::int AS last_week
+      FROM commit_snapshots
+      WHERE github_username = ${githubUsername}
+        AND date >= ${lastWeekStart}
+    `);
+    const wr = weekResult.rows[0] as any;
+    const thisWeek = Number(wr.this_week);
+    const lastWeek = Number(wr.last_week);
+    const trendPercent = lastWeek > 0
+      ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100)
+      : thisWeek > 0 ? 100 : 0;
+
+    return {
+      current_streak: cached.current_streak,
+      longest_streak: cached.longest_streak,
+      best_week_commits: cached.best_week_commits,
+      best_week_start: cached.best_week_start,
+      this_week: thisWeek,
+      last_week: lastWeek,
+      trend_percent: trendPercent,
+    };
+  }
+
+  // Full recalculation — get all daily contribution data
   const days = await db
     .select({
       date: commitSnapshots.date,

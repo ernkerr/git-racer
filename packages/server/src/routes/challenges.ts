@@ -2,10 +2,10 @@ import { Hono } from "hono";
 import { requireAuth, optionalAuth } from "../middleware/auth.js";
 import { db } from "../db/index.js";
 import { challenges, challengeParticipants, users } from "../db/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { createChallengeSchema } from "@git-racer/shared";
 import { createChallenge } from "../services/challenges.js";
-import { getCommitCount, refreshCommitData } from "../services/commits.js";
+import { refreshCommitData } from "../services/commits.js";
 import type { AppEnv } from "../types.js";
 
 export const challengeRoutes = new Hono<AppEnv>();
@@ -45,60 +45,41 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
 
   if (!challenge) return c.json({ error: "Challenge not found" }, 404);
 
-  // Get participants
-  const participants = await db
-    .select({
-      github_username: challengeParticipants.github_username,
-      is_ghost: challengeParticipants.is_ghost,
-      user_id: challengeParticipants.user_id,
-    })
-    .from(challengeParticipants)
-    .where(eq(challengeParticipants.challenge_id, challenge.id));
+  // Only refresh the logged-in user's data (not all participants)
+  const authedUser = c.get("user") as { username?: string } | undefined;
+  if (authedUser?.username) {
+    try { await refreshCommitData(authedUser.username); } catch {}
+  }
 
-  // Refresh and get commit counts for each participant
   const startDate = challenge.start_date.toISOString().slice(0, 10);
   const endDate = challenge.end_date
     ? challenge.end_date.toISOString().slice(0, 10)
     : new Date().toISOString().slice(0, 10);
 
-  const leaderboard = await Promise.all(
-    participants.map(async (p) => {
-      // Non-fatal: don't let a GitHub API failure break the entire page
-      try {
-        await refreshCommitData(p.github_username);
-      } catch {
-        // Continue with whatever data we have cached
-      }
+  // Single query: participants + commit counts + avatars
+  const rows = await db.execute(sql`
+    SELECT
+      cp.github_username,
+      cp.is_ghost,
+      COALESCE(SUM(cs.commit_count), 0)::int AS commit_count,
+      COALESCE(u.avatar_url, 'https://github.com/' || cp.github_username || '.png') AS avatar_url
+    FROM challenge_participants cp
+    LEFT JOIN commit_snapshots cs
+      ON cs.github_username = cp.github_username
+      AND cs.date >= ${startDate}
+      AND cs.date <= ${endDate}
+    LEFT JOIN users u ON u.id = cp.user_id
+    WHERE cp.challenge_id = ${challenge.id}
+    GROUP BY cp.github_username, cp.is_ghost, u.avatar_url
+    ORDER BY commit_count DESC
+  `);
 
-      // Get avatar URL
-      let avatarUrl: string | null = null;
-      if (p.user_id) {
-        const [user] = await db
-          .select({ avatar_url: users.avatar_url })
-          .from(users)
-          .where(eq(users.id, p.user_id))
-          .limit(1);
-        avatarUrl = user?.avatar_url ?? null;
-      } else {
-        avatarUrl = `https://github.com/${p.github_username}.png`;
-      }
-
-      const commitCount = await getCommitCount(
-        p.github_username,
-        startDate,
-        endDate
-      );
-
-      return {
-        github_username: p.github_username,
-        avatar_url: avatarUrl,
-        commit_count: commitCount,
-        is_ghost: p.is_ghost,
-      };
-    })
-  );
-
-  leaderboard.sort((a, b) => b.commit_count - a.commit_count);
+  const leaderboard = rows.rows.map((r: any) => ({
+    github_username: r.github_username,
+    avatar_url: r.avatar_url,
+    commit_count: Number(r.commit_count),
+    is_ghost: r.is_ghost,
+  }));
 
   return c.json({
     id: challenge.id,

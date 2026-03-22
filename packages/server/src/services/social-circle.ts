@@ -11,28 +11,11 @@ export async function fetchAndCacheFollowing(
   userId: number,
   username: string,
   token: string
-): Promise<string[]> {
-  // Check cache freshness
-  const [latest] = await db
-    .select({ fetched_at: socialCircles.fetched_at })
-    .from(socialCircles)
-    .where(eq(socialCircles.user_id, userId))
-    .orderBy(desc(socialCircles.fetched_at))
-    .limit(1);
-
-  if (latest && Date.now() - latest.fetched_at.getTime() < SOCIAL_CIRCLE_CACHE_MS) {
-    // Return cached
-    const cached = await db
-      .select({ following_username: socialCircles.following_username })
-      .from(socialCircles)
-      .where(eq(socialCircles.user_id, userId));
-    return cached.map((r) => r.following_username);
-  }
-
+): Promise<void> {
   // Fetch from GitHub
   const following: { login: string; avatar_url: string }[] = [];
   let page = 1;
-  const maxPages = 5; // Cap at 500 users
+  const maxPages = 5;
 
   while (page <= maxPages) {
     const res = await fetch(
@@ -55,7 +38,7 @@ export async function fetchAndCacheFollowing(
     page++;
   }
 
-  if (following.length === 0) return [];
+  if (following.length === 0) return;
 
   // Clear old cache and insert new
   await db.delete(socialCircles).where(eq(socialCircles.user_id, userId));
@@ -71,19 +54,42 @@ export async function fetchAndCacheFollowing(
       }))
     );
   }
-
-  return following.map((f) => f.login);
 }
 
 /**
  * Get the user's rank among people they follow for the current week.
+ * Always serves from cache. Triggers a background refresh if stale.
  */
 export async function getSocialCircleRanking(
   userId: number,
   username: string,
   token: string
 ): Promise<SocialCircleData> {
-  const followingUsernames = await fetchAndCacheFollowing(userId, username, token);
+  // Check cache age
+  const [latest] = await db
+    .select({ fetched_at: socialCircles.fetched_at })
+    .from(socialCircles)
+    .where(eq(socialCircles.user_id, userId))
+    .orderBy(desc(socialCircles.fetched_at))
+    .limit(1);
+
+  const isStale = !latest || Date.now() - latest.fetched_at.getTime() >= SOCIAL_CIRCLE_CACHE_MS;
+
+  // If stale, kick off background refresh (non-blocking)
+  if (isStale) {
+    fetchAndCacheFollowing(userId, username, token).catch(() => {});
+  }
+
+  // Always serve from cache
+  const cached = await db
+    .select({
+      following_username: socialCircles.following_username,
+      avatar_url: socialCircles.avatar_url,
+    })
+    .from(socialCircles)
+    .where(eq(socialCircles.user_id, userId));
+
+  const followingUsernames = cached.map((r) => r.following_username);
 
   if (followingUsernames.length === 0) {
     return { entries: [], your_rank: 0, total: 0 };
@@ -118,18 +124,8 @@ export async function getSocialCircleRanking(
     .groupBy(commitSnapshots.github_username);
 
   const commitMap = new Map(commits.map((r) => [r.github_username, Number(r.total)]));
-
-  // Get avatar URLs from cache
-  const cached = await db
-    .select({
-      following_username: socialCircles.following_username,
-      avatar_url: socialCircles.avatar_url,
-    })
-    .from(socialCircles)
-    .where(eq(socialCircles.user_id, userId));
   const avatarMap = new Map(cached.map((r) => [r.following_username, r.avatar_url]));
 
-  // Build entries: following + user
   const entries = allUsernames.map((u) => ({
     github_username: u,
     avatar_url: avatarMap.get(u) ?? `https://github.com/${u}.png`,
@@ -137,14 +133,13 @@ export async function getSocialCircleRanking(
     is_you: u === username,
   }));
 
-  // Sort by commits descending
   entries.sort((a, b) => b.commit_count - a.commit_count);
 
   const ranked = entries.map((e, i) => ({ ...e, rank: i + 1 }));
   const yourRank = ranked.find((e) => e.is_you)?.rank ?? 0;
 
   return {
-    entries: ranked.slice(0, 50), // Top 50
+    entries: ranked.slice(0, 50),
     your_rank: yourRank,
     total: ranked.length,
   };
