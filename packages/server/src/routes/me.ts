@@ -46,13 +46,17 @@ meRoutes.get("/dashboard", async (c) => {
 
   if (!user) return c.json({ error: "User not found" }, 404);
 
-  await refreshCommitData(username, user.access_token);
+  try {
+    await refreshCommitData(username, user.access_token);
+  } catch (e) {
+    console.error("refreshCommitData failed:", e);
+  }
 
   const now = new Date();
   const todayStr = today();
 
   const [stats, challengeRows, streakInfo, contribDays] = await Promise.all([
-    getUserStatsFast(username),
+    getUserStatsFast(username).catch(() => ({ today: 0, this_week: 0, this_month: 0, this_year: 0, all_time: 0 })),
     db.execute(sql`
       WITH user_challenges AS (
         SELECT c.id, c.name, c.type, c.share_slug, c.end_date, c.start_date, c.created_at
@@ -85,8 +89,8 @@ meRoutes.get("/dashboard", async (c) => {
         COALESCE((SELECT commits FROM participant_commits pc WHERE pc.challenge_id = uc.id ORDER BY commits DESC LIMIT 1), 0) AS leader_commits
       FROM user_challenges uc
       ORDER BY uc.created_at DESC
-    `),
-    computeStreaks(username, userId),
+    `).catch((e) => { console.error("challenge query failed:", e); return { rows: [] }; }),
+    computeStreaks(username, userId).catch(() => null),
     (() => {
       const yearAgo = new Date(now);
       yearAgo.setFullYear(yearAgo.getFullYear() - 1);
@@ -102,7 +106,7 @@ meRoutes.get("/dashboard", async (c) => {
           )
         )
         .orderBy(commitSnapshots.date);
-    })(),
+    })().catch(() => []),
   ]);
 
   const contributions = buildContributionGraph(contribDays, now);
