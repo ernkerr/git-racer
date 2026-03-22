@@ -6,7 +6,7 @@
   "functions": {
     "api/index.ts": {
       "includeFiles": "packages/{server,shared}/src/**",
-      "maxDuration": 60
+      "maxDuration": 300
     }
   },
   "routes": [

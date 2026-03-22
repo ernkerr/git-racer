@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { requireAuth } from "../middleware/auth.js";
 import { db } from "../db/index.js";
-import { users, challenges, challengeParticipants, commitSnapshots } from "../db/schema.js";
-import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
-import { getUserStats, getCommitCount, refreshCommitData } from "../services/commits.js";
+import { users, commitSnapshots } from "../db/schema.js";
+import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
+import { getUserStats, refreshCommitData } from "../services/commits.js";
 import { computeStreaks } from "../services/streaks.js";
 import type { AppEnv } from "../types.js";
 import type { ContributionDay } from "@git-racer/shared";
@@ -50,67 +50,57 @@ meRoutes.get("/stats", async (c) => {
 });
 
 meRoutes.get("/challenges", async (c) => {
-  const { sub: userId, username } = c.get("user");
+  const { username } = c.get("user");
+  const todayStr = new Date().toISOString().slice(0, 10);
 
-  // Get all challenges where the user is a participant
-  const rows = await db
-    .select({
-      id: challenges.id,
-      name: challenges.name,
-      type: challenges.type,
-      share_slug: challenges.share_slug,
-      end_date: challenges.end_date,
-      start_date: challenges.start_date,
-    })
-    .from(challenges)
-    .innerJoin(
-      challengeParticipants,
-      eq(challenges.id, challengeParticipants.challenge_id)
+  // Single query: get all user's challenges with participant counts and commit leaders
+  const challengeRows = await db.execute(sql`
+    WITH user_challenges AS (
+      SELECT c.id, c.name, c.type, c.share_slug, c.end_date, c.start_date, c.created_at
+      FROM challenges c
+      INNER JOIN challenge_participants cp ON cp.challenge_id = c.id
+      WHERE cp.github_username = ${username}
+    ),
+    participant_commits AS (
+      SELECT
+        cp.challenge_id,
+        cp.github_username,
+        COALESCE(SUM(cs.commit_count), 0)::int AS commits
+      FROM challenge_participants cp
+      INNER JOIN user_challenges uc ON uc.id = cp.challenge_id
+      LEFT JOIN commit_snapshots cs
+        ON cs.github_username = cp.github_username
+        AND cs.date >= uc.start_date::date::text
+        AND cs.date <= COALESCE(uc.end_date::date::text, ${todayStr})
+      GROUP BY cp.challenge_id, cp.github_username
     )
-    .where(eq(challengeParticipants.github_username, username))
-    .orderBy(desc(challenges.created_at));
+    SELECT
+      uc.id,
+      uc.name,
+      uc.type,
+      uc.share_slug,
+      uc.end_date,
+      (SELECT COUNT(*)::int FROM challenge_participants cp2 WHERE cp2.challenge_id = uc.id) AS participant_count,
+      COALESCE((SELECT commits FROM participant_commits pc WHERE pc.challenge_id = uc.id AND pc.github_username = ${username}), 0) AS your_commits,
+      COALESCE((SELECT github_username FROM participant_commits pc WHERE pc.challenge_id = uc.id ORDER BY commits DESC LIMIT 1), '') AS leader_username,
+      COALESCE((SELECT commits FROM participant_commits pc WHERE pc.challenge_id = uc.id ORDER BY commits DESC LIMIT 1), 0) AS leader_commits
+    FROM user_challenges uc
+    ORDER BY uc.created_at DESC
+  `);
 
-  // For each challenge, get participant count and leader
-  const result = await Promise.all(
-    rows.map(async (challenge) => {
-      const participants = await db
-        .select({
-          github_username: challengeParticipants.github_username,
-        })
-        .from(challengeParticipants)
-        .where(eq(challengeParticipants.challenge_id, challenge.id));
-
-      // Get commit counts for each participant within the challenge period
-      const startDate = challenge.start_date.toISOString().slice(0, 10);
-      const endDate = challenge.end_date
-        ? challenge.end_date.toISOString().slice(0, 10)
-        : new Date().toISOString().slice(0, 10);
-
-      const counts = await Promise.all(
-        participants.map(async (p) => ({
-          username: p.github_username,
-          commits: await getCommitCount(p.github_username, startDate, endDate),
-        }))
-      );
-
-      counts.sort((a, b) => b.commits - a.commits);
-      const myCommits = counts.find((c) => c.username === username)?.commits ?? 0;
-
-      return {
-        id: challenge.id,
-        name: challenge.name,
-        type: challenge.type,
-        share_slug: challenge.share_slug,
-        end_date: challenge.end_date?.toISOString() ?? null,
-        your_commits: myCommits,
-        leader_username: counts[0]?.username ?? "",
-        leader_commits: counts[0]?.commits ?? 0,
-        participant_count: participants.length,
-      };
-    })
+  return c.json(
+    challengeRows.rows.map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      type: r.type,
+      share_slug: r.share_slug,
+      end_date: r.end_date?.toISOString?.() ?? r.end_date ?? null,
+      your_commits: Number(r.your_commits),
+      leader_username: r.leader_username,
+      leader_commits: Number(r.leader_commits),
+      participant_count: Number(r.participant_count),
+    }))
   );
-
-  return c.json(result);
 });
 
 meRoutes.get("/streaks", async (c) => {
@@ -185,6 +175,130 @@ meRoutes.get("/contributions", async (c) => {
   }
 
   return c.json({ days: result, total_year: totalYear });
+});
+
+/**
+ * Consolidated dashboard endpoint — returns stats, challenges, streaks,
+ * and contributions in a single request instead of 4 separate ones.
+ */
+meRoutes.get("/dashboard", async (c) => {
+  const { sub: userId, username } = c.get("user");
+
+  const [user] = await db
+    .select({ access_token: users.access_token })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user) return c.json({ error: "User not found" }, 404);
+
+  // Refresh commit data once (shared by stats + contributions)
+  await refreshCommitData(username, user.access_token);
+
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+
+  // Run all queries in parallel
+  const [stats, challengeRows, streakInfo, contribDays] = await Promise.all([
+    getUserStats(username),
+    // Challenges — single SQL query
+    db.execute(sql`
+      WITH user_challenges AS (
+        SELECT c.id, c.name, c.type, c.share_slug, c.end_date, c.start_date, c.created_at
+        FROM challenges c
+        INNER JOIN challenge_participants cp ON cp.challenge_id = c.id
+        WHERE cp.github_username = ${username}
+      ),
+      participant_commits AS (
+        SELECT
+          cp.challenge_id,
+          cp.github_username,
+          COALESCE(SUM(cs.commit_count), 0)::int AS commits
+        FROM challenge_participants cp
+        INNER JOIN user_challenges uc ON uc.id = cp.challenge_id
+        LEFT JOIN commit_snapshots cs
+          ON cs.github_username = cp.github_username
+          AND cs.date >= uc.start_date::date::text
+          AND cs.date <= COALESCE(uc.end_date::date::text, ${todayStr})
+        GROUP BY cp.challenge_id, cp.github_username
+      )
+      SELECT
+        uc.id,
+        uc.name,
+        uc.type,
+        uc.share_slug,
+        uc.end_date,
+        (SELECT COUNT(*)::int FROM challenge_participants cp2 WHERE cp2.challenge_id = uc.id) AS participant_count,
+        COALESCE((SELECT commits FROM participant_commits pc WHERE pc.challenge_id = uc.id AND pc.github_username = ${username}), 0) AS your_commits,
+        COALESCE((SELECT github_username FROM participant_commits pc WHERE pc.challenge_id = uc.id ORDER BY commits DESC LIMIT 1), '') AS leader_username,
+        COALESCE((SELECT commits FROM participant_commits pc WHERE pc.challenge_id = uc.id ORDER BY commits DESC LIMIT 1), 0) AS leader_commits
+      FROM user_challenges uc
+      ORDER BY uc.created_at DESC
+    `),
+    computeStreaks(username, userId),
+    // Contributions — 365 days
+    (() => {
+      const yearAgo = new Date(now);
+      yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+      yearAgo.setDate(yearAgo.getDate() + 1);
+      return db
+        .select({ date: commitSnapshots.date, count: commitSnapshots.commit_count })
+        .from(commitSnapshots)
+        .where(
+          and(
+            eq(commitSnapshots.github_username, username),
+            gte(commitSnapshots.date, yearAgo.toISOString().slice(0, 10)),
+            lte(commitSnapshots.date, todayStr)
+          )
+        )
+        .orderBy(commitSnapshots.date);
+    })(),
+  ]);
+
+  // Build contributions graph
+  const yearAgo = new Date(now);
+  yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+  yearAgo.setDate(yearAgo.getDate() + 1);
+  const dayMap = new Map(contribDays.map((d) => [d.date, d.count]));
+  const maxCount = Math.max(1, ...contribDays.map((d) => d.count));
+  const contributionDays: ContributionDay[] = [];
+  let totalYear = 0;
+  const cursor = new Date(yearAgo);
+  while (cursor <= now) {
+    const dateKey = cursor.toISOString().slice(0, 10);
+    const count = dayMap.get(dateKey) ?? 0;
+    totalYear += count;
+    let level = 0;
+    if (count > 0) {
+      const ratio = count / maxCount;
+      if (ratio > 0.75) level = 4;
+      else if (ratio > 0.5) level = 3;
+      else if (ratio > 0.25) level = 2;
+      else level = 1;
+    }
+    contributionDays.push({ date: dateKey, count, level });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  // Format challenges
+  const challenges = challengeRows.rows.map((r: any) => ({
+    id: r.id,
+    name: r.name,
+    type: r.type,
+    share_slug: r.share_slug,
+    end_date: r.end_date?.toISOString?.() ?? r.end_date ?? null,
+    your_commits: Number(r.your_commits),
+    leader_username: r.leader_username,
+    leader_commits: Number(r.leader_commits),
+    participant_count: Number(r.participant_count),
+  }));
+
+  return c.json({
+    stats,
+    challenges,
+    streaks: streakInfo,
+    contributions: { days: contributionDays, total_year: totalYear },
+  });
 });
 
 meRoutes.get("/share", async (c) => {

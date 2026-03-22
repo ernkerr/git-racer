@@ -43,26 +43,24 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    // Load core data in parallel
-    Promise.all([
-      api<UserStats>("/me/stats"),
-      api<ActiveChallenge[]>("/me/challenges"),
-      api<UserStreakInfo>("/me/streaks"),
-      api<ContributionGraphData>("/me/contributions"),
-      api<LeagueGroup>("/leagues/current").catch(() => null),
-      api<FamousDevBenchmark[]>("/benchmarks?period=week").catch(() => []),
-    ])
-      .then(([s, c, st, cont, l, b]) => {
-        setStats(s);
-        setChallenges(c);
-        setStreaks(st);
-        setContributions(cont);
-        setLeague(l);
-        setBenchmarks(b);
+    // Single consolidated call for core dashboard data
+    api<{
+      stats: UserStats;
+      challenges: ActiveChallenge[];
+      streaks: UserStreakInfo;
+      contributions: ContributionGraphData;
+    }>("/me/dashboard")
+      .then((data) => {
+        setStats(data.stats);
+        setChallenges(data.challenges);
+        setStreaks(data.streaks);
+        setContributions(data.contributions);
       })
       .finally(() => setLoading(false));
 
-    // Load social circle separately (slower — needs GitHub API)
+    // These load independently (separate APIs / slower)
+    api<LeagueGroup>("/leagues/current").then(setLeague).catch(() => {});
+    api<FamousDevBenchmark[]>("/benchmarks?period=week").then(setBenchmarks).catch(() => []);
     api<SocialCircleData>("/social/circle")
       .then(setSocialData)
       .catch(() => {})

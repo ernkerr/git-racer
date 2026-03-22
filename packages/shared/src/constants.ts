@@ -1,5 +1,5 @@
-/** How long before cached commit data is considered stale (15 minutes) */
-export const CACHE_TTL_MS = 15 * 60 * 1000;
+/** How long before cached commit data is considered stale (4 hours) */
+export const CACHE_TTL_MS = 4 * 60 * 60 * 1000;
 
 /** Length of the share slug for challenges */
 export const SLUG_LENGTH = 8;

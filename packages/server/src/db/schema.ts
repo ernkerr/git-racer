@@ -9,6 +9,7 @@ import {
   date,
   jsonb,
   unique,
+  index,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -50,7 +51,11 @@ export const challengeParticipants = pgTable(
     is_ghost: boolean("is_ghost").default(false).notNull(),
     joined_at: timestamp("joined_at").defaultNow().notNull(),
   },
-  (t) => [unique().on(t.challenge_id, t.github_username)]
+  (t) => [
+    unique().on(t.challenge_id, t.github_username),
+    index("idx_cp_challenge_id").on(t.challenge_id),
+    index("idx_cp_github_username").on(t.github_username),
+  ]
 );
 
 export const commitSnapshots = pgTable(
@@ -62,7 +67,11 @@ export const commitSnapshots = pgTable(
     commit_count: integer("commit_count").notNull().default(0),
     fetched_at: timestamp("fetched_at").defaultNow().notNull(),
   },
-  (t) => [unique().on(t.github_username, t.date)]
+  (t) => [
+    unique().on(t.github_username, t.date),
+    index("idx_cs_username_date").on(t.github_username, t.date),
+    index("idx_cs_date").on(t.date),
+  ]
 );
 
 export const suggestedOpponents = pgTable("suggested_opponents", {
@@ -97,7 +106,11 @@ export const leagueMemberships = pgTable(
     demoted: boolean("demoted").default(false),
     created_at: timestamp("created_at").defaultNow().notNull(),
   },
-  (t) => [unique().on(t.week_start, t.github_username)]
+  (t) => [
+    unique().on(t.week_start, t.github_username),
+    index("idx_lm_week_start").on(t.week_start),
+    index("idx_lm_user_id").on(t.user_id),
+  ]
 );
 
 export const famousDevs = pgTable("famous_devs", {
