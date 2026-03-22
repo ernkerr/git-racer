@@ -55,6 +55,9 @@ leaderboardRoutes.get("/", async (c) => {
         FROM event_committers
         WHERE date >= ${start} AND date <= ${end}
         GROUP BY github_username
+        -- Filter out automated accounts that push thousands of times per day.
+        -- A real developer rarely exceeds 200 pushes in a day; 500/day is generous.
+        HAVING MAX(push_count) <= 500
       ) ec
       FULL OUTER JOIN (
         SELECT github_username, SUM(commit_count) AS commits

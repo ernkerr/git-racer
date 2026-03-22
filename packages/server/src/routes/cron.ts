@@ -422,11 +422,16 @@ async function enrichTopUsers(
   topN: number = 10
 ): Promise<{ users_enriched: number }> {
   try {
-    // Find the top N committers from the event_committers table for the given date
+    // Find the top N committers from the event_committers table for the given date.
+    // Filter out automated accounts (push_count > 500/day is not human behavior)
+    // so we enrich real developers, not spam accounts.
     const topRows = await db.execute(sql`
       SELECT github_username, commit_count
       FROM event_committers
       WHERE date = ${date}
+        AND push_count <= 500
+        AND github_username NOT LIKE '%[bot]'
+        AND github_username NOT LIKE '%-bot'
       ORDER BY commit_count DESC
       LIMIT ${topN}
     `);
