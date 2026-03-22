@@ -30,44 +30,37 @@ export async function getStarredComparisons(
 
   const allUsernames = [username, ...starred.map((s) => s.github_username)];
 
-  // Try event_committers first (GH Archive / real-time data)
-  const eventCounts = await db.execute(sql`
+  // Blend both sources: use GREATEST of event_committers (GH Archive)
+  // and commit_snapshots (real GraphQL data for app users)
+  const blended = await db.execute(sql`
     SELECT
       github_username,
-      COALESCE(SUM(commit_count), 0)::int AS total
-    FROM event_committers
-    WHERE github_username IN (${sql.join(allUsernames.map((u) => sql`${u}`), sql`, `)})
-      AND date >= ${start}
-      AND date <= ${end}
-    GROUP BY github_username
+      GREATEST(COALESCE(ec_total, 0), COALESCE(cs_total, 0))::int AS total
+    FROM (
+      SELECT
+        COALESCE(ec.github_username, cs.github_username) AS github_username,
+        ec.total AS ec_total,
+        cs.total AS cs_total
+      FROM (
+        SELECT github_username, SUM(commit_count)::int AS total
+        FROM event_committers
+        WHERE date >= ${start} AND date <= ${end}
+          AND github_username IN (${sql.join(allUsernames.map((u) => sql`${u}`), sql`, `)})
+        GROUP BY github_username
+      ) ec
+      FULL OUTER JOIN (
+        SELECT github_username, SUM(commit_count)::int AS total
+        FROM commit_snapshots
+        WHERE date >= ${start} AND date <= ${end}
+          AND github_username IN (${sql.join(allUsernames.map((u) => sql`${u}`), sql`, `)})
+        GROUP BY github_username
+      ) cs ON ec.github_username = cs.github_username
+    ) merged
   `);
 
-  let commitMap = new Map(
-    (eventCounts.rows as any[]).map((r) => [r.github_username, Number(r.total)])
+  const commitMap = new Map(
+    (blended.rows as any[]).map((r) => [r.github_username, Number(r.total)])
   );
-
-  // Fall back to commit_snapshots if no event data
-  if (commitMap.size === 0) {
-    const snapCounts = await db
-      .select({
-        github_username: commitSnapshots.github_username,
-        total: sql<number>`coalesce(sum(${commitSnapshots.commit_count}), 0)`.as("total"),
-      })
-      .from(commitSnapshots)
-      .where(
-        and(
-          gte(commitSnapshots.date, start),
-          lte(commitSnapshots.date, end),
-          sql`${commitSnapshots.github_username} IN (${sql.join(
-            allUsernames.map((u) => sql`${u}`),
-            sql`, `
-          )})`
-        )
-      )
-      .groupBy(commitSnapshots.github_username);
-
-    commitMap = new Map(snapCounts.map((r) => [r.github_username, Number(r.total)]));
-  }
 
   const yourCommits = commitMap.get(username) ?? 0;
 

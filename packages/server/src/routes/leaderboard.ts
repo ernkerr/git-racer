@@ -5,82 +5,69 @@ import { periodRange } from "../lib/dates.js";
 
 export const leaderboardRoutes = new Hono();
 
+const BOT_FILTER = sql`
+  AND github_username NOT LIKE '%[bot]'
+  AND github_username NOT LIKE '%-bot'
+  AND github_username NOT IN ('dependabot', 'renovate', 'github-actions', 'greenkeeper', 'snyk-bot', 'codecov', 'imgbot', 'netlify', 'vercel', 'Copilot', 'github-merge-queue')
+`;
+
 leaderboardRoutes.get("/", async (c) => {
   const period = c.req.query("period") || "week";
   const limit = Math.min(parseInt(c.req.query("limit") || "100", 10), 100);
-  const { start, end } = periodRange(period);
+  let { start, end } = periodRange(period);
 
-  // For the "day" period, use the most recent date in event_committers
-  // since today's data may not be fully ingested yet.
-  // For other periods, use the full date range.
-  const eventRows = await db.execute(sql`
-    SELECT
-      ec.github_username,
-      COALESCE(SUM(ec.commit_count), 0)::int AS commit_count,
-      (array_agg(ec.avatar_url ORDER BY ec.last_seen_at DESC))[1] AS avatar_url
-    FROM event_committers ec
-    WHERE ec.date >= ${start}
-      AND ec.date <= ${end}
-      AND ec.github_username NOT LIKE '%[bot]'
-      AND ec.github_username NOT LIKE '%-bot'
-      AND ec.github_username NOT IN ('dependabot', 'renovate', 'github-actions', 'greenkeeper', 'snyk-bot', 'codecov', 'imgbot', 'netlify', 'vercel', 'Copilot', 'github-merge-queue')
-    GROUP BY ec.github_username
-    ORDER BY commit_count DESC
-    LIMIT ${limit}
-  `);
-
-  // If no event data for this range, try the most recent day available
-  if (eventRows.rows.length === 0 && period === "day") {
-    const recentRows = await db.execute(sql`
-      SELECT
-        ec.github_username,
-        ec.commit_count,
-        ec.avatar_url
-      FROM event_committers ec
-      WHERE ec.date = (SELECT MAX(date) FROM event_committers)
-        AND ec.github_username NOT LIKE '%[bot]'
-        AND ec.github_username NOT LIKE '%-bot'
-        AND ec.github_username NOT IN ('dependabot', 'renovate', 'github-actions', 'greenkeeper', 'snyk-bot', 'codecov', 'imgbot', 'netlify', 'vercel', 'Copilot', 'github-merge-queue')
-      ORDER BY ec.commit_count DESC
-      LIMIT ${limit}
+  // For "day" period, if no data for today, use most recent day available
+  if (period === "day") {
+    const hasData = await db.execute(sql`
+      SELECT 1 FROM event_committers WHERE date >= ${start} AND date <= ${end} LIMIT 1
     `);
-
-    if (recentRows.rows.length > 0) {
-      return c.json(
-        recentRows.rows.map((r: any) => ({
-          github_username: r.github_username,
-          avatar_url: r.avatar_url,
-          commit_count: Number(r.commit_count),
-        }))
-      );
+    if (hasData.rows.length === 0) {
+      const maxDate = await db.execute(sql`
+        SELECT MAX(date) AS d FROM event_committers
+      `);
+      if (maxDate.rows.length > 0 && maxDate.rows[0].d) {
+        start = maxDate.rows[0].d as string;
+        end = start;
+      }
     }
   }
 
-  if (eventRows.rows.length > 0) {
-    return c.json(
-      eventRows.rows.map((r: any) => ({
-        github_username: r.github_username,
-        avatar_url: r.avatar_url,
-        commit_count: Number(r.commit_count),
-      }))
-    );
-  }
-
-  // Fallback to commit_snapshots if no event data at all
+  // Blend both data sources:
+  // - event_committers: GH Archive public push data (everyone)
+  // - commit_snapshots: real commit data from GraphQL (app users only)
+  // Use GREATEST so app users show their real (higher) commit count
   const rows = await db.execute(sql`
     SELECT
-      cs.github_username,
-      COALESCE(SUM(cs.commit_count), 0)::int AS commit_count,
-      COALESCE(so.avatar_url, u.avatar_url, 'https://github.com/' || cs.github_username || '.png') AS avatar_url
-    FROM commit_snapshots cs
-    LEFT JOIN suggested_opponents so ON so.github_username = cs.github_username
-    LEFT JOIN users u ON u.github_username = cs.github_username
-    WHERE cs.date >= ${start}
-      AND cs.date <= ${end}
-      AND cs.github_username NOT LIKE '%[bot]'
-      AND cs.github_username NOT LIKE '%-bot'
-      AND cs.github_username NOT IN ('dependabot', 'renovate', 'github-actions', 'greenkeeper', 'snyk-bot', 'codecov', 'imgbot', 'netlify', 'vercel')
-    GROUP BY cs.github_username, so.avatar_url, u.avatar_url
+      github_username,
+      commit_count,
+      avatar_url
+    FROM (
+      SELECT
+        COALESCE(ec.github_username, cs.github_username) AS github_username,
+        GREATEST(
+          COALESCE(ec.commits, 0),
+          COALESCE(cs.commits, 0)
+        )::int AS commit_count,
+        COALESCE(ec.avatar_url, u.avatar_url, 'https://github.com/' || COALESCE(ec.github_username, cs.github_username) || '.png') AS avatar_url
+      FROM (
+        SELECT github_username, SUM(commit_count) AS commits,
+          (array_agg(avatar_url ORDER BY last_seen_at DESC))[1] AS avatar_url
+        FROM event_committers
+        WHERE date >= ${start} AND date <= ${end}
+        GROUP BY github_username
+      ) ec
+      FULL OUTER JOIN (
+        SELECT github_username, SUM(commit_count) AS commits
+        FROM commit_snapshots
+        WHERE date >= ${start} AND date <= ${end}
+        GROUP BY github_username
+      ) cs ON ec.github_username = cs.github_username
+      LEFT JOIN users u ON u.github_username = COALESCE(ec.github_username, cs.github_username)
+      WHERE COALESCE(ec.github_username, cs.github_username) NOT LIKE '%[bot]'
+        AND COALESCE(ec.github_username, cs.github_username) NOT LIKE '%-bot'
+        AND COALESCE(ec.github_username, cs.github_username) NOT IN ('dependabot', 'renovate', 'github-actions', 'greenkeeper', 'snyk-bot', 'codecov', 'imgbot', 'netlify', 'vercel', 'Copilot', 'github-merge-queue')
+    ) merged
+    WHERE commit_count > 0
     ORDER BY commit_count DESC
     LIMIT ${limit}
   `);
