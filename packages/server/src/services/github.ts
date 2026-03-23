@@ -176,6 +176,8 @@ export async function fetchContributionDays(
   const totalCommits = collection.totalCommitContributions;
   const totalContribs = collection.contributionCalendar.totalContributions;
 
+  console.log(`[github] ${username}: totalCommits=${totalCommits} totalContribs=${totalContribs} from=${from.toISOString()} to=${to.toISOString()}`);
+
   // Flatten the nested weeks -> days structure into a simple list.
   const rawDays: { date: string; count: number }[] = [];
   for (const week of collection.contributionCalendar.weeks) {

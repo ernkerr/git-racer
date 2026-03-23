@@ -38,7 +38,10 @@ export async function refreshCommitData(
 
   if (latest.length > 0) {
     const ageMs = Date.now() - latest[0].fetched_at.getTime();
-    if (ageMs < CACHE_TTL_MS) return true; // Still fresh
+    if (ageMs < CACHE_TTL_MS) {
+      console.log(`[commits] ${githubUsername}: cache fresh (age=${Math.round(ageMs/1000)}s)`);
+      return true;
+    }
   }
 
   const now = new Date();
