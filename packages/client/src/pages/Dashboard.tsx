@@ -130,10 +130,16 @@ export default function Dashboard() {
               <Link
                 key={ch.id}
                 to={`/c/${ch.share_slug}`}
-                className={`retro-box bg-arcade-surface p-4 block hover:-translate-y-px transition-all ${
-                  ch.leader_username && ch.leader_commits > ch.your_commits ? "border-arcade-pink" : ""
-                }`}
-                style={ch.leader_username && ch.leader_commits > ch.your_commits ? { borderColor: "#FF006E" } : undefined}
+                className="retro-box bg-arcade-surface p-4 block hover:-translate-y-px transition-all"
+                style={
+                  ch.leader_username && ch.leader_commits > ch.your_commits
+                    ? { borderColor: "#DC2626" }
+                    : ch.leader_username && ch.leader_commits < ch.your_commits
+                    ? { borderColor: "#16A34A" }
+                    : ch.leader_username && ch.leader_commits === ch.your_commits
+                    ? { borderColor: "#EAB308" }
+                    : undefined
+                }
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -148,14 +154,16 @@ export default function Dashboard() {
                     <p className="font-pixel text-3xl tabular-nums text-arcade-white">
                       {ch.your_commits}
                     </p>
-                    <p className={`font-pixel text-xs ${
-                      ch.leader_username === "" ? "text-arcade-gray"
-                      : ch.leader_commits > ch.your_commits ? "text-arcade-pink"
-                      : "text-arcade-cyan"
-                    }`}>
+                    <p className="font-pixel text-xs" style={{
+                      color: ch.leader_username === "" ? "#78716C"
+                        : ch.leader_commits > ch.your_commits ? "#DC2626"
+                        : ch.leader_commits < ch.your_commits ? "#16A34A"
+                        : "#EAB308"
+                    }}>
                       {ch.leader_username === "" ? "" : ch.leader_commits > ch.your_commits
                         ? `${ch.leader_commits - ch.your_commits} BEHIND`
-                        : "YOU LEAD"}
+                        : ch.leader_commits < ch.your_commits ? "YOU LEAD"
+                        : "TIED"}
                     </p>
                   </div>
                 </div>
