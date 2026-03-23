@@ -81,30 +81,30 @@ export default function GitHubUserSearch({ value, onChange, placeholder = "Searc
           onChange={handleInputChange}
           onFocus={() => results.length > 0 && setOpen(true)}
           placeholder={placeholder}
-          className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+          className="input-arcade w-full px-3 py-2"
         />
         {loading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <div className="w-4 h-4 border-2 border-gray-500 border-t-green-400 rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-arcade-gray border-t-arcade-cyan rounded-full animate-spin" />
           </div>
         )}
       </div>
 
       {open && results.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full bg-gray-900 border border-gray-700 rounded-md shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+        <div className="retro-box absolute z-50 mt-1 w-full bg-arcade-surface overflow-hidden max-h-64 overflow-y-auto">
           {results.map((user) => (
             <button
               key={user.id}
               type="button"
               onClick={() => selectUser(user)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-800 transition-colors text-left"
+              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-arcade-bg transition-colors text-left"
             >
               <img
                 src={user.avatar_url}
                 alt={user.login}
-                className="w-8 h-8 rounded-full flex-shrink-0"
+                className="w-8 h-8 rounded-none border border-arcade-gray shrink-0"
               />
-              <span className="text-white text-sm font-medium truncate">{user.login}</span>
+              <span className="font-mono text-sm text-arcade-white truncate">{user.login}</span>
             </button>
           ))}
         </div>

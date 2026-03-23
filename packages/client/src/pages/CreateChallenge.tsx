@@ -4,6 +4,12 @@ import { api } from "../lib/api.ts";
 import type { ChallengeType, DurationType, SuggestedOpponent } from "@git-racer/shared";
 import GitHubUserSearch from "../components/GitHubUserSearch.tsx";
 
+const DURATION_LABELS: Record<DurationType, string> = {
+  fixed: "FIXED",
+  ongoing: "ONGOING",
+  goal: "GOAL",
+};
+
 export default function CreateChallenge() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -72,7 +78,6 @@ export default function CreateChallenge() {
   };
 
   const selectSuggested = (username: string) => {
-    // Fill the first empty slot, or add a new one
     const emptyIdx = opponents.findIndex((o) => !o.trim());
     if (emptyIdx >= 0) {
       updateOpponent(emptyIdx, username);
@@ -85,24 +90,31 @@ export default function CreateChallenge() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Create a Race</h1>
+      <h1 className="font-pixel text-xl text-arcade-yellow mb-8" style={{ textShadow: "2px 2px 0px #000" }}>
+        CREATE A RACE
+      </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Race Name */}
         <div>
-          <label className="block text-sm text-gray-400 mb-1.5">Race Name</label>
+          <label className="block font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">
+            Race Name
+          </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Weekend Sprint"
             required
-            className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+            className="input-arcade w-full px-3 py-2"
           />
         </div>
 
         {/* Race Type */}
         <div>
-          <label className="block text-sm text-gray-400 mb-1.5">Type</label>
+          <label className="block font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">
+            Type
+          </label>
           <div className="flex gap-3">
             {(["1v1", "team"] as const).map((t) => (
               <button
@@ -112,13 +124,13 @@ export default function CreateChallenge() {
                   setType(t);
                   if (t === "1v1") setOpponents([opponents[0] || ""]);
                 }}
-                className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`btn-arcade flex-1 py-2 font-pixel text-[8px] ${
                   type === t
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                    ? "bg-arcade-pink text-black"
+                    : "bg-arcade-surface text-arcade-gray opacity-60"
                 }`}
               >
-                {t === "1v1" ? "1v1" : "Team"}
+                {t === "1v1" ? "1V1" : "TEAM"}
               </button>
             ))}
           </div>
@@ -126,20 +138,22 @@ export default function CreateChallenge() {
 
         {/* Duration Type */}
         <div>
-          <label className="block text-sm text-gray-400 mb-1.5">Duration</label>
+          <label className="block font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">
+            Duration
+          </label>
           <div className="flex gap-3">
             {(["fixed", "ongoing", "goal"] as const).map((d) => (
               <button
                 key={d}
                 type="button"
                 onClick={() => setDurationType(d)}
-                className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`btn-arcade flex-1 py-2 font-pixel text-[8px] ${
                   durationType === d
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                    ? "bg-arcade-pink text-black"
+                    : "bg-arcade-surface text-arcade-gray opacity-60"
                 }`}
               >
-                {d === "fixed" ? "End Date" : d === "ongoing" ? "Ongoing" : "Goal"}
+                {DURATION_LABELS[d]}
               </button>
             ))}
           </div>
@@ -147,30 +161,31 @@ export default function CreateChallenge() {
 
         {/* Opponents */}
         <div>
-          <label className="block text-sm text-gray-400 mb-1.5">
+          <label className="block font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">
             {type === "1v1" ? "Opponent" : "Participants"} (GitHub username)
           </label>
 
           {/* Suggested opponents */}
           {suggested.length > 0 && (
             <div className="mb-3">
-              <p className="text-xs text-gray-500 mb-2">Suggested</p>
+              <p className="font-pixel text-[8px] text-arcade-gray mb-2 uppercase">Suggested</p>
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {suggested.map((s) => (
                   <button
                     key={s.github_username}
                     type="button"
                     onClick={() => selectSuggested(s.github_username)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors flex-shrink-0 ${
+                    className={`btn-arcade flex items-center gap-1.5 px-2.5 py-1.5 font-pixel text-[8px] shrink-0 ${
                       opponents.includes(s.github_username)
-                        ? "bg-green-600/20 border border-green-500/40 text-green-400"
-                        : "bg-gray-800 border border-gray-700 text-gray-300 hover:border-gray-500"
+                        ? "bg-arcade-cyan/20 text-arcade-cyan"
+                        : "bg-arcade-surface text-arcade-gray"
                     }`}
+                    style={opponents.includes(s.github_username) ? { borderColor: "#00F5FF" } : undefined}
                   >
                     <img
                       src={s.avatar_url || `https://github.com/${s.github_username}.png`}
                       alt={s.github_username}
-                      className="w-5 h-5 rounded-full"
+                      className="w-5 h-5 rounded-none"
                     />
                     {s.github_username}
                   </button>
@@ -192,9 +207,9 @@ export default function CreateChallenge() {
                 <button
                   type="button"
                   onClick={() => removeOpponent(i)}
-                  className="text-gray-500 hover:text-red-400 px-2 transition-colors"
+                  className="font-pixel text-[8px] text-arcade-gray hover:text-arcade-pink px-2 transition-colors"
                 >
-                  x
+                  X
                 </button>
               )}
             </div>
@@ -203,12 +218,12 @@ export default function CreateChallenge() {
             <button
               type="button"
               onClick={addOpponent}
-              className="text-sm text-green-400 hover:text-green-300"
+              className="font-pixel text-[8px] text-arcade-cyan hover:text-arcade-yellow transition-colors"
             >
-              + Add participant
+              + ADD PARTICIPANT
             </button>
           )}
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="font-mono text-[10px] text-arcade-gray mt-2">
             They don't need an account — we'll track their public commits.
           </p>
         </div>
@@ -216,13 +231,15 @@ export default function CreateChallenge() {
         {/* End Date (fixed only) */}
         {durationType === "fixed" && (
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">End Date</label>
+            <label className="block font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">
+              End Date
+            </label>
             <input
               type="date"
               value={endDate || defaultEnd}
               onChange={(e) => setEndDate(e.target.value)}
               required
-              className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:outline-none focus:border-green-500"
+              className="input-arcade w-full px-3 py-2"
             />
           </div>
         )}
@@ -230,7 +247,7 @@ export default function CreateChallenge() {
         {/* Goal Target (goal only) */}
         {durationType === "goal" && (
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">
+            <label className="block font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">
               Goal: First to ___ commits
             </label>
             <input
@@ -238,19 +255,21 @@ export default function CreateChallenge() {
               min={1}
               value={goalTarget}
               onChange={(e) => setGoalTarget(parseInt(e.target.value) || 1)}
-              className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:outline-none focus:border-green-500"
+              className="input-arcade w-full px-3 py-2"
             />
           </div>
         )}
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && (
+          <p className="font-pixel text-[8px] text-arcade-pink">{error}</p>
+        )}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 py-2.5 rounded-md font-semibold transition-colors"
+          className="btn-arcade w-full bg-arcade-pink text-black font-pixel text-sm py-4 uppercase"
         >
-          {submitting ? "Creating..." : "Start Race"}
+          {submitting ? "RACING..." : "START RACE!"}
         </button>
       </form>
     </div>

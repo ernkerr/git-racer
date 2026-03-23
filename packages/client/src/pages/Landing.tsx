@@ -10,24 +10,40 @@ export default function Landing() {
 
   return (
     <div>
-      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center mb-12">
-        <h1 className="text-5xl font-bold tracking-tight mb-4">
-          Race your commits.
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center mb-4 scanlines">
+        <h1 className="font-pixel leading-loose mb-8">
+          <span
+            className="block text-2xl md:text-4xl text-arcade-pink"
+            style={{ textShadow: "3px 3px 0px #000" }}
+          >
+            RACE YOUR
+          </span>
+          <span
+            className="block text-2xl md:text-4xl text-arcade-yellow"
+            style={{ textShadow: "3px 3px 0px #000" }}
+          >
+            COMMITS.
+          </span>
         </h1>
-        <p className="text-xl text-gray-400 max-w-lg mb-8">
+        <p className="font-mono text-sm text-arcade-gray max-w-lg mb-10 leading-relaxed">
           Race your friends, race famous developers, and turn your GitHub
           contributions into a competitive sport.
         </p>
         <button
           onClick={login}
-          className="bg-white text-gray-900 hover:bg-gray-200 px-6 py-3 rounded-lg font-semibold text-lg transition-colors"
+          className="btn-arcade bg-arcade-pink text-black font-pixel text-sm px-8 py-4 mb-4"
         >
-          Sign in with GitHub
+          PRESS START
         </button>
-        <p className="text-sm text-gray-500 mt-4">
+        <p className="font-pixel text-[10px] text-arcade-gray blink">
+          INSERT COIN TO CONTINUE
+        </p>
+        <p className="font-mono text-xs text-arcade-gray mt-6">
           We only request read access to your profile. No repo access needed.
         </p>
       </div>
+
+      <div className="checker-divider my-10" />
 
       <Leaderboard />
     </div>

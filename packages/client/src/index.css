@@ -1,1 +1,107 @@
 @import "tailwindcss";
+
+@theme {
+  --color-arcade-bg:      #0A0A0A;
+  --color-arcade-surface: #1A1A1A;
+  --color-arcade-pink:    #FF006E;
+  --color-arcade-yellow:  #FFE600;
+  --color-arcade-cyan:    #00F5FF;
+  --color-arcade-white:   #F0F0F0;
+  --color-arcade-gray:    #888888;
+
+  --font-pixel: "Press Start 2P", system-ui, monospace;
+}
+
+/* Global base */
+body {
+  background-color: #0A0A0A;
+  color: #F0F0F0;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+}
+
+/* Pixel font utility — fallback if @theme font token doesn't generate the class */
+.font-pixel {
+  font-family: "Press Start 2P", system-ui, monospace;
+}
+
+/* ─── Core primitives ─────────────────────────────────────────────────────── */
+
+/* The neo-brutalist card/box: thick black border + offset shadow */
+.retro-box {
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0px #000;
+}
+
+/* Pressable arcade button — combine with bg/text utilities in JSX */
+.btn-arcade {
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-arcade:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #000;
+}
+.btn-arcade:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Checkered flag divider — black & white, 12px tall */
+.checker-divider {
+  height: 12px;
+  background-image: repeating-conic-gradient(#000 0% 25%, #F0F0F0 0% 50%);
+  background-size: 12px 12px;
+  border-top: 2px solid #000;
+  border-bottom: 2px solid #000;
+}
+
+/* Checkered accent bar — pink & yellow, 8px tall */
+.checker-bar {
+  height: 8px;
+  background-image: repeating-conic-gradient(#FF006E 0% 25%, #FFE600 0% 50%);
+  background-size: 8px 8px;
+}
+
+/* Retro form input */
+.input-arcade {
+  background-color: #1A1A1A;
+  border: 3px solid #000;
+  box-shadow: 2px 2px 0px #000;
+  color: #F0F0F0;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  outline: none;
+  transition: border-color 0.1s, box-shadow 0.1s;
+}
+.input-arcade:focus {
+  border-color: #00F5FF;
+  box-shadow: 2px 2px 0px #00F5FF;
+}
+.input-arcade::placeholder {
+  color: #888888;
+}
+
+/* Blinking text — INSERT COIN style */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Subtle CRT scanline overlay */
+.scanlines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.15) 2px,
+    rgba(0, 0, 0, 0.15) 4px
+  );
+}

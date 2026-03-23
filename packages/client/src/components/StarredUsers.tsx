@@ -62,25 +62,22 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
           {starred.map((s) => (
             <div
               key={s.github_username}
-              className={`flex-shrink-0 w-64 rounded-xl border p-4 ${
-                s.you_beat_them
-                  ? "bg-green-600/10 border-green-500/30"
-                  : "bg-gray-900 border-gray-800"
-              }`}
+              className="retro-box shrink-0 w-64 bg-arcade-surface p-4"
+              style={s.you_beat_them ? { borderColor: "#00F5FF" } : undefined}
             >
               <div className="flex items-center gap-3 mb-3">
                 <img
                   src={s.avatar_url ?? `https://github.com/${s.github_username}.png`}
                   alt={s.github_username}
-                  className="w-10 h-10 rounded-full"
+                  className="w-10 h-10 rounded-none border border-arcade-gray shrink-0"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-sm truncate">{s.display_name}</p>
-                  <p className="text-xs text-gray-500 truncate">@{s.github_username}</p>
+                  <p className="font-mono text-sm text-arcade-white truncate">{s.display_name}</p>
+                  <p className="font-mono text-xs text-arcade-gray truncate">@{s.github_username}</p>
                 </div>
                 <button
                   onClick={() => handleUnstar(s.github_username)}
-                  className="text-yellow-400 hover:text-yellow-300 flex-shrink-0"
+                  className="text-arcade-yellow hover:text-arcade-gray shrink-0 transition-colors"
                   title="Unstar"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -91,32 +88,32 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
 
               <div className="flex items-end justify-between">
                 <div>
-                  <p className="text-xs text-gray-500">Them</p>
-                  <p className="text-lg font-bold tabular-nums text-gray-400">
+                  <p className="font-pixel text-[8px] text-arcade-gray mb-1">THEM</p>
+                  <p className="font-pixel text-sm tabular-nums text-arcade-gray">
                     {s.their_commits.toLocaleString()}
                   </p>
                 </div>
                 <div className="text-center px-2">
-                  <span className={`text-lg font-bold ${s.you_beat_them ? "text-green-400" : "text-gray-500"}`}>
+                  <span className={`font-pixel text-sm ${s.you_beat_them ? "text-arcade-cyan" : "text-arcade-gray"}`}>
                     {s.you_beat_them ? ">" : "<"}
                   </span>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">You</p>
-                  <p className={`text-lg font-bold tabular-nums ${s.you_beat_them ? "text-green-400" : "text-white"}`}>
+                  <p className="font-pixel text-[8px] text-arcade-gray mb-1">YOU</p>
+                  <p className={`font-pixel text-sm tabular-nums ${s.you_beat_them ? "text-arcade-yellow" : "text-arcade-white"}`}>
                     {s.your_commits.toLocaleString()}
                   </p>
                 </div>
               </div>
 
-              <div className={`mt-3 text-xs font-medium text-center py-1 rounded ${
+              <div className={`mt-3 font-pixel text-[8px] text-center py-1 border ${
                 s.you_beat_them
-                  ? "bg-green-600/20 text-green-400"
-                  : "bg-gray-800 text-gray-400"
+                  ? "border-arcade-cyan text-arcade-cyan bg-arcade-bg"
+                  : "border-arcade-gray text-arcade-gray bg-arcade-bg"
               }`}>
                 {s.you_beat_them
-                  ? `You beat ${s.display_name}!`
-                  : `${(s.their_commits - s.your_commits).toLocaleString()} more to beat them`}
+                  ? `YOU BEAT ${s.display_name.toUpperCase()}!`
+                  : `${(s.their_commits - s.your_commits).toLocaleString()} MORE TO BEAT`}
               </div>
             </div>
           ))}
@@ -126,22 +123,22 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
       {/* Suggestions */}
       {suggestions.length > 0 && (
         <div>
-          <p className="text-xs text-gray-500 mb-2">Suggested developers</p>
+          <p className="font-pixel text-[8px] text-arcade-gray mb-2 uppercase">Suggested</p>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {suggestions.map((s) => (
               <button
                 key={s.github_username}
                 onClick={() => handleRace(s.github_username)}
                 disabled={adding}
-                className="flex items-center gap-2 flex-shrink-0 bg-gray-900 border border-gray-800 hover:border-green-500/50 rounded-lg px-3 py-2 transition-colors disabled:opacity-50"
+                className="btn-arcade flex items-center gap-2 shrink-0 bg-arcade-surface px-3 py-2 disabled:opacity-50"
               >
                 <img
                   src={s.avatar_url ?? `https://github.com/${s.github_username}.png`}
                   alt={s.github_username}
-                  className="w-6 h-6 rounded-full"
+                  className="w-6 h-6 rounded-none border border-arcade-gray"
                 />
-                <span className="text-sm text-white truncate max-w-[120px]">{s.github_username}</span>
-                <span className="text-xs text-green-400">Race</span>
+                <span className="font-mono text-sm text-arcade-white truncate max-w-[100px]">{s.github_username}</span>
+                <span className="font-pixel text-[8px] text-arcade-cyan">RACE</span>
               </button>
             ))}
           </div>

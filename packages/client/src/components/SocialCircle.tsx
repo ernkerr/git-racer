@@ -7,13 +7,13 @@ interface Props {
 
 export default function SocialCircle({ data, loading }: Props) {
   if (loading) {
-    return <div className="text-gray-400 text-center py-6 text-sm">Loading your circle...</div>;
+    return <div className="font-pixel text-xs text-arcade-gray text-center py-6 blink">LOADING CIRCLE...</div>;
   }
 
   if (data.total === 0) {
     return (
-      <div className="text-gray-500 text-center py-6 text-sm">
-        Follow people on GitHub to see how you compare!
+      <div className="font-pixel text-xs text-arcade-gray text-center py-6">
+        FOLLOW PEOPLE ON GITHUB TO SEE HOW YOU COMPARE!
       </div>
     );
   }
@@ -21,9 +21,11 @@ export default function SocialCircle({ data, loading }: Props) {
   return (
     <div>
       {/* Your rank badge */}
-      <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-3 text-center">
-        <p className="text-3xl font-bold text-green-400">#{data.your_rank}</p>
-        <p className="text-sm text-gray-400">
+      <div className="retro-box bg-arcade-surface p-4 mb-3 text-center">
+        <p className="font-pixel text-2xl text-arcade-cyan" style={{ textShadow: "2px 2px 0px #000" }}>
+          #{data.your_rank}
+        </p>
+        <p className="font-mono text-xs text-arcade-gray mt-1">
           of {data.total} devs you follow
         </p>
       </div>
@@ -33,25 +35,25 @@ export default function SocialCircle({ data, loading }: Props) {
         {data.entries.map((entry) => (
           <div
             key={entry.github_username}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+            className={`flex items-center gap-3 px-3 py-2 text-sm ${
               entry.is_you
-                ? "bg-green-600/20 border border-green-500/40"
-                : "bg-gray-900/50"
+                ? "bg-arcade-surface border border-arcade-cyan"
+                : "bg-arcade-bg"
             }`}
           >
-            <span className="w-5 text-center font-bold text-xs text-gray-500">
+            <span className="font-pixel text-[8px] w-5 text-center text-arcade-gray">
               {entry.rank}
             </span>
             <img
               src={entry.avatar_url ?? `https://github.com/${entry.github_username}.png`}
               alt={entry.github_username}
-              className="w-6 h-6 rounded-full flex-shrink-0"
+              className="w-6 h-6 rounded-none border border-arcade-gray shrink-0"
             />
-            <span className={`flex-1 truncate ${entry.is_you ? "font-semibold text-white" : "text-gray-300"}`}>
+            <span className={`font-mono text-sm flex-1 truncate ${entry.is_you ? "text-arcade-yellow font-bold" : "text-arcade-white"}`}>
               {entry.github_username}
-              {entry.is_you && <span className="text-green-400 text-xs ml-1">(you)</span>}
+              {entry.is_you && <span className="font-pixel text-[8px] text-arcade-cyan ml-1">(you)</span>}
             </span>
-            <span className="font-bold tabular-nums text-green-400">
+            <span className="font-pixel text-xs tabular-nums text-arcade-yellow">
               {entry.commit_count}
             </span>
           </div>

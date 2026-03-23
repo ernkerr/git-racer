@@ -21,9 +21,11 @@ import Leaderboard from "../components/Leaderboard.tsx";
 
 function StatsCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-      <p className="text-xs text-gray-400 mb-1">{label}</p>
-      <p className="text-2xl font-bold tabular-nums">{value.toLocaleString()}</p>
+    <div className="retro-box bg-arcade-surface p-4">
+      <p className="font-pixel text-[8px] text-arcade-gray mb-2 leading-loose uppercase">{label}</p>
+      <p className="font-pixel text-xl tabular-nums text-arcade-yellow" style={{ textShadow: "2px 2px 0px #000" }}>
+        {value.toLocaleString()}
+      </p>
     </div>
   );
 }
@@ -46,7 +48,6 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    // Single consolidated call for core dashboard data
     api<{
       stats: UserStats;
       challenges: ActiveChallenge[];
@@ -62,7 +63,6 @@ export default function Dashboard() {
       .catch((err) => console.error("Dashboard load failed:", err))
       .finally(() => setLoading(false));
 
-    // These load independently (separate APIs / slower)
     api<LeagueGroup>("/leagues/current").then(setLeague).catch(() => {});
     api<StarredUser[]>("/starred?period=week").then(setStarred).catch(() => []);
     api<StarSuggestion[]>("/starred/suggestions").then(setSuggestions).catch(() => []);
@@ -73,14 +73,18 @@ export default function Dashboard() {
   }, []);
 
   if (loading) {
-    return <div className="text-gray-400">Loading your stats...</div>;
+    return <div className="font-pixel text-xs text-arcade-gray blink">LOADING YOUR STATS...</div>;
   }
 
   return (
     <div className="space-y-8">
+      <div className="checker-bar" />
+
       {/* Header + Share */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="font-pixel text-xl text-arcade-yellow" style={{ textShadow: "2px 2px 0px #000" }}>
+          DASHBOARD
+        </h1>
         <ShareButton />
       </div>
 
@@ -101,23 +105,23 @@ export default function Dashboard() {
       {/* Active Races */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">Active Races</h2>
+          <h2 className="font-pixel text-sm text-arcade-cyan">ACTIVE RACES</h2>
           <Link
             to="/challenges/new"
-            className="text-sm bg-green-600 hover:bg-green-500 px-3 py-1.5 rounded-md transition-colors"
+            className="btn-arcade bg-arcade-pink text-black font-pixel text-[8px] px-3 py-2"
           >
-            New Race
+            NEW RACE
           </Link>
         </div>
 
         {challenges.length === 0 ? (
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 text-center">
-            <p className="text-gray-400 mb-4">No active races yet.</p>
+          <div className="retro-box bg-arcade-surface p-8 text-center">
+            <p className="font-pixel text-xs text-arcade-gray mb-4">NO ACTIVE RACES YET.</p>
             <Link
               to="/challenges/new"
-              className="text-green-400 hover:text-green-300 font-medium"
+              className="font-pixel text-xs text-arcade-cyan hover:text-arcade-yellow transition-colors"
             >
-              Create your first race
+              CREATE YOUR FIRST RACE
             </Link>
           </div>
         ) : (
@@ -126,25 +130,25 @@ export default function Dashboard() {
               <Link
                 key={ch.id}
                 to={`/c/${ch.share_slug}`}
-                className="block bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors"
+                className="retro-box bg-arcade-surface p-4 block hover:-translate-y-px transition-all"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold">{ch.name}</h3>
-                    <p className="text-sm text-gray-400">
+                    <h3 className="font-pixel text-sm text-arcade-white">{ch.name}</h3>
+                    <p className="font-mono text-xs text-arcade-gray mt-1">
                       {ch.participant_count} participants
                       {ch.end_date &&
-                        ` \u00b7 ends ${new Date(ch.end_date).toLocaleDateString()}`}
+                        ` · ends ${new Date(ch.end_date).toLocaleDateString()}`}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold tabular-nums">
+                    <p className="font-pixel text-2xl tabular-nums text-arcade-yellow">
                       {ch.your_commits}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="font-mono text-xs text-arcade-gray">
                       {ch.leader_username === "" ? "" : ch.leader_commits > ch.your_commits
-                        ? `${ch.leader_username} leads with ${ch.leader_commits}`
-                        : "You're in the lead!"}
+                        ? `${ch.leader_username} leads`
+                        : "YOU'RE WINNING!"}
                     </p>
                   </div>
                 </div>
@@ -156,7 +160,7 @@ export default function Dashboard() {
 
       {/* Starred Users */}
       <div>
-        <h2 className="text-lg font-bold mb-3">Starred Developers</h2>
+        <h2 className="font-pixel text-sm text-arcade-cyan mb-3">STARRED DEVS</h2>
         <StarredUsers
           starred={starred}
           suggestions={suggestions}
@@ -170,7 +174,7 @@ export default function Dashboard() {
 
       {/* Social Circle */}
       <div>
-        <h2 className="text-lg font-bold mb-3">Your Circle</h2>
+        <h2 className="font-pixel text-sm text-arcade-cyan mb-3">YOUR CIRCLE</h2>
         <SocialCircle data={socialData} loading={socialLoading} />
       </div>
 
@@ -181,19 +185,19 @@ export default function Dashboard() {
 
       {/* Weekly League */}
       <div>
-        <h2 className="text-lg font-bold mb-3">Weekly League</h2>
+        <h2 className="font-pixel text-sm text-arcade-cyan mb-3">WEEKLY LEAGUE</h2>
         {league ? (
           <LeagueCard league={league} />
         ) : (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center text-gray-500 text-sm">
-            Your league is being set up. Check back soon!
+          <div className="retro-box bg-arcade-surface p-6 text-center">
+            <p className="font-pixel text-xs text-arcade-gray">YOUR LEAGUE IS BEING SET UP. CHECK BACK SOON!</p>
           </div>
         )}
       </div>
 
       {/* Contribution Graph */}
       {contributions && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <div className="retro-box bg-arcade-surface p-5">
           <ContributionGraph days={contributions.days} totalYear={contributions.total_year} />
         </div>
       )}

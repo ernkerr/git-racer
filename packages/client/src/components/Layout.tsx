@@ -5,47 +5,55 @@ export default function Layout() {
   const { user, login, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800">
+    <div className="min-h-screen bg-arcade-bg text-arcade-white">
+      <header
+        className="bg-arcade-surface border-b-4 border-black"
+        style={{ boxShadow: "0 4px 0 #000" }}
+      >
         <nav className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to={user ? "/dashboard" : "/"} className="text-xl font-bold tracking-tight">
-            Git Racer
+          <Link
+            to={user ? "/dashboard" : "/"}
+            className="font-pixel text-sm text-arcade-yellow leading-loose"
+            style={{ textShadow: "3px 3px 0px #FF006E" }}
+          >
+            GIT RACER
           </Link>
           <div className="flex items-center gap-4">
             {user ? (
               <>
                 <Link
                   to="/challenges/new"
-                  className="text-sm bg-green-600 hover:bg-green-500 px-3 py-1.5 rounded-md transition-colors"
+                  className="btn-arcade bg-arcade-cyan text-black font-pixel text-[8px] px-3 py-2"
                 >
-                  New Race
+                  NEW RACE
                 </Link>
                 <div className="flex items-center gap-2">
                   <img
                     src={user.avatar_url ?? ""}
                     alt={user.github_username}
-                    className="w-8 h-8 rounded-full"
+                    className="w-8 h-8 rounded-none border-2 border-arcade-yellow"
                   />
-                  <span className="text-sm text-gray-300">{user.github_username}</span>
+                  <span className="font-pixel text-[8px] text-arcade-gray">{user.github_username}</span>
                 </div>
                 <button
                   onClick={logout}
-                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                  className="font-pixel text-[8px] text-arcade-gray hover:text-arcade-pink transition-colors"
                 >
-                  Logout
+                  LOGOUT
                 </button>
               </>
             ) : (
               <button
                 onClick={login}
-                className="text-sm bg-white text-gray-900 hover:bg-gray-200 px-4 py-1.5 rounded-md font-medium transition-colors"
+                className="btn-arcade bg-arcade-pink text-black font-pixel text-[8px] px-4 py-2"
               >
-                Sign in with GitHub
+                INSERT COIN
               </button>
             )}
           </div>
         </nav>
       </header>
+      <div className="checker-divider" />
       <main className="max-w-5xl mx-auto px-4 py-8">
         <Outlet />
       </main>

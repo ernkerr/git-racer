@@ -8,85 +8,83 @@ export default function StreakCard({ streaks }: Props) {
   const trendPositive = streaks.trend_percent >= 0;
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <div className="retro-box bg-arcade-surface p-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
         {/* Current streak */}
         <div>
-          <p className="text-xs text-gray-500 mb-1">Current Streak</p>
-          <p className="text-2xl font-bold tabular-nums">
+          <p className="font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">Current Streak</p>
+          <p className="font-pixel text-lg tabular-nums text-arcade-yellow">
             {streaks.current_streak}
-            <span className="text-sm text-gray-500 ml-1">days</span>
+            <span className="font-pixel text-[8px] text-arcade-gray ml-1">days</span>
           </p>
-          {/* Streak dots */}
+          {/* Streak dots — square, pixel style */}
           <div className="flex gap-0.5 mt-2">
             {Array.from({ length: Math.min(streaks.current_streak, 14) }).map((_, i) => (
               <div
                 key={i}
-                className="w-2 h-2 rounded-full bg-green-500"
+                className="w-2 h-2 bg-arcade-yellow"
                 style={{ opacity: 0.4 + (i / Math.min(streaks.current_streak, 14)) * 0.6 }}
               />
             ))}
             {streaks.current_streak === 0 && (
-              <div className="w-2 h-2 rounded-full bg-gray-700" />
+              <div className="w-2 h-2 bg-arcade-surface border border-arcade-gray" />
             )}
           </div>
         </div>
 
         {/* Longest streak */}
         <div>
-          <p className="text-xs text-gray-500 mb-1">Longest Streak</p>
-          <p className="text-2xl font-bold tabular-nums">
+          <p className="font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">Best Streak</p>
+          <p className="font-pixel text-lg tabular-nums text-arcade-yellow">
             {streaks.longest_streak}
-            <span className="text-sm text-gray-500 ml-1">days</span>
+            <span className="font-pixel text-[8px] text-arcade-gray ml-1">days</span>
           </p>
-          {/* Progress toward record */}
           {streaks.longest_streak > 0 && (
             <div className="mt-2">
-              <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-3 bg-arcade-bg border border-black overflow-hidden">
                 <div
-                  className="h-full bg-yellow-500 rounded-full transition-all"
+                  className="h-full bg-arcade-yellow transition-all"
                   style={{
                     width: `${Math.min(100, (streaks.current_streak / streaks.longest_streak) * 100)}%`,
                   }}
                 />
               </div>
-              <p className="text-[10px] text-gray-600 mt-0.5">
+              <p className="font-pixel text-[8px] text-arcade-gray mt-1">
                 {streaks.current_streak >= streaks.longest_streak
-                  ? "New record!"
-                  : `${streaks.longest_streak - streaks.current_streak} to beat`}
+                  ? "NEW RECORD!"
+                  : `${streaks.longest_streak - streaks.current_streak} TO BEAT`}
               </p>
             </div>
           )}
         </div>
 
-        {/* This week with mini bar chart */}
+        {/* This week */}
         <div>
-          <p className="text-xs text-gray-500 mb-1">This Week</p>
-          <p className="text-2xl font-bold tabular-nums">
+          <p className="font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">This Week</p>
+          <p className="font-pixel text-lg tabular-nums text-arcade-yellow">
             {streaks.this_week}
           </p>
-          <p className={`text-xs mt-0.5 ${trendPositive ? "text-green-400" : "text-red-400"}`}>
-            {trendPositive ? "+" : ""}{streaks.trend_percent}% vs last week
+          <p className={`font-pixel text-[8px] mt-1 ${trendPositive ? "text-arcade-cyan" : "text-arcade-pink"}`}>
+            {trendPositive ? "+" : ""}{streaks.trend_percent}% VS LAST WK
           </p>
         </div>
 
         {/* Best week */}
         <div>
-          <p className="text-xs text-gray-500 mb-1">Best Week</p>
-          <p className="text-2xl font-bold tabular-nums">
+          <p className="font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">Best Week</p>
+          <p className="font-pixel text-lg tabular-nums text-arcade-yellow">
             {streaks.best_week_commits}
           </p>
           {streaks.best_week_start && (
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="font-mono text-[10px] text-arcade-gray mt-0.5">
               {formatDate(streaks.best_week_start)}
             </p>
           )}
-          {/* Progress toward best */}
           {streaks.best_week_commits > 0 && (
             <div className="mt-2">
-              <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-3 bg-arcade-bg border border-black overflow-hidden">
                 <div
-                  className="h-full bg-purple-500 rounded-full transition-all"
+                  className="h-full bg-arcade-cyan transition-all"
                   style={{
                     width: `${Math.min(100, (streaks.this_week / streaks.best_week_commits) * 100)}%`,
                   }}

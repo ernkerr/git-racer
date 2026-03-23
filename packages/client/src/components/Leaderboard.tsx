@@ -10,11 +10,23 @@ interface LeaderboardEntry {
 type Period = "day" | "week" | "month" | "yearly";
 
 const PERIOD_LABELS: Record<Period, string> = {
-  day: "Today",
-  week: "This Week",
-  month: "This Month",
-  yearly: "This Year",
+  day: "TODAY",
+  week: "THIS WEEK",
+  month: "THIS MONTH",
+  yearly: "THIS YEAR",
 };
+
+const RANK_ORDINALS = ["1ST", "2ND", "3RD"];
+const RANK_COLORS = [
+  "text-arcade-yellow",
+  "text-arcade-cyan",
+  "text-arcade-pink",
+];
+const ROW_BORDER_COLORS = [
+  "border-arcade-yellow",
+  "border-arcade-cyan",
+  "border-arcade-pink",
+];
 
 export default function Leaderboard() {
   const [period, setPeriod] = useState<Period>("week");
@@ -36,11 +48,13 @@ export default function Leaderboard() {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <div className="flex items-center justify-center gap-2 mb-4">
-        <h2 className="text-2xl font-bold text-center">Leaderboard</h2>
+      <div className="flex items-center justify-center gap-3 mb-6">
+        <h2 className="font-pixel text-lg text-arcade-yellow" style={{ textShadow: "2px 2px 0px #000" }}>
+          HI-SCORES
+        </h2>
         <button
           onClick={() => setShowInfo((v) => !v)}
-          className="text-gray-500 hover:text-gray-300 transition-colors"
+          className="text-arcade-gray hover:text-arcade-cyan transition-colors"
           title="How rankings work"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,32 +64,32 @@ export default function Leaderboard() {
       </div>
 
       {showInfo && (
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-4 text-sm text-gray-400 space-y-2">
+        <div className="retro-box bg-arcade-surface p-4 mb-6 text-sm text-arcade-gray space-y-2">
           <p>
-            Rankings are based on <span className="text-white">real public GitHub activity</span> from
+            Rankings are based on <span className="text-arcade-cyan">real public GitHub activity</span> from
             every push event across all of GitHub, updated daily.
           </p>
           <p>
-            If you have a Git Racer account, your ranking uses your <span className="text-white">actual commit count</span> (including
+            If you have a Git Racer account, your ranking uses your <span className="text-arcade-cyan">actual commit count</span> (including
             private repos) so your number matches your dashboard.
           </p>
           <p>
             For everyone else, rankings are based on public pushes tracked
-            via <span className="text-white">GH Archive</span>.
+            via <span className="text-arcade-cyan">GH Archive</span>.
           </p>
         </div>
       )}
 
       {/* Period Tabs */}
-      <div className="flex gap-1 bg-gray-900 rounded-lg p-1 mb-6">
+      <div className="flex gap-2 mb-6">
         {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`btn-arcade flex-1 py-2 font-pixel text-[8px] leading-loose ${
               period === p
-                ? "bg-green-600 text-white"
-                : "text-gray-400 hover:text-white hover:bg-gray-800"
+                ? "bg-arcade-pink text-black"
+                : "bg-arcade-surface text-arcade-gray hover:text-arcade-white"
             }`}
           >
             {PERIOD_LABELS[p]}
@@ -85,63 +99,49 @@ export default function Leaderboard() {
 
       {/* Leaderboard List */}
       {loading ? (
-        <div className="text-gray-400 text-center py-12">Loading leaderboard...</div>
+        <div className="font-pixel text-xs text-arcade-gray text-center py-12 blink">
+          LOADING...
+        </div>
       ) : entries.length === 0 ? (
-        <div className="text-gray-500 text-center py-12">
-          Leaderboard updates daily. Check back soon!
+        <div className="font-pixel text-xs text-arcade-gray text-center py-12">
+          NO DATA YET. CHECK BACK SOON!
         </div>
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {entries.slice(0, visible).map((entry, i) => {
             const barWidth = maxCommits > 0 ? (entry.commit_count / maxCommits) * 100 : 0;
+            const isTop3 = i < 3;
             return (
               <div
                 key={entry.github_username}
-                className={`relative flex items-center gap-3 px-4 py-2.5 rounded-lg overflow-hidden ${
-                  i === 0
-                    ? "bg-yellow-500/10 border border-yellow-500/30"
-                    : i === 1
-                      ? "bg-gray-400/10 border border-gray-400/30"
-                      : i === 2
-                        ? "bg-amber-600/10 border border-amber-600/30"
-                        : "bg-gray-900 border border-gray-800"
-                }`}
+                className={`retro-box relative flex items-center gap-3 px-4 py-3 overflow-hidden bg-arcade-surface ${isTop3 ? ROW_BORDER_COLORS[i] : ""}`}
+                style={isTop3 ? { borderColor: undefined } : undefined}
               >
                 {/* Background bar */}
                 <div
-                  className="absolute inset-y-0 left-0 bg-green-500/8 transition-all duration-500"
+                  className="absolute inset-y-0 left-0 bg-arcade-yellow/10 transition-all duration-500"
                   style={{ width: `${barWidth}%` }}
                 />
 
                 {/* Rank */}
-                <span
-                  className={`relative w-7 text-center font-bold text-sm ${
-                    i === 0
-                      ? "text-yellow-400"
-                      : i === 1
-                        ? "text-gray-300"
-                        : i === 2
-                          ? "text-amber-500"
-                          : "text-gray-500"
-                  }`}
-                >
-                  {i + 1}
+                <span className={`relative font-pixel text-[8px] w-8 text-center ${isTop3 ? RANK_COLORS[i] : "text-arcade-gray"}`}>
+                  {i < 3 ? RANK_ORDINALS[i] : i + 1}
                 </span>
 
                 {/* Avatar */}
                 <img
                   src={entry.avatar_url}
                   alt={entry.github_username}
-                  className="relative w-8 h-8 rounded-full flex-shrink-0"
+                  className="relative w-8 h-8 rounded-none border-2 border-arcade-gray shrink-0"
                 />
 
                 {/* Username */}
-                <span className="relative font-medium flex-1 truncate text-sm">
+                <span className="relative font-mono text-sm text-arcade-white flex-1 truncate">
                   {entry.github_username}
                 </span>
 
                 {/* Commit count */}
-                <span className="relative text-lg font-bold tabular-nums text-green-400">
+                <span className="relative font-pixel text-sm tabular-nums text-arcade-yellow">
                   {entry.commit_count.toLocaleString()}
                 </span>
               </div>
@@ -150,9 +150,9 @@ export default function Leaderboard() {
           {visible < entries.length && (
             <button
               onClick={() => setVisible((v) => v + 10)}
-              className="w-full py-2.5 rounded-lg bg-gray-900 border border-gray-800 text-sm text-gray-400 hover:text-white hover:border-gray-700 transition-colors"
+              className="btn-arcade w-full py-2 font-pixel text-[8px] bg-arcade-surface text-arcade-gray hover:text-arcade-white"
             >
-              + Show more
+              + SHOW MORE
             </button>
           )}
         </div>

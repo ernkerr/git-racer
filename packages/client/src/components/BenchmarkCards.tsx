@@ -58,8 +58,8 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
 
   if (benchmarks.length === 0) {
     return (
-      <div className="text-gray-500 text-center py-6 text-sm">
-        Benchmark data populates as contributions are tracked. Check back soon!
+      <div className="font-pixel text-xs text-arcade-gray text-center py-6">
+        BENCHMARK DATA POPULATES AS CONTRIBUTIONS ARE TRACKED. CHECK BACK SOON!
       </div>
     );
   }
@@ -72,10 +72,10 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
           <button
             key={cat}
             onClick={() => setFilter(cat)}
-            className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            className={`btn-arcade shrink-0 px-3 py-1 font-pixel text-[8px] transition-colors ${
               filter === cat
-                ? "bg-white text-black"
-                : "bg-gray-800 text-gray-400 hover:text-white"
+                ? "bg-arcade-pink text-black"
+                : "bg-arcade-surface text-arcade-gray opacity-60"
             }`}
           >
             {CATEGORY_LABELS[cat] ?? cat}
@@ -83,35 +83,34 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
         ))}
       </div>
 
-      {/* Horizontal scroll of cards — original card layout */}
+      {/* Horizontal scroll of cards */}
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
         {filtered.map((b) => (
           <div
             key={b.github_username}
-            className={`flex-shrink-0 w-64 rounded-xl border p-4 ${
-              b.you_beat_them
-                ? "bg-green-600/10 border-green-500/30"
-                : "bg-gray-900 border-gray-800"
+            className={`retro-box shrink-0 w-64 bg-arcade-surface p-4 ${
+              b.you_beat_them ? "border-arcade-cyan" : ""
             }`}
+            style={b.you_beat_them ? { borderColor: "#00F5FF" } : undefined}
           >
             {/* Dev info */}
             <div className="flex items-center gap-3 mb-3">
               <img
                 src={b.avatar_url ?? `https://github.com/${b.github_username}.png`}
                 alt={b.github_username}
-                className="w-10 h-10 rounded-full"
+                className="w-10 h-10 rounded-none border border-arcade-gray shrink-0"
               />
               <div className="min-w-0 flex-1">
-                <p className="font-semibold text-sm truncate">{b.display_name}</p>
-                <p className="text-xs text-gray-500 truncate">{b.known_for}</p>
+                <p className="font-mono text-sm text-arcade-white truncate">{b.display_name}</p>
+                <p className="font-mono text-xs text-arcade-gray truncate">{b.known_for}</p>
               </div>
               {b.is_custom && (
                 <button
                   onClick={() => handleRemove(b.github_username)}
-                  className="text-gray-600 hover:text-red-400 text-xs flex-shrink-0"
+                  className="font-pixel text-[8px] text-arcade-gray hover:text-arcade-pink shrink-0 transition-colors"
                   title="Remove"
                 >
-                  x
+                  X
                 </button>
               )}
             </div>
@@ -119,33 +118,33 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
             {/* Comparison */}
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-xs text-gray-500">Their commits</p>
-                <p className="text-lg font-bold tabular-nums text-gray-400">
+                <p className="font-pixel text-[8px] text-arcade-gray mb-1">THEIRS</p>
+                <p className="font-pixel text-sm tabular-nums text-arcade-gray">
                   {b.their_commits}
                 </p>
               </div>
               <div className="text-center px-2">
-                <span className={`text-lg font-bold ${b.you_beat_them ? "text-green-400" : "text-gray-500"}`}>
+                <span className={`font-pixel text-sm ${b.you_beat_them ? "text-arcade-cyan" : "text-arcade-gray"}`}>
                   {b.you_beat_them ? ">" : "<"}
                 </span>
               </div>
               <div className="text-right">
-                <p className="text-xs text-gray-500">You</p>
-                <p className={`text-lg font-bold tabular-nums ${b.you_beat_them ? "text-green-400" : "text-white"}`}>
+                <p className="font-pixel text-[8px] text-arcade-gray mb-1">YOU</p>
+                <p className={`font-pixel text-sm tabular-nums ${b.you_beat_them ? "text-arcade-yellow" : "text-arcade-white"}`}>
                   {b.your_commits}
                 </p>
               </div>
             </div>
 
             {/* Status */}
-            <div className={`mt-3 text-xs font-medium text-center py-1 rounded ${
+            <div className={`mt-3 font-pixel text-[8px] text-center py-1 border ${
               b.you_beat_them
-                ? "bg-green-600/20 text-green-400"
-                : "bg-gray-800 text-gray-400"
+                ? "border-arcade-cyan text-arcade-cyan bg-arcade-bg"
+                : "border-arcade-gray text-arcade-gray bg-arcade-bg"
             }`}>
               {b.you_beat_them
-                ? `You beat ${b.display_name}!`
-                : `${b.their_commits - b.your_commits} more to beat them`}
+                ? `BEAT ${b.display_name.toUpperCase()}!`
+                : `${b.their_commits - b.your_commits} MORE TO BEAT`}
             </div>
           </div>
         ))}
@@ -159,14 +158,14 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           placeholder="Add a GitHub username..."
-          className="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gray-600"
+          className="input-arcade flex-1 px-3 py-2 text-sm"
         />
         <button
           onClick={handleAdd}
           disabled={adding || !input.trim()}
-          className="bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-sm px-4 py-2 rounded-lg transition-colors"
+          className="btn-arcade bg-arcade-surface text-arcade-gray font-pixel text-[8px] px-4 py-2 disabled:opacity-40"
         >
-          {adding ? "..." : "Add"}
+          {adding ? "..." : "ADD"}
         </button>
       </div>
     </div>

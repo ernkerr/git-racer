@@ -1,11 +1,18 @@
 import type { LeagueGroup, LeagueTier } from "@git-racer/shared";
 
-const TIER_CONFIG: Record<LeagueTier, { label: string; color: string; bg: string; border: string; barColor: string }> = {
-  bronze: { label: "Bronze", color: "text-amber-600", bg: "bg-amber-600/10", border: "border-amber-600/30", barColor: "bg-amber-600" },
-  silver: { label: "Silver", color: "text-gray-300", bg: "bg-gray-400/10", border: "border-gray-400/30", barColor: "bg-gray-400" },
-  gold: { label: "Gold", color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30", barColor: "bg-yellow-400" },
-  platinum: { label: "Platinum", color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/30", barColor: "bg-cyan-400" },
-  diamond: { label: "Diamond", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30", barColor: "bg-purple-400" },
+const TIER_CONFIG: Record<LeagueTier, {
+  label: string;
+  color: string;
+  bg: string;
+  borderClass: string;
+  borderColor: string;
+  barColor: string;
+}> = {
+  bronze:   { label: "BRONZE",   color: "text-[#CD7F32]", bg: "bg-[#2A1A00]",    borderClass: "border-[#CD7F32]", borderColor: "#CD7F32", barColor: "bg-[#CD7F32]"        },
+  silver:   { label: "SILVER",   color: "text-arcade-gray",  bg: "bg-arcade-surface", borderClass: "border-arcade-gray",  borderColor: "#888888", barColor: "bg-arcade-gray"   },
+  gold:     { label: "GOLD",     color: "text-arcade-yellow", bg: "bg-arcade-surface", borderClass: "border-arcade-yellow", borderColor: "#FFE600", barColor: "bg-arcade-yellow" },
+  platinum: { label: "PLATINUM", color: "text-arcade-cyan",  bg: "bg-arcade-surface", borderClass: "border-arcade-cyan",  borderColor: "#00F5FF", barColor: "bg-arcade-cyan"   },
+  diamond:  { label: "DIAMOND",  color: "text-arcade-pink",  bg: "bg-arcade-surface", borderClass: "border-arcade-pink",  borderColor: "#FF006E", barColor: "bg-arcade-pink"   },
 };
 
 const ALL_TIERS: LeagueTier[] = ["bronze", "silver", "gold", "platinum", "diamond"];
@@ -22,18 +29,25 @@ export default function LeagueCard({ league }: Props) {
   const tierIndex = ALL_TIERS.indexOf(league.tier);
 
   return (
-    <div className={`rounded-xl border ${config.border} ${config.bg} p-5`}>
+    <div
+      className={`retro-box ${config.bg} p-5`}
+      style={{ borderColor: config.borderColor, borderWidth: "4px" }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className={`font-bold text-lg ${config.color}`}>{config.label} League</h3>
-          <p className="text-xs text-gray-500">
-            Week of {formatWeekDate(league.week_start)} &middot; {league.days_left === 0 ? "Final day" : `${league.days_left}d left`}
+          <h3 className={`font-pixel text-sm ${config.color}`} style={{ textShadow: "2px 2px 0px #000" }}>
+            {config.label} LEAGUE
+          </h3>
+          <p className="font-mono text-[10px] text-arcade-gray mt-1">
+            WK OF {formatWeekDate(league.week_start)} &middot; {league.days_left === 0 ? "FINAL DAY" : `${league.days_left}D LEFT`}
           </p>
         </div>
         <div className="text-right">
-          <p className={`text-3xl font-bold tabular-nums ${config.color}`}>#{league.your_rank}</p>
-          <p className="text-xs text-gray-500">of {totalMembers}</p>
+          <p className={`font-pixel text-2xl tabular-nums ${config.color}`} style={{ textShadow: "2px 2px 0px #000" }}>
+            #{league.your_rank}
+          </p>
+          <p className="font-mono text-[10px] text-arcade-gray">of {totalMembers}</p>
         </div>
       </div>
 
@@ -42,22 +56,22 @@ export default function LeagueCard({ league }: Props) {
         {ALL_TIERS.map((t, i) => (
           <div
             key={t}
-            className={`h-1.5 flex-1 rounded-full ${
-              i <= tierIndex ? TIER_CONFIG[t].barColor : "bg-gray-800"
+            className={`h-2.5 flex-1 border border-black ${
+              i <= tierIndex ? TIER_CONFIG[t].barColor : "bg-arcade-bg"
             }`}
           />
         ))}
       </div>
 
-      {/* How it works */}
-      <div className="flex gap-4 mb-3 text-[10px] text-gray-500">
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-green-500" />
-          Top {PROMOTE_COUNT} move up a tier
+      {/* Legend */}
+      <div className="flex gap-4 mb-3">
+        <span className="flex items-center gap-1 font-pixel text-[8px] text-arcade-gray">
+          <span className="w-2 h-2 bg-arcade-cyan" />
+          TOP {PROMOTE_COUNT} MOVE UP
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-red-500" />
-          Bottom {DEMOTE_COUNT} move down
+        <span className="flex items-center gap-1 font-pixel text-[8px] text-arcade-gray">
+          <span className="w-2 h-2 bg-arcade-pink" />
+          BOTTOM {DEMOTE_COUNT} DROP
         </span>
       </div>
 
@@ -72,37 +86,37 @@ export default function LeagueCard({ league }: Props) {
           return (
             <div
               key={member.github_username}
-              className={`relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm overflow-hidden ${
+              className={`relative flex items-center gap-3 px-3 py-2 text-sm overflow-hidden ${
                 member.is_you
-                  ? "bg-green-600/20 border border-green-500/40"
+                  ? "bg-arcade-surface border-2 border-arcade-yellow"
                   : isPromoteZone
-                    ? "bg-green-900/10"
+                    ? "bg-[#0A1F0A]"
                     : isDemoteZone
-                      ? "bg-red-900/10"
-                      : "bg-gray-900/30"
+                      ? "bg-[#1F0A0A]"
+                      : "bg-arcade-bg"
               }`}
             >
               {/* Bar background */}
               <div
-                className="absolute inset-y-0 left-0 bg-green-500/8"
+                className="absolute inset-y-0 left-0 bg-arcade-yellow/10"
                 style={{ width: `${barWidth}%` }}
               />
 
-              <span className={`relative w-5 text-center font-bold text-xs ${
-                isPromoteZone ? "text-green-400" : isDemoteZone ? "text-red-400" : "text-gray-500"
+              <span className={`relative font-pixel text-[8px] w-5 text-center ${
+                isPromoteZone ? "text-arcade-cyan" : isDemoteZone ? "text-arcade-pink" : "text-arcade-gray"
               }`}>
                 {member.rank}
               </span>
               <img
                 src={member.avatar_url ?? `https://github.com/${member.github_username}.png`}
                 alt={member.github_username}
-                className="relative w-6 h-6 rounded-full flex-shrink-0"
+                className="relative w-6 h-6 rounded-none border border-arcade-gray shrink-0"
               />
-              <span className={`relative flex-1 truncate ${member.is_you ? "font-semibold text-white" : "text-gray-300"}`}>
+              <span className={`relative font-mono text-sm flex-1 truncate ${member.is_you ? "text-arcade-yellow font-bold" : "text-arcade-white"}`}>
                 {member.github_username}
-                {member.is_you && <span className="text-green-400 text-xs ml-1">(you)</span>}
+                {member.is_you && <span className="font-pixel text-[8px] text-arcade-cyan ml-1">(you)</span>}
               </span>
-              <span className="relative font-bold tabular-nums text-green-400 text-sm">
+              <span className="relative font-pixel text-xs tabular-nums text-arcade-yellow">
                 {member.weekly_commits}
               </span>
             </div>

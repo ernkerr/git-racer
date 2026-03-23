@@ -87,8 +87,8 @@ export default function Challenge() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (loading) return <div className="text-gray-400">Loading race...</div>;
-  if (!challenge) return <div className="text-gray-400">Race not found.</div>;
+  if (loading) return <div className="font-pixel text-xs text-arcade-gray blink">LOADING RACE...</div>;
+  if (!challenge) return <div className="font-pixel text-xs text-arcade-gray">RACE NOT FOUND.</div>;
 
   const isCreator = user && challenge.created_by === user.id;
   const isParticipant = user && challenge.participants.some(
@@ -105,64 +105,67 @@ export default function Challenge() {
       {/* Back button */}
       <Link
         to="/dashboard"
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white mb-4 transition-colors"
+        className="inline-flex items-center gap-1 font-pixel text-[8px] text-arcade-gray hover:text-arcade-cyan mb-6 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        Back to Dashboard
+        BACK
       </Link>
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-start justify-between mb-6 gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold">{challenge.name}</h1>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-400">
-              {challenge.type}
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <h1 className="font-pixel text-xl text-arcade-yellow" style={{ textShadow: "2px 2px 0px #000" }}>
+              {challenge.name}
+            </h1>
+            <span className="font-pixel text-[7px] px-2 py-1 bg-arcade-surface border border-arcade-gray text-arcade-gray">
+              {challenge.type.toUpperCase()}
             </span>
           </div>
-          <p className="text-sm text-gray-400">
-            {new Date(challenge.start_date).toLocaleDateString()} &mdash;{" "}
+          <p className="font-mono text-xs text-arcade-gray">
+            {new Date(challenge.start_date).toLocaleDateString()} —{" "}
             {challenge.end_date
               ? new Date(challenge.end_date).toLocaleDateString()
               : isGoal
-              ? `First to ${challenge.goal_target} ${challenge.goal_metric}`
-              : "Ongoing"}
+              ? `FIRST TO ${challenge.goal_target} ${challenge.goal_metric}`
+              : "ONGOING"}
             {(isFinished || goalReached) && (
-              <span className="ml-2 text-yellow-400 font-medium">Finished</span>
+              <span className="font-pixel text-[8px] text-arcade-yellow ml-2">FINISHED</span>
             )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap shrink-0">
           {canJoin && (
             <button
               onClick={handleJoin}
               disabled={joining}
-              className="text-sm bg-green-600 hover:bg-green-500 disabled:opacity-50 px-4 py-1.5 rounded-md transition-colors"
+              className="btn-arcade bg-arcade-cyan text-black font-pixel text-[8px] px-4 py-2"
             >
-              {joining ? "Joining..." : "Join"}
+              {joining ? "..." : "JOIN"}
             </button>
           )}
           <button
             onClick={copyLink}
-            className="text-sm bg-gray-800 hover:bg-gray-700 px-4 py-1.5 rounded-md transition-colors"
+            className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-[8px] px-4 py-2"
           >
-            {copied ? "Copied!" : "Share"}
+            {copied ? "COPIED!" : "SHARE"}
           </button>
           {isCreator && (
             <>
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="text-sm bg-gray-800 hover:bg-gray-700 px-4 py-1.5 rounded-md transition-colors"
+                className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-[8px] px-4 py-2"
               >
-                Settings
+                SETTINGS
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="text-sm bg-red-600/20 hover:bg-red-600/40 text-red-400 disabled:opacity-50 px-4 py-1.5 rounded-md transition-colors"
+                className="btn-arcade bg-[#3D0000] text-arcade-pink font-pixel text-[8px] px-4 py-2"
+                style={{ borderColor: "#FF006E" }}
               >
-                {deleting ? "..." : "Delete"}
+                {deleting ? "..." : "DELETE"}
               </button>
             </>
           )}
@@ -171,16 +174,16 @@ export default function Challenge() {
 
       {/* Settings panel */}
       {showSettings && isCreator && (
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-4 space-y-4">
-          <h3 className="text-sm font-semibold text-gray-300">Race Settings</h3>
+        <div className="retro-box bg-arcade-surface p-4 mb-6 space-y-4">
+          <h3 className="font-pixel text-[8px] text-arcade-cyan">RACE SETTINGS</h3>
 
           <div>
-            <label className="block text-xs text-gray-500 mb-1">End Date (optional)</label>
+            <label className="block font-pixel text-[8px] text-arcade-gray mb-2">END DATE (OPTIONAL)</label>
             <input
               type="date"
               value={settingsEndDate}
               onChange={(e) => setSettingsEndDate(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-green-500"
+              className="input-arcade w-full px-3 py-2"
             />
           </div>
 
@@ -188,15 +191,15 @@ export default function Challenge() {
             <button
               onClick={handleSaveSettings}
               disabled={saving}
-              className="text-sm bg-green-600 hover:bg-green-500 disabled:opacity-50 px-4 py-1.5 rounded-md transition-colors"
+              className="btn-arcade bg-arcade-cyan text-black font-pixel text-[8px] px-4 py-2"
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? "SAVING..." : "SAVE"}
             </button>
             <button
               onClick={() => setShowSettings(false)}
-              className="text-sm bg-gray-800 hover:bg-gray-700 px-4 py-1.5 rounded-md transition-colors"
+              className="btn-arcade bg-arcade-surface text-arcade-gray font-pixel text-[8px] px-4 py-2"
             >
-              Cancel
+              CANCEL
             </button>
           </div>
         </div>
@@ -204,21 +207,21 @@ export default function Challenge() {
 
       {/* Goal progress bar */}
       {isGoal && challenge.goal_target && challenge.participants.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-4">
-          <p className="text-sm text-gray-400 mb-2">
-            Goal: {challenge.goal_target} {challenge.goal_metric}
+        <div className="retro-box bg-arcade-surface p-4 mb-6">
+          <p className="font-pixel text-[8px] text-arcade-gray mb-3">
+            GOAL: {challenge.goal_target} {challenge.goal_metric}
           </p>
           {challenge.participants.slice(0, 3).map((p) => {
             const pct = Math.min(100, (p.commit_count / challenge.goal_target!) * 100);
             return (
-              <div key={p.github_username} className="mb-2 last:mb-0">
-                <div className="flex justify-between text-xs text-gray-400 mb-1">
+              <div key={p.github_username} className="mb-3 last:mb-0">
+                <div className="flex justify-between font-mono text-xs text-arcade-gray mb-1">
                   <span>{p.github_username}</span>
                   <span>{p.commit_count} / {challenge.goal_target}</span>
                 </div>
-                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-4 bg-arcade-bg border border-black overflow-hidden">
                   <div
-                    className="h-full bg-green-500 rounded-full transition-all"
+                    className="h-full bg-arcade-yellow transition-all"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -228,47 +231,48 @@ export default function Challenge() {
         </div>
       )}
 
-      <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
-        <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 text-sm text-gray-400 border-b border-gray-800">
-          <span>#</span>
-          <span>Developer</span>
-          <span>Commits</span>
+      {/* Participants table */}
+      <div className="retro-box bg-arcade-surface overflow-hidden">
+        <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 bg-arcade-bg border-b-4 border-black">
+          <span className="font-pixel text-[8px] text-arcade-cyan">#</span>
+          <span className="font-pixel text-[8px] text-arcade-cyan">DRIVER</span>
+          <span className="font-pixel text-[8px] text-arcade-cyan">COMMITS</span>
         </div>
         {challenge.participants.map((p, i) => (
           <div
             key={p.github_username}
             className={`grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 items-center ${
-              i === 0 ? "bg-gray-800/50" : ""
+              i === 0 ? "bg-arcade-yellow/10" : ""
             } ${
               user?.github_username === p.github_username
-                ? "border-l-2 border-green-500"
+                ? "border-l-4 border-arcade-pink"
                 : ""
             }`}
           >
-            <span className="text-gray-500 font-mono w-6 text-center">
+            <span className="font-pixel text-[8px] text-arcade-gray w-6 text-center">
               {i + 1}
             </span>
             <div className="flex items-center gap-3">
               <img
                 src={p.avatar_url || `https://github.com/${p.github_username}.png`}
                 alt={p.github_username}
-                className="w-8 h-8 rounded-full"
+                className="w-8 h-8 rounded-none border-2 border-arcade-gray"
               />
-              <span className="font-medium">
+              <span className="font-mono text-sm text-arcade-white">
                 {p.github_username}
                 {p.is_ghost && (
-                  <span className="ml-1.5 text-xs text-gray-500">(public)</span>
+                  <span className="font-pixel text-[7px] text-arcade-gray ml-1">(public)</span>
                 )}
               </span>
             </div>
-            <span className="text-2xl font-bold tabular-nums">
+            <span className="font-pixel text-xl tabular-nums text-arcade-yellow" style={{ textShadow: "1px 1px 0px #000" }}>
               {p.commit_count.toLocaleString()}
             </span>
           </div>
         ))}
       </div>
 
-      <p className="text-xs text-gray-500 mt-4 text-center">
+      <p className="font-mono text-[10px] text-arcade-gray mt-4 text-center">
         Stats refresh automatically every 60 seconds. Commit data cached for up to 4 hours.
       </p>
     </div>

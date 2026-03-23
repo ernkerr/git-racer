@@ -1,14 +1,6 @@
 import { useState } from "react";
 import type { ContributionDay } from "@git-racer/shared";
 
-const LEVEL_COLORS = [
-  "bg-gray-800",
-  "bg-green-900",
-  "bg-green-700",
-  "bg-green-500",
-  "bg-green-400",
-];
-
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 interface Props {
@@ -21,30 +13,26 @@ export default function ContributionGraph({ days, totalYear }: Props) {
 
   if (days.length === 0) {
     return (
-      <div className="text-gray-500 text-center py-8">No contribution data yet.</div>
+      <div className="font-pixel text-xs text-arcade-gray text-center py-8">NO CONTRIBUTION DATA YET.</div>
     );
   }
 
   // Build a 7-row (Sun-Sat) x N-column (weeks) grid
   const firstDate = new Date(days[0].date + "T12:00:00");
-  const startDow = firstDate.getDay(); // 0=Sun
+  const startDow = firstDate.getDay();
 
-  // Pad front so first day lands on the correct row
   const cells: (ContributionDay | null)[] = [];
   for (let i = 0; i < startDow; i++) cells.push(null);
   cells.push(...days);
-  // Pad end to fill last column
   while (cells.length % 7 !== 0) cells.push(null);
 
   const numWeeks = cells.length / 7;
 
-  // Build week columns
   const weeks: (ContributionDay | null)[][] = [];
   for (let w = 0; w < numWeeks; w++) {
     weeks.push(cells.slice(w * 7, w * 7 + 7));
   }
 
-  // Month label positions (which column index a new month starts)
   const monthLabels: { label: string; col: number }[] = [];
   let prevMonth = -1;
   for (let col = 0; col < weeks.length; col++) {
@@ -69,8 +57,8 @@ export default function ContributionGraph({ days, totalYear }: Props) {
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-gray-400">
-          {totalYear.toLocaleString()} contributions in the last year
+        <p className="font-pixel text-[8px] text-arcade-gray">
+          {totalYear.toLocaleString()} CONTRIBUTIONS THIS YEAR
         </p>
       </div>
 
@@ -87,7 +75,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
               key={i}
               x={labelWidth + m.col * step}
               y={10}
-              className="fill-gray-500"
+              fill="#888888"
               fontSize={9}
             >
               {m.label}
@@ -100,7 +88,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
               key={label}
               x={labelWidth - 4}
               y={headerHeight + [1, 3, 5][i] * step + cellSize - 1}
-              className="fill-gray-500"
+              fill="#888888"
               fontSize={9}
               textAnchor="end"
             >
@@ -114,8 +102,6 @@ export default function ContributionGraph({ days, totalYear }: Props) {
               if (!day) return null;
               const x = labelWidth + col * step;
               const y = headerHeight + row * step;
-              const colorClass = LEVEL_COLORS[day.level];
-              // Map tailwind colors to hex for SVG
               const fill = levelToColor(day.level);
               return (
                 <rect
@@ -124,7 +110,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
                   y={y}
                   width={cellSize}
                   height={cellSize}
-                  rx={2}
+                  rx={0}
                   fill={fill}
                   className="cursor-pointer"
                   onMouseEnter={(e) => {
@@ -144,26 +130,27 @@ export default function ContributionGraph({ days, totalYear }: Props) {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-end gap-1 mt-2 text-[10px] text-gray-500">
-        <span>Less</span>
+      <div className="flex items-center justify-end gap-1 mt-2">
+        <span className="font-pixel text-[8px] text-arcade-gray mr-1">LESS</span>
         {[0, 1, 2, 3, 4].map((level) => (
           <div
             key={level}
-            className="w-[10px] h-[10px] rounded-[2px]"
+            className="w-[10px] h-[10px]"
             style={{ backgroundColor: levelToColor(level) }}
           />
         ))}
-        <span>More</span>
+        <span className="font-pixel text-[8px] text-arcade-gray ml-1">MORE</span>
       </div>
 
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="fixed z-50 bg-gray-700 text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap"
+          className="fixed z-50 bg-arcade-surface border border-arcade-cyan text-arcade-white font-mono text-xs px-2 py-1 pointer-events-none whitespace-nowrap"
           style={{
             left: tooltip.x,
             top: tooltip.y,
             transform: "translate(-50%, -100%)",
+            boxShadow: "2px 2px 0px #000",
           }}
         >
           {tooltip.text}
@@ -175,12 +162,12 @@ export default function ContributionGraph({ days, totalYear }: Props) {
 
 function levelToColor(level: number): string {
   switch (level) {
-    case 0: return "#1f2937"; // gray-800
-    case 1: return "#14532d"; // green-900
-    case 2: return "#15803d"; // green-700
-    case 3: return "#22c55e"; // green-500
-    case 4: return "#4ade80"; // green-400
-    default: return "#1f2937";
+    case 0: return "#1A1A1A"; // arcade-surface (empty)
+    case 1: return "#3D3600"; // very dark yellow
+    case 2: return "#7A6C00"; // mid yellow
+    case 3: return "#B89E00"; // bright yellow
+    case 4: return "#FFE600"; // arcade-yellow (max)
+    default: return "#1A1A1A";
   }
 }
 
