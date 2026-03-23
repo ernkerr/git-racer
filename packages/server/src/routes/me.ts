@@ -14,6 +14,7 @@ import { getUserStatsFast, refreshCommitData } from "../services/commits.js";
 import { computeStreaks } from "../services/streaks.js";
 import { today, weekStart, isoWeek } from "../lib/dates.js";
 import type { AppEnv } from "../types.js";
+import { env } from "../lib/env.js";
 import type { ContributionDay } from "@git-racer/shared";
 
 export const meRoutes = new Hono<AppEnv>();
@@ -218,7 +219,20 @@ meRoutes.get("/share", async (c) => {
   if (streakInfo.current_streak > 0) lines.push(`${streakInfo.current_streak}-day streak`);
   if (streakInfo.last_week > 0) lines.push(`${trendStr} vs last week`);
 
-  return c.json({ text: lines.join("\n"), week_label: weekLabel });
+  const shareText = lines.join("\n");
+
+  // Build a Twitter-friendly version (under 280 chars)
+  const streakText = streakInfo.current_streak > 0
+    ? ` with a ${streakInfo.current_streak}-day streak`
+    : "";
+  const tweet = `I made ${totalWeekCommits} commits this week${streakText}. Think you can keep up?\n\n${env.CLIENT_URL}`;
+
+  return c.json({
+    text: shareText,
+    tweet,
+    url: env.CLIENT_URL,
+    week_label: weekLabel,
+  });
 });
 
 /**

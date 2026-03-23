@@ -130,7 +130,10 @@ export default function Dashboard() {
               <Link
                 key={ch.id}
                 to={`/c/${ch.share_slug}`}
-                className="retro-box bg-arcade-surface p-4 block hover:-translate-y-px transition-all"
+                className={`retro-box bg-arcade-surface p-4 block hover:-translate-y-px transition-all ${
+                  ch.leader_username && ch.leader_commits > ch.your_commits ? "border-arcade-pink" : ""
+                }`}
+                style={ch.leader_username && ch.leader_commits > ch.your_commits ? { borderColor: "#FF006E" } : undefined}
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -145,10 +148,14 @@ export default function Dashboard() {
                     <p className="font-pixel text-3xl tabular-nums text-arcade-white">
                       {ch.your_commits}
                     </p>
-                    <p className="font-mono text-xs text-arcade-gray">
+                    <p className={`font-pixel text-xs ${
+                      ch.leader_username === "" ? "text-arcade-gray"
+                      : ch.leader_commits > ch.your_commits ? "text-arcade-pink"
+                      : "text-arcade-cyan"
+                    }`}>
                       {ch.leader_username === "" ? "" : ch.leader_commits > ch.your_commits
-                        ? `${ch.leader_username} leads`
-                        : "YOU'RE WINNING!"}
+                        ? `${ch.leader_commits - ch.your_commits} BEHIND`
+                        : "YOU LEAD"}
                     </p>
                   </div>
                 </div>

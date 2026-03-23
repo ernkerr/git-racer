@@ -149,5 +149,7 @@ export interface ContributionGraphData {
 
 export interface ShareData {
   text: string;
+  tweet: string;
+  url: string;
   week_label: string;
 }

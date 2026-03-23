@@ -11,6 +11,17 @@
     }
   },
   "routes": [
+    {
+      "src": "/c/([a-zA-Z0-9_-]+)$",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Twitterbot|facebookexternalhit|LinkedInBot|Slackbot|Discordbot|WhatsApp|TelegramBot).*"
+        }
+      ],
+      "dest": "/api/og/c/$1"
+    },
     { "src": "/api/(.*)", "dest": "/api/index.ts" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }

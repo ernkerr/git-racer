@@ -87,6 +87,19 @@ export default function Challenge() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const shareToX = () => {
+    const leader = challenge!.participants[0];
+    const text = leader
+      ? `${leader.github_username} leads "${challenge!.name}" with ${leader.commit_count} commits. Can you beat them?`
+      : `Join my commit race "${challenge!.name}" on Git Racer!`;
+    const url = window.location.href;
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+      "_blank",
+      "noopener,noreferrer,width=550,height=420"
+    );
+  };
+
   if (loading) return <div className="font-pixel text-sm text-arcade-gray">LOADING RACE...</div>;
   if (!challenge) return <div className="font-pixel text-sm text-arcade-gray">RACE NOT FOUND.</div>;
 
@@ -149,7 +162,13 @@ export default function Challenge() {
             onClick={copyLink}
             className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-xs px-4 py-2"
           >
-            {copied ? "COPIED!" : "SHARE"}
+            {copied ? "COPIED!" : "COPY LINK"}
+          </button>
+          <button
+            onClick={shareToX}
+            className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-xs px-4 py-2"
+          >
+            SHARE TO X
           </button>
           {isCreator && (
             <>
@@ -228,6 +247,31 @@ export default function Challenge() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Join CTA for visitors */}
+      {!isParticipant && challenge.type === "team" && !isFinished && !goalReached && (
+        <div className="retro-box bg-arcade-pink/10 p-4 mb-6 text-center" style={{ borderColor: "#FF006E" }}>
+          {user ? (
+            <button
+              onClick={handleJoin}
+              disabled={joining}
+              className="btn-arcade bg-arcade-pink text-black font-pixel text-base px-8 py-3"
+            >
+              {joining ? "JOINING..." : "JOIN THIS RACE"}
+            </button>
+          ) : (
+            <>
+              <p className="font-pixel text-sm text-arcade-white mb-3">WANT TO JOIN THIS RACE?</p>
+              <a
+                href={`/api/auth/github?redirect=${encodeURIComponent(window.location.pathname)}`}
+                className="btn-arcade bg-arcade-pink text-black font-pixel text-sm px-6 py-3 inline-flex"
+              >
+                SIGN IN TO JOIN
+              </a>
+            </>
+          )}
         </div>
       )}
 
