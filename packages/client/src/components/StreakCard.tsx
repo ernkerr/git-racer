@@ -22,12 +22,12 @@ export default function StreakCard({ streaks }: Props) {
             {Array.from({ length: Math.min(streaks.current_streak, 14) }).map((_, i) => (
               <div
                 key={i}
-                className="w-2.5 h-2.5 bg-arcade-pink border border-black"
+                className="w-2.5 h-2.5 bg-arcade-pink border border-arcade-border"
                 style={{ opacity: 0.4 + (i / Math.min(streaks.current_streak, 14)) * 0.6 }}
               />
             ))}
             {streaks.current_streak === 0 && (
-              <div className="w-2.5 h-2.5 bg-arcade-bg border-2 border-black" />
+              <div className="w-2.5 h-2.5 bg-arcade-bg border-2 border-arcade-border" />
             )}
           </div>
         </div>
@@ -41,7 +41,7 @@ export default function StreakCard({ streaks }: Props) {
           </p>
           {streaks.longest_streak > 0 && (
             <div className="mt-2">
-              <div className="h-3 bg-arcade-bg border-2 border-black overflow-hidden">
+              <div className="h-3 bg-arcade-bg border-2 border-arcade-border overflow-hidden">
                 <div
                   className="h-full bg-arcade-pink transition-all"
                   style={{
@@ -82,7 +82,7 @@ export default function StreakCard({ streaks }: Props) {
           )}
           {streaks.best_week_commits > 0 && (
             <div className="mt-2">
-              <div className="h-3 bg-arcade-bg border-2 border-black overflow-hidden">
+              <div className="h-3 bg-arcade-bg border-2 border-arcade-border overflow-hidden">
                 <div
                   className="h-full bg-arcade-cyan transition-all"
                   style={{

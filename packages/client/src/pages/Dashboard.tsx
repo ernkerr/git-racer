@@ -30,6 +30,16 @@ function StatsCard({ label, value }: { label: string; value: number }) {
   );
 }
 
+function RaceStatus({ status }: { status: "winning" | "losing" | "tied" | "none" }) {
+  return (
+    <span className="race-status">
+      <span className={`race-status-dot red ${status === "losing" ? "lit" : ""}`} />
+      <span className={`race-status-dot yellow ${status === "tied" ? "lit" : ""}`} />
+      <span className={`race-status-dot green ${status === "winning" ? "lit" : ""}`} />
+    </span>
+  );
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [challenges, setChallenges] = useState<ActiveChallenge[]>([]);
@@ -102,6 +112,8 @@ export default function Dashboard() {
       {/* Streaks & Records */}
       {streaks && <StreakCard streaks={streaks} />}
 
+      <div className="checker-strip" />
+
       {/* Active Races */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -126,52 +138,65 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-3">
-            {challenges.map((ch) => (
-              <Link
-                key={ch.id}
-                to={`/c/${ch.share_slug}`}
-                className="retro-box bg-arcade-surface p-4 block hover:-translate-y-px transition-all"
-                style={
-                  ch.leader_username && ch.leader_commits > ch.your_commits
-                    ? { borderColor: "#DC2626" }
-                    : ch.leader_username && ch.leader_commits < ch.your_commits
-                    ? { borderColor: "#16A34A" }
-                    : ch.leader_username && ch.leader_commits === ch.your_commits
-                    ? { borderColor: "#EAB308" }
-                    : undefined
-                }
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-pixel text-base text-arcade-white">{ch.name}</h3>
-                    <p className="font-mono text-xs text-arcade-gray mt-1">
-                      {ch.participant_count} participants
-                      {ch.end_date &&
-                        ` · ends ${new Date(ch.end_date).toLocaleDateString()}`}
-                    </p>
+            {challenges.map((ch) => {
+              const raceStatus =
+                ch.leader_username === "" ? "none" as const
+                : ch.leader_commits > ch.your_commits ? "losing" as const
+                : ch.leader_commits < ch.your_commits ? "winning" as const
+                : "tied" as const;
+
+              return (
+                <Link
+                  key={ch.id}
+                  to={`/c/${ch.share_slug}`}
+                  className="retro-box bg-arcade-surface p-4 block hover:-translate-y-px transition-all"
+                  style={
+                    raceStatus === "losing"
+                      ? { borderColor: "#DC2626" }
+                      : raceStatus === "winning"
+                      ? { borderColor: "#16A34A" }
+                      : raceStatus === "tied"
+                      ? { borderColor: "#EAB308" }
+                      : undefined
+                  }
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <RaceStatus status={raceStatus} />
+                        <h3 className="font-pixel text-base text-arcade-white">{ch.name}</h3>
+                      </div>
+                      <p className="font-mono text-xs text-arcade-gray mt-1">
+                        {ch.participant_count} participants
+                        {ch.end_date &&
+                          ` · ends ${new Date(ch.end_date).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-pixel text-3xl tabular-nums text-arcade-white">
+                        {ch.your_commits}
+                      </p>
+                      <p className="font-pixel text-xs" style={{
+                        color: raceStatus === "none" ? "#78716C"
+                          : raceStatus === "losing" ? "#DC2626"
+                          : raceStatus === "winning" ? "#16A34A"
+                          : "#EAB308"
+                      }}>
+                        {raceStatus === "none" ? "" : raceStatus === "losing"
+                          ? `${ch.leader_commits - ch.your_commits} BEHIND`
+                          : raceStatus === "winning" ? "YOU LEAD"
+                          : "TIED"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-pixel text-3xl tabular-nums text-arcade-white">
-                      {ch.your_commits}
-                    </p>
-                    <p className="font-pixel text-xs" style={{
-                      color: ch.leader_username === "" ? "#78716C"
-                        : ch.leader_commits > ch.your_commits ? "#DC2626"
-                        : ch.leader_commits < ch.your_commits ? "#16A34A"
-                        : "#EAB308"
-                    }}>
-                      {ch.leader_username === "" ? "" : ch.leader_commits > ch.your_commits
-                        ? `${ch.leader_commits - ch.your_commits} BEHIND`
-                        : ch.leader_commits < ch.your_commits ? "YOU LEAD"
-                        : "TIED"}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
+
+      <div className="checker-strip" />
 
       {/* Starred Users */}
       <div>
@@ -193,10 +218,14 @@ export default function Dashboard() {
         <SocialCircle data={socialData} loading={socialLoading} />
       </div>
 
+      <div className="checker-divider" />
+
       {/* Global Leaderboard */}
       <div>
         <Leaderboard />
       </div>
+
+      <div className="checker-strip" />
 
       {/* Weekly League */}
       <div>

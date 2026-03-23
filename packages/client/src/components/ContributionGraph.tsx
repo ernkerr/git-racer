@@ -75,7 +75,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
               key={i}
               x={labelWidth + m.col * step}
               y={10}
-              fill="#78716C"
+              style={{ fill: "var(--arcade-muted)" }}
               fontSize={9}
             >
               {m.label}
@@ -88,7 +88,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
               key={label}
               x={labelWidth - 4}
               y={headerHeight + [1, 3, 5][i] * step + cellSize - 1}
-              fill="#78716C"
+              style={{ fill: "var(--arcade-muted)" }}
               fontSize={9}
               textAnchor="end"
             >
@@ -112,7 +112,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
                   height={cellSize}
                   rx={0}
                   fill={fill}
-                  stroke="#000"
+                  style={{ stroke: "var(--arcade-border)" }}
                   strokeWidth={0.5}
                   className="cursor-pointer"
                   onMouseEnter={(e) => {
@@ -137,7 +137,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
         {[0, 1, 2, 3, 4].map((level) => (
           <div
             key={level}
-            className="w-[10px] h-[10px] border border-black"
+            className="w-[10px] h-[10px] border border-arcade-border"
             style={{ backgroundColor: levelToColor(level) }}
           />
         ))}
@@ -147,12 +147,15 @@ export default function ContributionGraph({ days, totalYear }: Props) {
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="fixed z-50 bg-arcade-white text-white text-xs px-2 py-1 pointer-events-none whitespace-nowrap border-2 border-black"
+          className="fixed z-50 text-xs px-2 py-1 pointer-events-none whitespace-nowrap border-2"
           style={{
+            backgroundColor: "var(--arcade-text)",
+            color: "var(--arcade-bg)",
+            borderColor: "var(--arcade-border)",
+            boxShadow: "3px 3px 0px var(--arcade-shadow)",
             left: tooltip.x,
             top: tooltip.y,
             transform: "translate(-50%, -100%)",
-            boxShadow: "3px 3px 0px #000",
           }}
         >
           {tooltip.text}
@@ -164,12 +167,12 @@ export default function ContributionGraph({ days, totalYear }: Props) {
 
 function levelToColor(level: number): string {
   switch (level) {
-    case 0: return "#E7E5E4"; // stone-200 (empty)
-    case 1: return "#FDE68A"; // yellow-200
-    case 2: return "#FBBF24"; // yellow-400
-    case 3: return "#F59E0B"; // amber-500
-    case 4: return "#FF006E"; // pink (max)
-    default: return "#E7E5E4";
+    case 0: return "var(--contrib-0)";
+    case 1: return "var(--contrib-1)";
+    case 2: return "var(--contrib-2)";
+    case 3: return "var(--contrib-3)";
+    case 4: return "var(--contrib-4)";
+    default: return "var(--contrib-0)";
   }
 }
 

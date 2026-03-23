@@ -102,7 +102,7 @@ export default function GitHubUserSearch({ value, onChange, placeholder = "Searc
               <img
                 src={user.avatar_url}
                 alt={user.login}
-                className="w-8 h-8 rounded-none border-2 border-black shrink-0"
+                className="w-8 h-8 rounded-none border-2 border-arcade-border shrink-0"
               />
               <span className="font-mono text-sm text-arcade-white truncate">{user.login}</span>
             </button>

@@ -3,16 +3,14 @@ import type { LeagueGroup, LeagueTier } from "@git-racer/shared";
 const TIER_CONFIG: Record<LeagueTier, {
   label: string;
   color: string;
-  bg: string;
-  borderClass: string;
   borderColor: string;
   barColor: string;
 }> = {
-  bronze:   { label: "BRONZE",   color: "text-[#92400E]", bg: "bg-[#FFFBEB]",      borderClass: "border-[#92400E]", borderColor: "#92400E", barColor: "bg-[#92400E]"        },
-  silver:   { label: "SILVER",   color: "text-arcade-gray",  bg: "bg-arcade-surface", borderClass: "border-arcade-gray",  borderColor: "#78716C", barColor: "bg-arcade-gray"   },
-  gold:     { label: "GOLD",     color: "text-[#B45309]", bg: "bg-arcade-surface", borderClass: "border-[#B45309]", borderColor: "#B45309", barColor: "bg-[#F59E0B]" },
-  platinum: { label: "PLATINUM", color: "text-arcade-cyan",  bg: "bg-arcade-surface", borderClass: "border-arcade-cyan",  borderColor: "#2563EB", barColor: "bg-arcade-cyan"   },
-  diamond:  { label: "DIAMOND",  color: "text-arcade-pink",  bg: "bg-arcade-surface", borderClass: "border-arcade-pink",  borderColor: "#FF006E", barColor: "bg-arcade-pink"   },
+  bronze:   { label: "BRONZE",   color: "text-[#92400E]", borderColor: "#92400E", barColor: "bg-[#92400E]"  },
+  silver:   { label: "SILVER",   color: "text-arcade-gray",  borderColor: "#78716C", barColor: "bg-arcade-gray" },
+  gold:     { label: "GOLD",     color: "text-[#B45309]", borderColor: "#B45309", barColor: "bg-[#F59E0B]"  },
+  platinum: { label: "PLATINUM", color: "text-arcade-cyan",  borderColor: "#2563EB", barColor: "bg-arcade-cyan" },
+  diamond:  { label: "DIAMOND",  color: "text-arcade-pink",  borderColor: "#FF006E", barColor: "bg-arcade-pink" },
 };
 
 const ALL_TIERS: LeagueTier[] = ["bronze", "silver", "gold", "platinum", "diamond"];
@@ -30,8 +28,12 @@ export default function LeagueCard({ league }: Props) {
 
   return (
     <div
-      className={`retro-box ${config.bg} p-5`}
-      style={{ borderColor: config.borderColor, borderWidth: "4px" }}
+      className="retro-box p-5"
+      style={{
+        borderColor: config.borderColor,
+        borderWidth: "4px",
+        backgroundColor: league.tier === "bronze" ? "var(--arcade-tier-bronze)" : "var(--arcade-surface)",
+      }}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -56,7 +58,7 @@ export default function LeagueCard({ league }: Props) {
         {ALL_TIERS.map((t, i) => (
           <div
             key={t}
-            className={`h-2.5 flex-1 border-2 border-black ${
+            className={`h-2.5 flex-1 border-2 border-arcade-border ${
               i <= tierIndex ? TIER_CONFIG[t].barColor : "bg-arcade-bg"
             }`}
           />
@@ -66,11 +68,11 @@ export default function LeagueCard({ league }: Props) {
       {/* Legend */}
       <div className="flex gap-4 mb-3">
         <span className="flex items-center gap-1 font-pixel text-xs text-arcade-gray">
-          <span className="w-2.5 h-2.5 bg-arcade-cyan border border-black" />
+          <span className="w-2.5 h-2.5 bg-arcade-cyan border border-arcade-border" />
           TOP {PROMOTE_COUNT} MOVE UP
         </span>
         <span className="flex items-center gap-1 font-pixel text-xs text-arcade-gray">
-          <span className="w-2.5 h-2.5 bg-arcade-pink border border-black" />
+          <span className="w-2.5 h-2.5 bg-arcade-pink border border-arcade-border" />
           BOTTOM {DEMOTE_COUNT} DROP
         </span>
       </div>
@@ -88,13 +90,20 @@ export default function LeagueCard({ league }: Props) {
               key={member.github_username}
               className={`relative flex items-center gap-3 px-3 py-2 text-sm overflow-hidden border-2 ${
                 member.is_you
-                  ? "bg-arcade-surface border-black"
-                  : isPromoteZone
-                    ? "bg-blue-50 border-transparent"
-                    : isDemoteZone
-                      ? "bg-red-50 border-transparent"
-                      : "bg-arcade-bg border-transparent"
+                  ? "bg-arcade-surface border-arcade-border"
+                  : "border-transparent"
               }`}
+              style={
+                !member.is_you
+                  ? {
+                      backgroundColor: isPromoteZone
+                        ? "var(--arcade-zone-promote)"
+                        : isDemoteZone
+                        ? "var(--arcade-zone-demote)"
+                        : "var(--arcade-bg)",
+                    }
+                  : undefined
+              }
             >
               {/* Bar background */}
               <div
@@ -110,7 +119,7 @@ export default function LeagueCard({ league }: Props) {
               <img
                 src={member.avatar_url ?? `https://github.com/${member.github_username}.png`}
                 alt={member.github_username}
-                className="relative w-6 h-6 rounded-none border-2 border-black shrink-0"
+                className="relative w-6 h-6 rounded-none border-2 border-arcade-border shrink-0"
               />
               <span className={`relative font-mono text-sm flex-1 truncate ${member.is_you ? "text-arcade-white font-bold" : "text-arcade-white"}`}>
                 {member.github_username}

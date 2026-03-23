@@ -78,7 +78,7 @@ export default function ShareButton() {
           >
             {copied ? "Copied!" : "Copy Stats"}
           </button>
-          <div className="border-t-2 border-black" />
+          <div className="border-t-2 border-arcade-border" />
           <button
             onClick={handleTweet}
             className="w-full text-left px-3 py-2.5 text-sm font-medium text-arcade-white hover:bg-arcade-bg transition-colors flex items-center gap-2"

@@ -37,7 +37,7 @@ export default function SocialCircle({ data, loading }: Props) {
             key={entry.github_username}
             className={`flex items-center gap-3 px-3 py-2 text-sm border-2 ${
               entry.is_you
-                ? "bg-arcade-surface border-black"
+                ? "bg-arcade-surface border-arcade-border"
                 : "bg-arcade-bg border-transparent"
             }`}
           >
@@ -47,7 +47,7 @@ export default function SocialCircle({ data, loading }: Props) {
             <img
               src={entry.avatar_url ?? `https://github.com/${entry.github_username}.png`}
               alt={entry.github_username}
-              className="w-6 h-6 rounded-none border-2 border-black shrink-0"
+              className="w-6 h-6 rounded-none border-2 border-arcade-border shrink-0"
             />
             <span className={`font-mono text-sm flex-1 truncate ${entry.is_you ? "text-arcade-white font-bold" : "text-arcade-white"}`}>
               {entry.github_username}

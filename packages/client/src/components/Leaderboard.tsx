@@ -132,7 +132,7 @@ export default function Leaderboard() {
                 <img
                   src={entry.avatar_url}
                   alt={entry.github_username}
-                  className="relative w-8 h-8 rounded-none border-3 border-black shrink-0"
+                  className="relative w-8 h-8 rounded-none border-3 border-arcade-border shrink-0"
                 />
 
                 {/* Username */}

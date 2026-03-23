@@ -132,7 +132,7 @@ export default function Challenge() {
             <h1 className="font-pixel text-2xl text-arcade-white">
               {challenge.name}
             </h1>
-            <span className="font-pixel text-[11px] px-2 py-1 bg-arcade-surface border-3 border-black text-arcade-gray">
+            <span className="font-pixel text-[11px] px-2 py-1 bg-arcade-surface border-3 border-arcade-border text-arcade-gray">
               {challenge.type.toUpperCase()}
             </span>
           </div>
@@ -181,8 +181,8 @@ export default function Challenge() {
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="btn-arcade bg-red-50 text-red-600 font-pixel text-xs px-4 py-2"
-                style={{ borderColor: "#DC2626" }}
+                className="btn-arcade font-pixel text-xs px-4 py-2"
+                style={{ borderColor: "#DC2626", backgroundColor: "var(--arcade-zone-demote)", color: "#DC2626" }}
               >
                 {deleting ? "..." : "DELETE"}
               </button>
@@ -238,7 +238,7 @@ export default function Challenge() {
                   <span>{p.github_username}</span>
                   <span>{p.commit_count} / {challenge.goal_target}</span>
                 </div>
-                <div className="h-4 bg-arcade-bg border-3 border-black overflow-hidden">
+                <div className="h-4 bg-arcade-bg border-3 border-arcade-border overflow-hidden">
                   <div
                     className="h-full bg-arcade-pink transition-all"
                     style={{ width: `${pct}%` }}
@@ -277,7 +277,7 @@ export default function Challenge() {
 
       {/* Participants table */}
       <div className="retro-box bg-arcade-surface overflow-hidden">
-        <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 bg-arcade-bg border-b-4 border-black">
+        <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 bg-arcade-bg border-b-4 border-arcade-border">
           <span className="font-pixel text-xs text-arcade-cyan">#</span>
           <span className="font-pixel text-xs text-arcade-cyan">RACER</span>
           <span className="font-pixel text-xs text-arcade-cyan">COMMITS</span>
@@ -300,7 +300,7 @@ export default function Challenge() {
               <img
                 src={p.avatar_url || `https://github.com/${p.github_username}.png`}
                 alt={p.github_username}
-                className="w-8 h-8 rounded-none border-3 border-black"
+                className="w-8 h-8 rounded-none border-3 border-arcade-border"
               />
               <span className="font-mono text-sm text-arcade-white">
                 {p.github_username}

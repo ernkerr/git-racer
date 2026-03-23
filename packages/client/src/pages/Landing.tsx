@@ -11,6 +11,13 @@ export default function Landing() {
   return (
     <div>
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center mb-4">
+        {/* Racing stoplight */}
+        <div className="stoplight stoplight-animated mb-10">
+          <div className="stoplight-dot red" />
+          <div className="stoplight-dot yellow" />
+          <div className="stoplight-dot green" />
+        </div>
+
         <h1 className="font-pixel leading-tight mb-8">
           <span className="block text-3xl md:text-5xl text-arcade-pink">
             RACE YOUR
@@ -23,13 +30,17 @@ export default function Landing() {
           Race your friends, race famous developers, and turn your GitHub
           contributions into a competitive sport.
         </p>
-        <button
-          onClick={login}
-          className="btn-arcade bg-arcade-pink text-black font-pixel text-base px-8 py-4 mb-4"
-        >
-          GET STARTED
-        </button>
-        <p className="text-xs text-arcade-gray mt-6">
+
+        <div className="checker-frame inline-block">
+          <button
+            onClick={login}
+            className="btn-arcade bg-arcade-pink text-black font-pixel text-base px-8 py-4"
+          >
+            GET STARTED
+          </button>
+        </div>
+
+        <p className="text-xs text-arcade-gray mt-8">
           We only request read access to your profile. No repo access needed.
         </p>
       </div>

@@ -98,7 +98,7 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
               <img
                 src={b.avatar_url ?? `https://github.com/${b.github_username}.png`}
                 alt={b.github_username}
-                className="w-10 h-10 rounded-none border-2 border-black shrink-0"
+                className="w-10 h-10 rounded-none border-2 border-arcade-border shrink-0"
               />
               <div className="min-w-0 flex-1">
                 <p className="font-mono text-sm text-arcade-white truncate">{b.display_name}</p>
@@ -140,7 +140,7 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
             <div className={`mt-3 font-pixel text-xs text-center py-1 border-3 ${
               b.you_beat_them
                 ? "border-arcade-cyan text-arcade-cyan bg-arcade-bg"
-                : "border-black text-arcade-gray bg-arcade-bg"
+                : "border-arcade-border text-arcade-gray bg-arcade-bg"
             }`}>
               {b.you_beat_them
                 ? `BEAT ${b.display_name.toUpperCase()}!`

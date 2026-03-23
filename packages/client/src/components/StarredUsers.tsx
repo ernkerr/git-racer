@@ -69,7 +69,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
                 <img
                   src={s.avatar_url ?? `https://github.com/${s.github_username}.png`}
                   alt={s.github_username}
-                  className="w-10 h-10 rounded-none border-2 border-black shrink-0"
+                  className="w-10 h-10 rounded-none border-2 border-arcade-border shrink-0"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-sm text-arcade-white truncate">{s.display_name}</p>
@@ -109,7 +109,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
               <div className={`mt-3 font-pixel text-xs text-center py-1 border-3 ${
                 s.you_beat_them
                   ? "border-arcade-cyan text-arcade-cyan bg-arcade-bg"
-                  : "border-black text-arcade-gray bg-arcade-bg"
+                  : "border-arcade-border text-arcade-gray bg-arcade-bg"
               }`}>
                 {s.you_beat_them
                   ? `YOU BEAT ${s.display_name.toUpperCase()}!`
@@ -135,7 +135,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
                 <img
                   src={s.avatar_url ?? `https://github.com/${s.github_username}.png`}
                   alt={s.github_username}
-                  className="w-6 h-6 rounded-none border-2 border-black"
+                  className="w-6 h-6 rounded-none border-2 border-arcade-border"
                 />
                 <span className="font-mono text-sm text-arcade-white truncate max-w-[100px]">{s.github_username}</span>
                 <span className="font-pixel text-xs text-arcade-cyan">RACE</span>
