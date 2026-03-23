@@ -20,6 +20,7 @@ interface PushEvent {
   id: string;
   type: string;
   actor: { login: string; avatar_url: string };
+  repo: { name: string };
   payload: { size?: number; distinct_size?: number; commits?: unknown[] };
   created_at: string;
 }
@@ -75,7 +76,7 @@ async function pollGitHubEvents(): Promise<PollResult> {
     headers["If-None-Match"] = lastEtag;
   }
 
-  const commitsByUser = new Map<string, { avatar_url: string; commit_count: number }>();
+  const commitsByUser = new Map<string, { avatar_url: string; commit_count: number; single_commit_pushes: number; repos: Set<string> }>();
   let eventsProcessed = 0;
   let newEtag = lastEtag;
   const freshSeenIds = new Set<string>();
@@ -127,15 +128,20 @@ async function pollGitHubEvents(): Promise<PollResult> {
         event.payload?.commits?.length ||
         1;
       const cappedCommitCount = Math.min(rawCommitCount, MAX_COMMITS_PER_PUSH);
+      const repoName: string = event.repo?.name || "";
 
       eventsProcessed++;
       const existing = commitsByUser.get(username);
       if (existing) {
         existing.commit_count += cappedCommitCount;
+        if (cappedCommitCount === 1) existing.single_commit_pushes += 1;
+        if (repoName) existing.repos.add(repoName);
       } else {
         commitsByUser.set(username, {
           avatar_url: event.actor.avatar_url || `https://github.com/${username}.png`,
           commit_count: cappedCommitCount,
+          single_commit_pushes: cappedCommitCount === 1 ? 1 : 0,
+          repos: repoName ? new Set([repoName]) : new Set(),
         });
       }
     }
@@ -202,6 +208,8 @@ export async function ingestRealtimeEvents(): Promise<{
     date: today,
     commit_count: data.commit_count,
     push_count: 1,
+    single_commit_pushes: data.single_commit_pushes,
+    unique_repos: data.repos.size,
     last_seen_at: new Date(),
   }));
 
@@ -222,6 +230,8 @@ export async function ingestRealtimeEvents(): Promise<{
           set: {
             commit_count: sql`event_committers.commit_count + excluded.commit_count`,
             push_count: sql`event_committers.push_count + excluded.push_count`,
+            single_commit_pushes: sql`event_committers.single_commit_pushes + excluded.single_commit_pushes`,
+            unique_repos: sql`GREATEST(event_committers.unique_repos, excluded.unique_repos)`,
             avatar_url: sql`excluded.avatar_url`,
             last_seen_at: sql`excluded.last_seen_at`,
           },

@@ -98,6 +98,8 @@ export const eventCommitters = pgTable(
     date: date("date").notNull(),
     commit_count: integer("commit_count").notNull().default(0),
     push_count: integer("push_count").notNull().default(0),
+    single_commit_pushes: integer("single_commit_pushes").notNull().default(0),
+    unique_repos: integer("unique_repos").notNull().default(0),
     last_seen_at: timestamp("last_seen_at").defaultNow().notNull(),
   },
   (t) => [

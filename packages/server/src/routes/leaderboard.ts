@@ -29,20 +29,26 @@ leaderboardRoutes.get("/", async (c) => {
   const limit = Math.min(parseInt(c.req.query("limit") || "100", 10), 100);
   const { start, end } = periodRange(period);
 
-  // GH Archive no longer includes per-push commit counts, so each push = 1
-  // "commit" in event_committers. This means archive data is really push counts,
-  // which lets green-square farmers dominate with hundreds of single-commit pushes.
+  // Behavioral bot detection: instead of a hard daily cap, we filter out accounts
+  // whose push patterns match commit-farming scripts. A farming account pushes
+  // hundreds of times per day, almost always one commit per push, to only 1-2 repos.
+  // Real developers push less frequently, batch multiple commits, and spread across repos.
   //
-  // Solution: cap archive-only counts at a reasonable daily max (ARCHIVE_DAILY_CAP).
-  // Users with GraphQL-verified data in commit_snapshots bypass the cap via GREATEST,
-  // so real prolific developers still show their true numbers.
-  const ARCHIVE_DAILY_CAP = 200;
+  // An account must meet ALL THREE conditions to be excluded (AND, not OR):
+  //   1. push_count > 20/day      — high daily push frequency
+  //   2. >85% single-commit pushes — nearly all pushes are single commits
+  //   3. unique_repos <= 2         — concentrated in very few repos
+  //
+  // Users with GraphQL-verified data in commit_snapshots bypass archive filtering
+  // entirely via GREATEST, so this only affects archive-only accounts.
+  // A generous fallback cap (500/day) still prevents true outliers from breaking display.
+  const ARCHIVE_FALLBACK_CAP = 500;
 
   // The query is structured as:
-  //   1. Subquery "ec": aggregate event_committers, capping per-day counts
+  //   1. Subquery "ec": aggregate event_committers, filtering farming-pattern accounts
   //   2. Subquery "cs": aggregate commit_snapshots (GraphQL-verified, uncapped)
   //   3. FULL OUTER JOIN so users in either source appear
-  //   4. GREATEST picks the higher count — verified GraphQL data wins over capped archive
+  //   4. GREATEST picks the higher count — verified GraphQL data wins over archive
   //   5. Bot accounts are filtered by suffix patterns and an explicit blocklist
   const rows = await db.execute(sql`
     SELECT
@@ -59,10 +65,15 @@ leaderboardRoutes.get("/", async (c) => {
         COALESCE(ec.avatar_url, u.avatar_url, 'https://github.com/' || COALESCE(ec.github_username, cs.github_username) || '.png') AS avatar_url
       FROM (
         SELECT github_username,
-          SUM(LEAST(commit_count, ${ARCHIVE_DAILY_CAP})) AS commits,
+          LEAST(SUM(commit_count), ${ARCHIVE_FALLBACK_CAP}) AS commits,
           (array_agg(avatar_url ORDER BY last_seen_at DESC))[1] AS avatar_url
         FROM event_committers
         WHERE date >= ${start} AND date <= ${end}
+          AND NOT (
+            push_count > 20
+            AND single_commit_pushes::float / NULLIF(push_count, 0) > 0.85
+            AND unique_repos <= 2
+          )
         GROUP BY github_username
       ) ec
       FULL OUTER JOIN (

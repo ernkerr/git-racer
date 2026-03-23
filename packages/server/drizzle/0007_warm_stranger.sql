@@ -1,0 +1,2 @@
+ALTER TABLE "event_committers" ADD COLUMN "single_commit_pushes" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "event_committers" ADD COLUMN "unique_repos" integer DEFAULT 0 NOT NULL;

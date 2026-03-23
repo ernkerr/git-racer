@@ -22,6 +22,8 @@ interface CommitterAgg {
   avatar_url: string;
   push_count: number;
   commit_count: number;
+  single_commit_pushes: number; // pushes where the commit count was exactly 1
+  repos: Set<string>;           // distinct repos pushed to (owner/repo)
 }
 
 /**
@@ -51,12 +53,16 @@ function processLine(line: string, agg: Map<string, CommitterAgg>): boolean {
     if (!username || isBot(username)) return false;
 
     const commitCount = getCommitCount(event.payload);
+    // event.repo.name is always present at the top level as "owner/repo"
+    const repoName: string = event.repo?.name || "";
 
     // Merge into the running aggregation: increment if seen, otherwise initialize
     const existing = agg.get(username);
     if (existing) {
       existing.push_count += 1;
       existing.commit_count += commitCount;
+      if (commitCount === 1) existing.single_commit_pushes += 1;
+      if (repoName) existing.repos.add(repoName);
     } else {
       agg.set(username, {
         avatar_url:
@@ -64,6 +70,8 @@ function processLine(line: string, agg: Map<string, CommitterAgg>): boolean {
           `https://github.com/${username}.png`,
         push_count: 1,
         commit_count: commitCount,
+        single_commit_pushes: commitCount === 1 ? 1 : 0,
+        repos: repoName ? new Set([repoName]) : new Set(),
       });
     }
     return true;
@@ -207,6 +215,8 @@ export async function ingestGHArchive(dateStr?: string): Promise<{
     date,
     commit_count: data.commit_count,
     push_count: data.push_count,
+    single_commit_pushes: data.single_commit_pushes,
+    unique_repos: data.repos.size,
     last_seen_at: new Date(),
   }));
 
@@ -228,6 +238,8 @@ export async function ingestGHArchive(dateStr?: string): Promise<{
           set: {
             commit_count: sql`event_committers.commit_count + excluded.commit_count`,
             push_count: sql`event_committers.push_count + excluded.push_count`,
+            single_commit_pushes: sql`event_committers.single_commit_pushes + excluded.single_commit_pushes`,
+            unique_repos: sql`GREATEST(event_committers.unique_repos, excluded.unique_repos)`,
             avatar_url: sql`excluded.avatar_url`,
             last_seen_at: sql`excluded.last_seen_at`,
           },

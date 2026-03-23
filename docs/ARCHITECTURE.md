@@ -410,6 +410,8 @@ Two auth middlewares:
 │ (unique composite)       │    │ (unique composite)         │
 │ commit_count             │    │ commit_count               │
 │ push_count               │    │ fetched_at                 │
+│ single_commit_pushes  ←bot detection signal               │
+│ unique_repos          ←bot detection signal               │
 │ avatar_url               │    └───────────────────────────┘
 │ last_seen_at             │
 └─────────────────────────┘    ┌───────────────────────────┐
@@ -454,8 +456,10 @@ Vercel's free plan only supports daily cron frequency. As a result, `ingest-even
 ├──────────────────┼──────────────┼────────────────────────────────┤
 │ ingest-events    │ 05:00 daily  │ Downloads 1 GH Archive hour,   │
 │                  │ (0 5 * * *)  │ parses PushEvents, upserts     │
-│                  │              │ event_committers. Then enriches │
-│                  │              │ top 10 via GraphQL.             │
+│                  │              │ event_committers (including     │
+│                  │              │ behavioral signals). Then       │
+│                  │              │ enriches top 150 users over the │
+│                  │              │ past 7 days via GraphQL.        │
 ├──────────────────┼──────────────┼────────────────────────────────┤
 │ poll-events      │ 06:00 daily  │ Polls GitHub Events API with   │
 │                  │ (0 6 * * *)  │ ETags for real-time "Today"    │
@@ -508,7 +512,7 @@ The system is designed to run at much higher frequency — the code, advisory lo
 
 ## Anti-Cheat
 
-Three layers prevent automated/spam accounts from dominating:
+Four layers prevent automated/spam accounts from dominating:
 
 ### 1. Bot filtering (13 patterns)
 
@@ -523,11 +527,30 @@ github-merge-queue
 
 ### 2. Per-push commit cap (50)
 
-Applied during GH Archive parsing and real-time event polling. Since GH Archive no longer reports per-push commit counts (each push = 1), the cap limits users who spam dozens or hundreds of tiny pushes per day — a common green-square farming pattern. Capping at 50 per day lets normal development through while preventing inflated archive scores.
+Applied during GH Archive parsing and real-time event polling. A single push with more than 50 commits is almost always automated (e.g., a dependency update bot committing thousands of lockfile changes). Capping at 50 per push lets normal development through while preventing any single event from inflating daily totals.
 
-### 3. Real data enrichment
+### 3. Behavioral scoring — farming pattern detection
 
-The top 10 users get their counts replaced with real GitHub GraphQL data (contribution calendar). This means even if archive data is inflated, the actual leaderboard shows verified numbers for the people who matter most — the top of the board.
+During ingestion, each push event contributes to two behavioral signals stored in `event_committers`:
+
+- **`single_commit_pushes`** — count of pushes where exactly 1 commit was made. Commit-farming scripts typically push one commit at a time, hundreds of times per day.
+- **`unique_repos`** — count of distinct repositories pushed to that day. Farming accounts push to 1–2 repos repeatedly; real developers spread activity across many repos.
+
+The leaderboard query excludes any account whose archive data matches **all three** farming conditions simultaneously:
+
+```sql
+AND NOT (
+  push_count > 20                                              -- high daily push frequency
+  AND single_commit_pushes::float / NULLIF(push_count, 0) > 0.85  -- >85% single-commit pushes
+  AND unique_repos <= 2                                        -- concentrated in ≤2 repos
+)
+```
+
+All three conditions must be true to exclude an account. A developer pushing frequently to many repos, or pushing infrequently to one repo, is never filtered. A 500-commit/day fallback cap still applies as a backstop for extreme outliers.
+
+### 4. Real data enrichment
+
+The top 150 users (by archive commit count, over the past 7 days) get their counts replaced with real GitHub GraphQL data — the verified contribution calendar. This means even if archive data is approximate, the leaderboard's top positions show accurate numbers. The `GREATEST()` blending logic picks the GraphQL count whenever it's available, completely bypassing archive filtering for those users.
 
 ---
 
