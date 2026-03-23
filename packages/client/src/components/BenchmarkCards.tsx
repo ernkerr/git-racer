@@ -58,7 +58,7 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
 
   if (benchmarks.length === 0) {
     return (
-      <div className="font-pixel text-xs text-arcade-gray text-center py-6">
+      <div className="font-pixel text-sm text-arcade-gray text-center py-6">
         BENCHMARK DATA POPULATES AS CONTRIBUTIONS ARE TRACKED. CHECK BACK SOON!
       </div>
     );
@@ -72,10 +72,10 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
           <button
             key={cat}
             onClick={() => setFilter(cat)}
-            className={`btn-arcade shrink-0 px-3 py-1 font-pixel text-[8px] transition-colors ${
+            className={`btn-arcade shrink-0 px-3 py-1 font-pixel text-xs transition-colors ${
               filter === cat
                 ? "bg-arcade-pink text-black"
-                : "bg-arcade-surface text-arcade-gray opacity-60"
+                : "bg-arcade-surface text-arcade-gray"
             }`}
           >
             {CATEGORY_LABELS[cat] ?? cat}
@@ -91,14 +91,14 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
             className={`retro-box shrink-0 w-64 bg-arcade-surface p-4 ${
               b.you_beat_them ? "border-arcade-cyan" : ""
             }`}
-            style={b.you_beat_them ? { borderColor: "#00F5FF" } : undefined}
+            style={b.you_beat_them ? { borderColor: "#2563EB" } : undefined}
           >
             {/* Dev info */}
             <div className="flex items-center gap-3 mb-3">
               <img
                 src={b.avatar_url ?? `https://github.com/${b.github_username}.png`}
                 alt={b.github_username}
-                className="w-10 h-10 rounded-none border border-arcade-gray shrink-0"
+                className="w-10 h-10 rounded-none border-2 border-black shrink-0"
               />
               <div className="min-w-0 flex-1">
                 <p className="font-mono text-sm text-arcade-white truncate">{b.display_name}</p>
@@ -107,7 +107,7 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
               {b.is_custom && (
                 <button
                   onClick={() => handleRemove(b.github_username)}
-                  className="font-pixel text-[8px] text-arcade-gray hover:text-arcade-pink shrink-0 transition-colors"
+                  className="font-pixel text-xs text-arcade-gray hover:text-arcade-pink shrink-0 transition-colors"
                   title="Remove"
                 >
                   X
@@ -118,29 +118,29 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
             {/* Comparison */}
             <div className="flex items-end justify-between">
               <div>
-                <p className="font-pixel text-[8px] text-arcade-gray mb-1">THEIRS</p>
-                <p className="font-pixel text-sm tabular-nums text-arcade-gray">
+                <p className="font-pixel text-xs text-arcade-gray mb-1">THEIRS</p>
+                <p className="font-pixel text-base tabular-nums text-arcade-gray">
                   {b.their_commits}
                 </p>
               </div>
               <div className="text-center px-2">
-                <span className={`font-pixel text-sm ${b.you_beat_them ? "text-arcade-cyan" : "text-arcade-gray"}`}>
+                <span className={`font-pixel text-base ${b.you_beat_them ? "text-arcade-cyan" : "text-arcade-gray"}`}>
                   {b.you_beat_them ? ">" : "<"}
                 </span>
               </div>
               <div className="text-right">
-                <p className="font-pixel text-[8px] text-arcade-gray mb-1">YOU</p>
-                <p className={`font-pixel text-sm tabular-nums ${b.you_beat_them ? "text-arcade-yellow" : "text-arcade-white"}`}>
+                <p className="font-pixel text-xs text-arcade-gray mb-1">YOU</p>
+                <p className={`font-pixel text-base tabular-nums ${b.you_beat_them ? "text-arcade-pink" : "text-arcade-white"}`}>
                   {b.your_commits}
                 </p>
               </div>
             </div>
 
             {/* Status */}
-            <div className={`mt-3 font-pixel text-[8px] text-center py-1 border ${
+            <div className={`mt-3 font-pixel text-xs text-center py-1 border-3 ${
               b.you_beat_them
                 ? "border-arcade-cyan text-arcade-cyan bg-arcade-bg"
-                : "border-arcade-gray text-arcade-gray bg-arcade-bg"
+                : "border-black text-arcade-gray bg-arcade-bg"
             }`}>
               {b.you_beat_them
                 ? `BEAT ${b.display_name.toUpperCase()}!`
@@ -163,7 +163,7 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
         <button
           onClick={handleAdd}
           disabled={adding || !input.trim()}
-          className="btn-arcade bg-arcade-surface text-arcade-gray font-pixel text-[8px] px-4 py-2 disabled:opacity-40"
+          className="btn-arcade bg-arcade-surface text-arcade-gray font-pixel text-xs px-4 py-2 disabled:opacity-40"
         >
           {adding ? "..." : "ADD"}
         </button>

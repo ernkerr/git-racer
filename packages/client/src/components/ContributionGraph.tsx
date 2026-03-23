@@ -13,7 +13,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
 
   if (days.length === 0) {
     return (
-      <div className="font-pixel text-xs text-arcade-gray text-center py-8">NO CONTRIBUTION DATA YET.</div>
+      <div className="font-pixel text-sm text-arcade-gray text-center py-8">NO CONTRIBUTION DATA YET.</div>
     );
   }
 
@@ -57,7 +57,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-3">
-        <p className="font-pixel text-[8px] text-arcade-gray">
+        <p className="font-pixel text-xs text-arcade-gray">
           {totalYear.toLocaleString()} CONTRIBUTIONS THIS YEAR
         </p>
       </div>
@@ -75,7 +75,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
               key={i}
               x={labelWidth + m.col * step}
               y={10}
-              fill="#888888"
+              fill="#78716C"
               fontSize={9}
             >
               {m.label}
@@ -88,7 +88,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
               key={label}
               x={labelWidth - 4}
               y={headerHeight + [1, 3, 5][i] * step + cellSize - 1}
-              fill="#888888"
+              fill="#78716C"
               fontSize={9}
               textAnchor="end"
             >
@@ -112,6 +112,8 @@ export default function ContributionGraph({ days, totalYear }: Props) {
                   height={cellSize}
                   rx={0}
                   fill={fill}
+                  stroke="#000"
+                  strokeWidth={0.5}
                   className="cursor-pointer"
                   onMouseEnter={(e) => {
                     const rect = (e.target as SVGRectElement).getBoundingClientRect();
@@ -131,26 +133,26 @@ export default function ContributionGraph({ days, totalYear }: Props) {
 
       {/* Legend */}
       <div className="flex items-center justify-end gap-1 mt-2">
-        <span className="font-pixel text-[8px] text-arcade-gray mr-1">LESS</span>
+        <span className="font-pixel text-xs text-arcade-gray mr-1">LESS</span>
         {[0, 1, 2, 3, 4].map((level) => (
           <div
             key={level}
-            className="w-[10px] h-[10px]"
+            className="w-[10px] h-[10px] border border-black"
             style={{ backgroundColor: levelToColor(level) }}
           />
         ))}
-        <span className="font-pixel text-[8px] text-arcade-gray ml-1">MORE</span>
+        <span className="font-pixel text-xs text-arcade-gray ml-1">MORE</span>
       </div>
 
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="fixed z-50 bg-arcade-surface border border-arcade-cyan text-arcade-white font-mono text-xs px-2 py-1 pointer-events-none whitespace-nowrap"
+          className="fixed z-50 bg-arcade-white text-white text-xs px-2 py-1 pointer-events-none whitespace-nowrap border-2 border-black"
           style={{
             left: tooltip.x,
             top: tooltip.y,
             transform: "translate(-50%, -100%)",
-            boxShadow: "2px 2px 0px #000",
+            boxShadow: "3px 3px 0px #000",
           }}
         >
           {tooltip.text}
@@ -162,12 +164,12 @@ export default function ContributionGraph({ days, totalYear }: Props) {
 
 function levelToColor(level: number): string {
   switch (level) {
-    case 0: return "#1A1A1A"; // arcade-surface (empty)
-    case 1: return "#3D3600"; // very dark yellow
-    case 2: return "#7A6C00"; // mid yellow
-    case 3: return "#B89E00"; // bright yellow
-    case 4: return "#FFE600"; // arcade-yellow (max)
-    default: return "#1A1A1A";
+    case 0: return "#E7E5E4"; // stone-200 (empty)
+    case 1: return "#FDE68A"; // yellow-200
+    case 2: return "#FBBF24"; // yellow-400
+    case 3: return "#F59E0B"; // amber-500
+    case 4: return "#FF006E"; // pink (max)
+    default: return "#E7E5E4";
   }
 }
 

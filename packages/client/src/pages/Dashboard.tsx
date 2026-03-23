@@ -22,8 +22,8 @@ import Leaderboard from "../components/Leaderboard.tsx";
 function StatsCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="retro-box bg-arcade-surface p-4">
-      <p className="font-pixel text-[8px] text-arcade-gray mb-2 leading-loose uppercase">{label}</p>
-      <p className="font-pixel text-xl tabular-nums text-arcade-yellow" style={{ textShadow: "2px 2px 0px #000" }}>
+      <p className="font-pixel text-xs text-arcade-gray mb-2 uppercase">{label}</p>
+      <p className="font-pixel text-2xl tabular-nums text-arcade-white">
         {value.toLocaleString()}
       </p>
     </div>
@@ -73,7 +73,7 @@ export default function Dashboard() {
   }, []);
 
   if (loading) {
-    return <div className="font-pixel text-xs text-arcade-gray blink">LOADING YOUR STATS...</div>;
+    return <div className="font-pixel text-sm text-arcade-gray">LOADING YOUR STATS...</div>;
   }
 
   return (
@@ -82,7 +82,7 @@ export default function Dashboard() {
 
       {/* Header + Share */}
       <div className="flex items-center justify-between">
-        <h1 className="font-pixel text-xl text-arcade-yellow" style={{ textShadow: "2px 2px 0px #000" }}>
+        <h1 className="font-pixel text-2xl text-arcade-white">
           DASHBOARD
         </h1>
         <ShareButton />
@@ -105,10 +105,10 @@ export default function Dashboard() {
       {/* Active Races */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-pixel text-sm text-arcade-cyan">ACTIVE RACES</h2>
+          <h2 className="font-pixel text-base text-arcade-cyan">ACTIVE RACES</h2>
           <Link
             to="/challenges/new"
-            className="btn-arcade bg-arcade-pink text-black font-pixel text-[8px] px-3 py-2"
+            className="btn-arcade bg-arcade-pink text-black font-pixel text-xs px-3 py-2"
           >
             NEW RACE
           </Link>
@@ -116,10 +116,10 @@ export default function Dashboard() {
 
         {challenges.length === 0 ? (
           <div className="retro-box bg-arcade-surface p-8 text-center">
-            <p className="font-pixel text-xs text-arcade-gray mb-4">NO ACTIVE RACES YET.</p>
+            <p className="font-pixel text-sm text-arcade-gray mb-4">NO ACTIVE RACES YET.</p>
             <Link
               to="/challenges/new"
-              className="font-pixel text-xs text-arcade-cyan hover:text-arcade-yellow transition-colors"
+              className="font-pixel text-sm text-arcade-cyan hover:text-arcade-pink transition-colors"
             >
               CREATE YOUR FIRST RACE
             </Link>
@@ -134,7 +134,7 @@ export default function Dashboard() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-pixel text-sm text-arcade-white">{ch.name}</h3>
+                    <h3 className="font-pixel text-base text-arcade-white">{ch.name}</h3>
                     <p className="font-mono text-xs text-arcade-gray mt-1">
                       {ch.participant_count} participants
                       {ch.end_date &&
@@ -142,7 +142,7 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-pixel text-2xl tabular-nums text-arcade-yellow">
+                    <p className="font-pixel text-3xl tabular-nums text-arcade-white">
                       {ch.your_commits}
                     </p>
                     <p className="font-mono text-xs text-arcade-gray">
@@ -160,7 +160,7 @@ export default function Dashboard() {
 
       {/* Starred Users */}
       <div>
-        <h2 className="font-pixel text-sm text-arcade-cyan mb-3">STARRED DEVS</h2>
+        <h2 className="font-pixel text-base text-arcade-cyan mb-3">STARRED DEVS</h2>
         <StarredUsers
           starred={starred}
           suggestions={suggestions}
@@ -174,7 +174,7 @@ export default function Dashboard() {
 
       {/* Social Circle */}
       <div>
-        <h2 className="font-pixel text-sm text-arcade-cyan mb-3">YOUR CIRCLE</h2>
+        <h2 className="font-pixel text-base text-arcade-cyan mb-3">YOUR CIRCLE</h2>
         <SocialCircle data={socialData} loading={socialLoading} />
       </div>
 
@@ -185,12 +185,12 @@ export default function Dashboard() {
 
       {/* Weekly League */}
       <div>
-        <h2 className="font-pixel text-sm text-arcade-cyan mb-3">WEEKLY LEAGUE</h2>
+        <h2 className="font-pixel text-base text-arcade-cyan mb-3">WEEKLY LEAGUE</h2>
         {league ? (
           <LeagueCard league={league} />
         ) : (
           <div className="retro-box bg-arcade-surface p-6 text-center">
-            <p className="font-pixel text-xs text-arcade-gray">YOUR LEAGUE IS BEING SET UP. CHECK BACK SOON!</p>
+            <p className="font-pixel text-sm text-arcade-gray">YOUR LEAGUE IS BEING SET UP. CHECK BACK SOON!</p>
           </div>
         )}
       </div>

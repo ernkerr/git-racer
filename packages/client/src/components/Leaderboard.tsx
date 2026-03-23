@@ -18,14 +18,14 @@ const PERIOD_LABELS: Record<Period, string> = {
 
 const RANK_ORDINALS = ["1ST", "2ND", "3RD"];
 const RANK_COLORS = [
-  "text-arcade-yellow",
-  "text-arcade-cyan",
   "text-arcade-pink",
+  "text-arcade-cyan",
+  "text-arcade-gray",
 ];
 const ROW_BORDER_COLORS = [
-  "border-arcade-yellow",
-  "border-arcade-cyan",
   "border-arcade-pink",
+  "border-arcade-cyan",
+  "border-arcade-gray",
 ];
 
 export default function Leaderboard() {
@@ -49,8 +49,8 @@ export default function Leaderboard() {
   return (
     <div className="w-full max-w-2xl mx-auto">
       <div className="flex items-center justify-center gap-3 mb-6">
-        <h2 className="font-pixel text-lg text-arcade-yellow" style={{ textShadow: "2px 2px 0px #000" }}>
-          HI-SCORES
+        <h2 className="font-pixel text-xl text-arcade-white">
+          LEADERBOARD
         </h2>
         <button
           onClick={() => setShowInfo((v) => !v)}
@@ -66,16 +66,16 @@ export default function Leaderboard() {
       {showInfo && (
         <div className="retro-box bg-arcade-surface p-4 mb-6 text-sm text-arcade-gray space-y-2">
           <p>
-            Rankings are based on <span className="text-arcade-cyan">real public GitHub activity</span> from
+            Rankings are based on <span className="text-arcade-cyan font-bold">real public GitHub activity</span> from
             every push event across all of GitHub, updated daily.
           </p>
           <p>
-            If you have a Git Racer account, your ranking uses your <span className="text-arcade-cyan">actual commit count</span> (including
+            If you have a Git Racer account, your ranking uses your <span className="text-arcade-cyan font-bold">actual commit count</span> (including
             private repos) so your number matches your dashboard.
           </p>
           <p>
             For everyone else, rankings are based on public pushes tracked
-            via <span className="text-arcade-cyan">GH Archive</span>.
+            via <span className="text-arcade-cyan font-bold">GH Archive</span>.
           </p>
         </div>
       )}
@@ -86,7 +86,7 @@ export default function Leaderboard() {
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`btn-arcade flex-1 py-2 font-pixel text-[8px] leading-loose ${
+            className={`btn-arcade flex-1 py-2 font-pixel text-xs ${
               period === p
                 ? "bg-arcade-pink text-black"
                 : "bg-arcade-surface text-arcade-gray hover:text-arcade-white"
@@ -99,11 +99,11 @@ export default function Leaderboard() {
 
       {/* Leaderboard List */}
       {loading ? (
-        <div className="font-pixel text-xs text-arcade-gray text-center py-12 blink">
+        <div className="font-pixel text-sm text-arcade-gray text-center py-12">
           LOADING...
         </div>
       ) : entries.length === 0 ? (
-        <div className="font-pixel text-xs text-arcade-gray text-center py-12">
+        <div className="font-pixel text-sm text-arcade-gray text-center py-12">
           NO DATA YET. CHECK BACK SOON!
         </div>
       ) : (
@@ -119,12 +119,12 @@ export default function Leaderboard() {
               >
                 {/* Background bar */}
                 <div
-                  className="absolute inset-y-0 left-0 bg-arcade-yellow/10 transition-all duration-500"
+                  className="absolute inset-y-0 left-0 bg-arcade-pink/10 transition-all duration-500"
                   style={{ width: `${barWidth}%` }}
                 />
 
                 {/* Rank */}
-                <span className={`relative font-pixel text-[8px] w-8 text-center ${isTop3 ? RANK_COLORS[i] : "text-arcade-gray"}`}>
+                <span className={`relative font-pixel text-xs w-8 text-center ${isTop3 ? RANK_COLORS[i] : "text-arcade-gray"}`}>
                   {i < 3 ? RANK_ORDINALS[i] : i + 1}
                 </span>
 
@@ -132,7 +132,7 @@ export default function Leaderboard() {
                 <img
                   src={entry.avatar_url}
                   alt={entry.github_username}
-                  className="relative w-8 h-8 rounded-none border-2 border-arcade-gray shrink-0"
+                  className="relative w-8 h-8 rounded-none border-3 border-black shrink-0"
                 />
 
                 {/* Username */}
@@ -141,7 +141,7 @@ export default function Leaderboard() {
                 </span>
 
                 {/* Commit count */}
-                <span className="relative font-pixel text-sm tabular-nums text-arcade-yellow">
+                <span className="relative font-pixel text-base tabular-nums text-arcade-white">
                   {entry.commit_count.toLocaleString()}
                 </span>
               </div>
@@ -150,7 +150,7 @@ export default function Leaderboard() {
           {visible < entries.length && (
             <button
               onClick={() => setVisible((v) => v + 10)}
-              className="btn-arcade w-full py-2 font-pixel text-[8px] bg-arcade-surface text-arcade-gray hover:text-arcade-white"
+              className="btn-arcade w-full py-2 font-pixel text-xs bg-arcade-surface text-arcade-gray hover:text-arcade-white"
             >
               + SHOW MORE
             </button>

@@ -13,8 +13,7 @@ export default function Layout() {
         <nav className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             to={user ? "/dashboard" : "/"}
-            className="font-pixel text-sm text-arcade-yellow leading-loose"
-            style={{ textShadow: "3px 3px 0px #FF006E" }}
+            className="font-pixel text-lg text-arcade-pink"
           >
             GIT RACER
           </Link>
@@ -23,7 +22,7 @@ export default function Layout() {
               <>
                 <Link
                   to="/challenges/new"
-                  className="btn-arcade bg-arcade-cyan text-black font-pixel text-[8px] px-3 py-2"
+                  className="btn-arcade bg-arcade-cyan text-white font-pixel text-xs px-3 py-2"
                 >
                   NEW RACE
                 </Link>
@@ -31,23 +30,23 @@ export default function Layout() {
                   <img
                     src={user.avatar_url ?? ""}
                     alt={user.github_username}
-                    className="w-8 h-8 rounded-none border-2 border-arcade-yellow"
+                    className="w-8 h-8 rounded-none border-3 border-black"
                   />
-                  <span className="font-pixel text-[8px] text-arcade-gray">{user.github_username}</span>
+                  <span className="text-sm text-arcade-gray">{user.github_username}</span>
                 </div>
                 <button
                   onClick={logout}
-                  className="font-pixel text-[8px] text-arcade-gray hover:text-arcade-pink transition-colors"
+                  className="text-sm text-arcade-gray hover:text-arcade-pink transition-colors font-medium"
                 >
-                  LOGOUT
+                  LOG OUT
                 </button>
               </>
             ) : (
               <button
                 onClick={login}
-                className="btn-arcade bg-arcade-pink text-black font-pixel text-[8px] px-4 py-2"
+                className="btn-arcade bg-arcade-pink text-black font-pixel text-xs px-4 py-2"
               >
-                INSERT COIN
+                SIGN IN
               </button>
             )}
           </div>

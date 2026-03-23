@@ -85,7 +85,7 @@ export default function GitHubUserSearch({ value, onChange, placeholder = "Searc
         />
         {loading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <div className="w-4 h-4 border-2 border-arcade-gray border-t-arcade-cyan rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-arcade-gray border-t-arcade-cyan animate-spin" />
           </div>
         )}
       </div>
@@ -102,7 +102,7 @@ export default function GitHubUserSearch({ value, onChange, placeholder = "Searc
               <img
                 src={user.avatar_url}
                 alt={user.login}
-                className="w-8 h-8 rounded-none border border-arcade-gray shrink-0"
+                className="w-8 h-8 rounded-none border-2 border-black shrink-0"
               />
               <span className="font-mono text-sm text-arcade-white truncate">{user.login}</span>
             </button>

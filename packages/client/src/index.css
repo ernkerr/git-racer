@@ -1,50 +1,57 @@
 @import "tailwindcss";
 
 @theme {
-  --color-arcade-bg:      #0A0A0A;
-  --color-arcade-surface: #1A1A1A;
+  --color-arcade-bg:      #FAFAF9;
+  --color-arcade-surface: #FFFFFF;
   --color-arcade-pink:    #FF006E;
   --color-arcade-yellow:  #FFE600;
-  --color-arcade-cyan:    #00F5FF;
-  --color-arcade-white:   #F0F0F0;
-  --color-arcade-gray:    #888888;
+  --color-arcade-cyan:    #2563EB;
+  --color-arcade-white:   #1C1917;
+  --color-arcade-gray:    #78716C;
 
-  --font-pixel: "Press Start 2P", system-ui, monospace;
+  --font-pixel: "Space Grotesk", system-ui, sans-serif;
 }
 
 /* Global base */
 body {
-  background-color: #0A0A0A;
-  color: #F0F0F0;
-  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  background-color: #FAFAF9;
+  color: #1C1917;
+  font-family: "Space Grotesk", system-ui, sans-serif;
 }
 
-/* Pixel font utility — fallback if @theme font token doesn't generate the class */
+/* Bold display utility */
 .font-pixel {
-  font-family: "Press Start 2P", system-ui, monospace;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 /* ─── Core primitives ─────────────────────────────────────────────────────── */
 
-/* The neo-brutalist card/box: thick black border + offset shadow */
+/* Neo-brutalist card: thick black border + hard offset shadow */
 .retro-box {
   border: 3px solid #000;
-  box-shadow: 4px 4px 0px #000;
+  box-shadow: 5px 5px 0px #000;
 }
 
-/* Pressable arcade button — combine with bg/text utilities in JSX */
+/* Pressable neo-brutalist button */
 .btn-arcade {
   border: 3px solid #000;
   box-shadow: 4px 4px 0px #000;
-  transition: transform 0.05s ease, box-shadow 0.05s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-weight: 700;
+}
+.btn-arcade:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0px #000;
 }
 .btn-arcade:active {
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0px #000;
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0px #000;
 }
 .btn-arcade:disabled {
   opacity: 0.4;
@@ -52,56 +59,38 @@ body {
   pointer-events: none;
 }
 
-/* Checkered flag divider — black & white, 12px tall */
+/* Bold divider — checkerboard pattern */
 .checker-divider {
   height: 12px;
-  background-image: repeating-conic-gradient(#000 0% 25%, #F0F0F0 0% 50%);
+  background-image: repeating-conic-gradient(#000 0% 25%, #FAFAF9 0% 50%);
   background-size: 12px 12px;
-  border-top: 2px solid #000;
-  border-bottom: 2px solid #000;
+  border-top: 3px solid #000;
+  border-bottom: 3px solid #000;
 }
 
-/* Checkered accent bar — pink & yellow, 8px tall */
+/* Accent bar — pink & yellow checkerboard */
 .checker-bar {
   height: 8px;
   background-image: repeating-conic-gradient(#FF006E 0% 25%, #FFE600 0% 50%);
   background-size: 8px 8px;
+  border-top: 2px solid #000;
+  border-bottom: 2px solid #000;
 }
 
-/* Retro form input */
+/* Neo-brutalist form input */
 .input-arcade {
-  background-color: #1A1A1A;
+  background-color: #FFFFFF;
   border: 3px solid #000;
-  box-shadow: 2px 2px 0px #000;
-  color: #F0F0F0;
-  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  box-shadow: 3px 3px 0px #000;
+  color: #1C1917;
+  font-family: "Space Grotesk", system-ui, sans-serif;
   outline: none;
   transition: border-color 0.1s, box-shadow 0.1s;
 }
 .input-arcade:focus {
-  border-color: #00F5FF;
-  box-shadow: 2px 2px 0px #00F5FF;
+  border-color: #2563EB;
+  box-shadow: 3px 3px 0px #2563EB;
 }
 .input-arcade::placeholder {
-  color: #888888;
-}
-
-/* Blinking text — INSERT COIN style */
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0; }
-}
-.blink {
-  animation: blink 1s step-end infinite;
-}
-
-/* Subtle CRT scanline overlay */
-.scanlines {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0px,
-    transparent 2px,
-    rgba(0, 0, 0, 0.15) 2px,
-    rgba(0, 0, 0, 0.15) 4px
-  );
+  color: #A8A29E;
 }

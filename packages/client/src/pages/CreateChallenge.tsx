@@ -90,14 +90,14 @@ export default function CreateChallenge() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h1 className="font-pixel text-xl text-arcade-yellow mb-8" style={{ textShadow: "2px 2px 0px #000" }}>
+      <h1 className="font-pixel text-2xl text-arcade-white mb-8">
         CREATE A RACE
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Race Name */}
         <div>
-          <label className="block font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">
+          <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
             Race Name
           </label>
           <input
@@ -112,7 +112,7 @@ export default function CreateChallenge() {
 
         {/* Race Type */}
         <div>
-          <label className="block font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">
+          <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
             Type
           </label>
           <div className="flex gap-3">
@@ -124,10 +124,10 @@ export default function CreateChallenge() {
                   setType(t);
                   if (t === "1v1") setOpponents([opponents[0] || ""]);
                 }}
-                className={`btn-arcade flex-1 py-2 font-pixel text-[8px] ${
+                className={`btn-arcade flex-1 py-2 font-pixel text-xs ${
                   type === t
                     ? "bg-arcade-pink text-black"
-                    : "bg-arcade-surface text-arcade-gray opacity-60"
+                    : "bg-arcade-surface text-arcade-gray"
                 }`}
               >
                 {t === "1v1" ? "1V1" : "TEAM"}
@@ -138,7 +138,7 @@ export default function CreateChallenge() {
 
         {/* Duration Type */}
         <div>
-          <label className="block font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">
+          <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
             Duration
           </label>
           <div className="flex gap-3">
@@ -147,10 +147,10 @@ export default function CreateChallenge() {
                 key={d}
                 type="button"
                 onClick={() => setDurationType(d)}
-                className={`btn-arcade flex-1 py-2 font-pixel text-[8px] ${
+                className={`btn-arcade flex-1 py-2 font-pixel text-xs ${
                   durationType === d
                     ? "bg-arcade-pink text-black"
-                    : "bg-arcade-surface text-arcade-gray opacity-60"
+                    : "bg-arcade-surface text-arcade-gray"
                 }`}
               >
                 {DURATION_LABELS[d]}
@@ -161,26 +161,26 @@ export default function CreateChallenge() {
 
         {/* Opponents */}
         <div>
-          <label className="block font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">
+          <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
             {type === "1v1" ? "Opponent" : "Participants"} (GitHub username)
           </label>
 
           {/* Suggested opponents */}
           {suggested.length > 0 && (
             <div className="mb-3">
-              <p className="font-pixel text-[8px] text-arcade-gray mb-2 uppercase">Suggested</p>
+              <p className="font-pixel text-xs text-arcade-gray mb-2 uppercase">Suggested</p>
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {suggested.map((s) => (
                   <button
                     key={s.github_username}
                     type="button"
                     onClick={() => selectSuggested(s.github_username)}
-                    className={`btn-arcade flex items-center gap-1.5 px-2.5 py-1.5 font-pixel text-[8px] shrink-0 ${
+                    className={`btn-arcade flex items-center gap-1.5 px-2.5 py-1.5 font-pixel text-xs shrink-0 ${
                       opponents.includes(s.github_username)
                         ? "bg-arcade-cyan/20 text-arcade-cyan"
                         : "bg-arcade-surface text-arcade-gray"
                     }`}
-                    style={opponents.includes(s.github_username) ? { borderColor: "#00F5FF" } : undefined}
+                    style={opponents.includes(s.github_username) ? { borderColor: "#2563EB" } : undefined}
                   >
                     <img
                       src={s.avatar_url || `https://github.com/${s.github_username}.png`}
@@ -207,7 +207,7 @@ export default function CreateChallenge() {
                 <button
                   type="button"
                   onClick={() => removeOpponent(i)}
-                  className="font-pixel text-[8px] text-arcade-gray hover:text-arcade-pink px-2 transition-colors"
+                  className="font-pixel text-xs text-arcade-gray hover:text-arcade-pink px-2 transition-colors"
                 >
                   X
                 </button>
@@ -218,12 +218,12 @@ export default function CreateChallenge() {
             <button
               type="button"
               onClick={addOpponent}
-              className="font-pixel text-[8px] text-arcade-cyan hover:text-arcade-yellow transition-colors"
+              className="font-pixel text-xs text-arcade-cyan hover:text-arcade-pink transition-colors"
             >
               + ADD PARTICIPANT
             </button>
           )}
-          <p className="font-mono text-[10px] text-arcade-gray mt-2">
+          <p className="text-xs text-arcade-gray mt-2">
             They don't need an account — we'll track their public commits.
           </p>
         </div>
@@ -231,7 +231,7 @@ export default function CreateChallenge() {
         {/* End Date (fixed only) */}
         {durationType === "fixed" && (
           <div>
-            <label className="block font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">
+            <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
               End Date
             </label>
             <input
@@ -247,7 +247,7 @@ export default function CreateChallenge() {
         {/* Goal Target (goal only) */}
         {durationType === "goal" && (
           <div>
-            <label className="block font-pixel text-[8px] text-arcade-gray mb-2 uppercase leading-loose">
+            <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
               Goal: First to ___ commits
             </label>
             <input
@@ -261,15 +261,15 @@ export default function CreateChallenge() {
         )}
 
         {error && (
-          <p className="font-pixel text-[8px] text-arcade-pink">{error}</p>
+          <p className="font-pixel text-xs text-red-600">{error}</p>
         )}
 
         <button
           type="submit"
           disabled={submitting}
-          className="btn-arcade w-full bg-arcade-pink text-black font-pixel text-sm py-4 uppercase"
+          className="btn-arcade w-full bg-arcade-pink text-black font-pixel text-base py-4 uppercase"
         >
-          {submitting ? "RACING..." : "START RACE!"}
+          {submitting ? "CREATING..." : "START RACE"}
         </button>
       </form>
     </div>

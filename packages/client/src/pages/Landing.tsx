@@ -10,35 +10,26 @@ export default function Landing() {
 
   return (
     <div>
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center mb-4 scanlines">
-        <h1 className="font-pixel leading-loose mb-8">
-          <span
-            className="block text-2xl md:text-4xl text-arcade-pink"
-            style={{ textShadow: "3px 3px 0px #000" }}
-          >
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center mb-4">
+        <h1 className="font-pixel leading-tight mb-8">
+          <span className="block text-3xl md:text-5xl text-arcade-pink">
             RACE YOUR
           </span>
-          <span
-            className="block text-2xl md:text-4xl text-arcade-yellow"
-            style={{ textShadow: "3px 3px 0px #000" }}
-          >
+          <span className="block text-3xl md:text-5xl text-arcade-white">
             COMMITS.
           </span>
         </h1>
-        <p className="font-mono text-sm text-arcade-gray max-w-lg mb-10 leading-relaxed">
+        <p className="text-base text-arcade-gray max-w-lg mb-10 leading-relaxed">
           Race your friends, race famous developers, and turn your GitHub
           contributions into a competitive sport.
         </p>
         <button
           onClick={login}
-          className="btn-arcade bg-arcade-pink text-black font-pixel text-sm px-8 py-4 mb-4"
+          className="btn-arcade bg-arcade-pink text-black font-pixel text-base px-8 py-4 mb-4"
         >
-          PRESS START
+          GET STARTED
         </button>
-        <p className="font-pixel text-[10px] text-arcade-gray blink">
-          INSERT COIN TO CONTINUE
-        </p>
-        <p className="font-mono text-xs text-arcade-gray mt-6">
+        <p className="text-xs text-arcade-gray mt-6">
           We only request read access to your profile. No repo access needed.
         </p>
       </div>

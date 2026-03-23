@@ -87,8 +87,8 @@ export default function Challenge() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (loading) return <div className="font-pixel text-xs text-arcade-gray blink">LOADING RACE...</div>;
-  if (!challenge) return <div className="font-pixel text-xs text-arcade-gray">RACE NOT FOUND.</div>;
+  if (loading) return <div className="font-pixel text-sm text-arcade-gray">LOADING RACE...</div>;
+  if (!challenge) return <div className="font-pixel text-sm text-arcade-gray">RACE NOT FOUND.</div>;
 
   const isCreator = user && challenge.created_by === user.id;
   const isParticipant = user && challenge.participants.some(
@@ -105,7 +105,7 @@ export default function Challenge() {
       {/* Back button */}
       <Link
         to="/dashboard"
-        className="inline-flex items-center gap-1 font-pixel text-[8px] text-arcade-gray hover:text-arcade-cyan mb-6 transition-colors"
+        className="inline-flex items-center gap-1 font-pixel text-xs text-arcade-gray hover:text-arcade-cyan mb-6 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -116,10 +116,10 @@ export default function Challenge() {
       <div className="flex items-start justify-between mb-6 gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h1 className="font-pixel text-xl text-arcade-yellow" style={{ textShadow: "2px 2px 0px #000" }}>
+            <h1 className="font-pixel text-2xl text-arcade-white">
               {challenge.name}
             </h1>
-            <span className="font-pixel text-[7px] px-2 py-1 bg-arcade-surface border border-arcade-gray text-arcade-gray">
+            <span className="font-pixel text-[11px] px-2 py-1 bg-arcade-surface border-3 border-black text-arcade-gray">
               {challenge.type.toUpperCase()}
             </span>
           </div>
@@ -131,7 +131,7 @@ export default function Challenge() {
               ? `FIRST TO ${challenge.goal_target} ${challenge.goal_metric}`
               : "ONGOING"}
             {(isFinished || goalReached) && (
-              <span className="font-pixel text-[8px] text-arcade-yellow ml-2">FINISHED</span>
+              <span className="font-pixel text-xs text-arcade-pink ml-2">FINISHED</span>
             )}
           </p>
         </div>
@@ -140,14 +140,14 @@ export default function Challenge() {
             <button
               onClick={handleJoin}
               disabled={joining}
-              className="btn-arcade bg-arcade-cyan text-black font-pixel text-[8px] px-4 py-2"
+              className="btn-arcade bg-arcade-cyan text-white font-pixel text-xs px-4 py-2"
             >
               {joining ? "..." : "JOIN"}
             </button>
           )}
           <button
             onClick={copyLink}
-            className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-[8px] px-4 py-2"
+            className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-xs px-4 py-2"
           >
             {copied ? "COPIED!" : "SHARE"}
           </button>
@@ -155,15 +155,15 @@ export default function Challenge() {
             <>
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-[8px] px-4 py-2"
+                className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-xs px-4 py-2"
               >
                 SETTINGS
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="btn-arcade bg-[#3D0000] text-arcade-pink font-pixel text-[8px] px-4 py-2"
-                style={{ borderColor: "#FF006E" }}
+                className="btn-arcade bg-red-50 text-red-600 font-pixel text-xs px-4 py-2"
+                style={{ borderColor: "#DC2626" }}
               >
                 {deleting ? "..." : "DELETE"}
               </button>
@@ -175,10 +175,10 @@ export default function Challenge() {
       {/* Settings panel */}
       {showSettings && isCreator && (
         <div className="retro-box bg-arcade-surface p-4 mb-6 space-y-4">
-          <h3 className="font-pixel text-[8px] text-arcade-cyan">RACE SETTINGS</h3>
+          <h3 className="font-pixel text-xs text-arcade-cyan">RACE SETTINGS</h3>
 
           <div>
-            <label className="block font-pixel text-[8px] text-arcade-gray mb-2">END DATE (OPTIONAL)</label>
+            <label className="block font-pixel text-xs text-arcade-gray mb-2">END DATE (OPTIONAL)</label>
             <input
               type="date"
               value={settingsEndDate}
@@ -191,13 +191,13 @@ export default function Challenge() {
             <button
               onClick={handleSaveSettings}
               disabled={saving}
-              className="btn-arcade bg-arcade-cyan text-black font-pixel text-[8px] px-4 py-2"
+              className="btn-arcade bg-arcade-cyan text-white font-pixel text-xs px-4 py-2"
             >
               {saving ? "SAVING..." : "SAVE"}
             </button>
             <button
               onClick={() => setShowSettings(false)}
-              className="btn-arcade bg-arcade-surface text-arcade-gray font-pixel text-[8px] px-4 py-2"
+              className="btn-arcade bg-arcade-surface text-arcade-gray font-pixel text-xs px-4 py-2"
             >
               CANCEL
             </button>
@@ -208,7 +208,7 @@ export default function Challenge() {
       {/* Goal progress bar */}
       {isGoal && challenge.goal_target && challenge.participants.length > 0 && (
         <div className="retro-box bg-arcade-surface p-4 mb-6">
-          <p className="font-pixel text-[8px] text-arcade-gray mb-3">
+          <p className="font-pixel text-xs text-arcade-gray mb-3">
             GOAL: {challenge.goal_target} {challenge.goal_metric}
           </p>
           {challenge.participants.slice(0, 3).map((p) => {
@@ -219,9 +219,9 @@ export default function Challenge() {
                   <span>{p.github_username}</span>
                   <span>{p.commit_count} / {challenge.goal_target}</span>
                 </div>
-                <div className="h-4 bg-arcade-bg border border-black overflow-hidden">
+                <div className="h-4 bg-arcade-bg border-3 border-black overflow-hidden">
                   <div
-                    className="h-full bg-arcade-yellow transition-all"
+                    className="h-full bg-arcade-pink transition-all"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -234,45 +234,45 @@ export default function Challenge() {
       {/* Participants table */}
       <div className="retro-box bg-arcade-surface overflow-hidden">
         <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 bg-arcade-bg border-b-4 border-black">
-          <span className="font-pixel text-[8px] text-arcade-cyan">#</span>
-          <span className="font-pixel text-[8px] text-arcade-cyan">DRIVER</span>
-          <span className="font-pixel text-[8px] text-arcade-cyan">COMMITS</span>
+          <span className="font-pixel text-xs text-arcade-cyan">#</span>
+          <span className="font-pixel text-xs text-arcade-cyan">RACER</span>
+          <span className="font-pixel text-xs text-arcade-cyan">COMMITS</span>
         </div>
         {challenge.participants.map((p, i) => (
           <div
             key={p.github_username}
             className={`grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 items-center ${
-              i === 0 ? "bg-arcade-yellow/10" : ""
+              i === 0 ? "bg-arcade-pink/10" : ""
             } ${
               user?.github_username === p.github_username
                 ? "border-l-4 border-arcade-pink"
                 : ""
             }`}
           >
-            <span className="font-pixel text-[8px] text-arcade-gray w-6 text-center">
+            <span className="font-pixel text-xs text-arcade-gray w-6 text-center">
               {i + 1}
             </span>
             <div className="flex items-center gap-3">
               <img
                 src={p.avatar_url || `https://github.com/${p.github_username}.png`}
                 alt={p.github_username}
-                className="w-8 h-8 rounded-none border-2 border-arcade-gray"
+                className="w-8 h-8 rounded-none border-3 border-black"
               />
               <span className="font-mono text-sm text-arcade-white">
                 {p.github_username}
                 {p.is_ghost && (
-                  <span className="font-pixel text-[7px] text-arcade-gray ml-1">(public)</span>
+                  <span className="font-pixel text-[11px] text-arcade-gray ml-1">(public)</span>
                 )}
               </span>
             </div>
-            <span className="font-pixel text-xl tabular-nums text-arcade-yellow" style={{ textShadow: "1px 1px 0px #000" }}>
+            <span className="font-pixel text-xl tabular-nums text-arcade-white">
               {p.commit_count.toLocaleString()}
             </span>
           </div>
         ))}
       </div>
 
-      <p className="font-mono text-[10px] text-arcade-gray mt-4 text-center">
+      <p className="font-mono text-xs text-arcade-gray mt-4 text-center">
         Stats refresh automatically every 60 seconds. Commit data cached for up to 4 hours.
       </p>
     </div>

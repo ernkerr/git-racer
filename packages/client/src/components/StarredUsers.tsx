@@ -63,13 +63,13 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
             <div
               key={s.github_username}
               className="retro-box shrink-0 w-64 bg-arcade-surface p-4"
-              style={s.you_beat_them ? { borderColor: "#00F5FF" } : undefined}
+              style={s.you_beat_them ? { borderColor: "#2563EB" } : undefined}
             >
               <div className="flex items-center gap-3 mb-3">
                 <img
                   src={s.avatar_url ?? `https://github.com/${s.github_username}.png`}
                   alt={s.github_username}
-                  className="w-10 h-10 rounded-none border border-arcade-gray shrink-0"
+                  className="w-10 h-10 rounded-none border-2 border-black shrink-0"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-sm text-arcade-white truncate">{s.display_name}</p>
@@ -77,7 +77,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
                 </div>
                 <button
                   onClick={() => handleUnstar(s.github_username)}
-                  className="text-arcade-yellow hover:text-arcade-gray shrink-0 transition-colors"
+                  className="text-arcade-pink hover:text-arcade-gray shrink-0 transition-colors"
                   title="Unstar"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -88,28 +88,28 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
 
               <div className="flex items-end justify-between">
                 <div>
-                  <p className="font-pixel text-[8px] text-arcade-gray mb-1">THEM</p>
-                  <p className="font-pixel text-sm tabular-nums text-arcade-gray">
+                  <p className="font-pixel text-xs text-arcade-gray mb-1">THEM</p>
+                  <p className="font-pixel text-base tabular-nums text-arcade-gray">
                     {s.their_commits.toLocaleString()}
                   </p>
                 </div>
                 <div className="text-center px-2">
-                  <span className={`font-pixel text-sm ${s.you_beat_them ? "text-arcade-cyan" : "text-arcade-gray"}`}>
+                  <span className={`font-pixel text-base ${s.you_beat_them ? "text-arcade-cyan" : "text-arcade-gray"}`}>
                     {s.you_beat_them ? ">" : "<"}
                   </span>
                 </div>
                 <div className="text-right">
-                  <p className="font-pixel text-[8px] text-arcade-gray mb-1">YOU</p>
-                  <p className={`font-pixel text-sm tabular-nums ${s.you_beat_them ? "text-arcade-yellow" : "text-arcade-white"}`}>
+                  <p className="font-pixel text-xs text-arcade-gray mb-1">YOU</p>
+                  <p className={`font-pixel text-base tabular-nums ${s.you_beat_them ? "text-arcade-pink" : "text-arcade-white"}`}>
                     {s.your_commits.toLocaleString()}
                   </p>
                 </div>
               </div>
 
-              <div className={`mt-3 font-pixel text-[8px] text-center py-1 border ${
+              <div className={`mt-3 font-pixel text-xs text-center py-1 border-3 ${
                 s.you_beat_them
                   ? "border-arcade-cyan text-arcade-cyan bg-arcade-bg"
-                  : "border-arcade-gray text-arcade-gray bg-arcade-bg"
+                  : "border-black text-arcade-gray bg-arcade-bg"
               }`}>
                 {s.you_beat_them
                   ? `YOU BEAT ${s.display_name.toUpperCase()}!`
@@ -123,7 +123,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
       {/* Suggestions */}
       {suggestions.length > 0 && (
         <div>
-          <p className="font-pixel text-[8px] text-arcade-gray mb-2 uppercase">Suggested</p>
+          <p className="font-pixel text-xs text-arcade-gray mb-2 uppercase">Suggested</p>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {suggestions.map((s) => (
               <button
@@ -135,10 +135,10 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
                 <img
                   src={s.avatar_url ?? `https://github.com/${s.github_username}.png`}
                   alt={s.github_username}
-                  className="w-6 h-6 rounded-none border border-arcade-gray"
+                  className="w-6 h-6 rounded-none border-2 border-black"
                 />
                 <span className="font-mono text-sm text-arcade-white truncate max-w-[100px]">{s.github_username}</span>
-                <span className="font-pixel text-[8px] text-arcade-cyan">RACE</span>
+                <span className="font-pixel text-xs text-arcade-cyan">RACE</span>
               </button>
             ))}
           </div>

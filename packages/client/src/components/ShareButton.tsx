@@ -29,10 +29,10 @@ export default function ShareButton() {
     <button
       onClick={handleShare}
       disabled={loading}
-      className="btn-arcade bg-arcade-surface font-pixel text-[8px] px-3 py-2 flex items-center gap-1.5"
+      className="btn-arcade bg-arcade-surface font-pixel text-xs px-3 py-2 flex items-center gap-1.5"
     >
       {copied ? (
-        <span className="text-arcade-cyan">✓ COPIED!</span>
+        <span className="text-arcade-cyan">COPIED!</span>
       ) : (
         <>
           <svg className="w-4 h-4 text-arcade-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
