@@ -377,7 +377,7 @@ cronRoutes.post("/ingest-events", async (c) => {
   const lockResult = await withAdvisoryLock("ingest-events", async () => {
     const date = c.req.query("date") || undefined;
     const result = await ingestGHArchive(date);
-    const enrichResult = await enrichTopUsers(result.date, 50);
+    const enrichResult = await enrichTopUsers(result.date, 150, 7);
     return { status: "completed", ...result, enriched: enrichResult };
   });
 
@@ -407,42 +407,49 @@ cronRoutes.post("/poll-events", async (c) => {
 });
 
 /**
- * Fetch accurate commit counts for the day's top committers from the
- * GitHub GraphQL contributions API and store them in commit_snapshots.
+ * Fetch accurate commit counts for top committers from the GitHub GraphQL
+ * contributions API and store them in commit_snapshots.
  *
  * GH Archive push events give us an approximate count; this enrichment
  * step replaces those estimates with the user's real contribution numbers.
+ * Enriches the top N users by archive commit count over the past `daysBack`
+ * days so that week/month leaderboard views also get accurate data.
  *
- * @param date - ISO date string (YYYY-MM-DD) to enrich
+ * @param date - ISO date string (YYYY-MM-DD) — the anchor date (today)
  * @param topN - Number of top committers to enrich (default: 10)
+ * @param daysBack - How many days back to cover (default: 1 = today only)
  * @returns The number of users whose snapshots were updated
  */
 async function enrichTopUsers(
   date: string,
-  topN: number = 10
+  topN: number = 10,
+  daysBack: number = 1
 ): Promise<{ users_enriched: number }> {
   try {
+    // Build the date range: from (daysBack-1) days before `date` through `date`
+    const toDate = new Date(date + "T23:59:59Z");
+    const fromDate = new Date(date + "T00:00:00Z");
+    fromDate.setDate(fromDate.getDate() - (daysBack - 1));
+    const fromStr = fromDate.toISOString().slice(0, 10);
+
     // Enrich from the suggested_opponents pool (real developers, top by followers)
     // rather than from event_committers (dominated by green-square farmers).
-    // Farmers have genuinely high GitHub commit counts from scripted commits,
-    // so enriching them would just confirm their inflated numbers.
-    // Real developers from the pool get their true GraphQL counts, which the
-    // leaderboard's GREATEST logic picks over the capped archive data.
+    // Aggregate over the full daysBack range so weekly top committers are enriched.
     const topRows = await db.execute(sql`
       SELECT so.github_username
       FROM suggested_opponents so
       INNER JOIN event_committers ec
-        ON ec.github_username = so.github_username AND ec.date = ${date}
-      ORDER BY ec.commit_count DESC
+        ON ec.github_username = so.github_username
+        AND ec.date >= ${fromStr} AND ec.date <= ${date}
+      GROUP BY so.github_username
+      ORDER BY SUM(ec.commit_count) DESC
       LIMIT ${topN}
     `);
 
     const usernames = topRows.rows.map((r: any) => r.github_username as string);
     if (usernames.length === 0) return { users_enriched: 0 };
 
-    const from = new Date(date + "T00:00:00Z");
-    const to = new Date(date + "T23:59:59Z");
-    const { data: contribData } = await fetchBatchContributionDays(usernames, from, to);
+    const { data: contribData } = await fetchBatchContributionDays(usernames, fromDate, toDate);
 
     const rows: { github_username: string; date: string; commit_count: number }[] = [];
     for (const [username, days] of contribData) {

@@ -36,7 +36,7 @@ leaderboardRoutes.get("/", async (c) => {
   // Solution: cap archive-only counts at a reasonable daily max (ARCHIVE_DAILY_CAP).
   // Users with GraphQL-verified data in commit_snapshots bypass the cap via GREATEST,
   // so real prolific developers still show their true numbers.
-  const ARCHIVE_DAILY_CAP = 50;
+  const ARCHIVE_DAILY_CAP = 200;
 
   // The query is structured as:
   //   1. Subquery "ec": aggregate event_committers, capping per-day counts
