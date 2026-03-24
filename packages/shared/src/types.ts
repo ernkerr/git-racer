@@ -8,12 +8,14 @@ export interface User {
 
 export type ChallengeType = "1v1" | "team";
 export type DurationType = "fixed" | "ongoing" | "goal";
+export type RefreshPeriod = "daily" | "weekly" | "ongoing";
 
 export interface Challenge {
   id: number;
   name: string;
   type: ChallengeType;
   duration_type: DurationType;
+  refresh_period: RefreshPeriod;
   start_date: string;
   end_date: string | null;
   goal_target: number | null;
@@ -38,9 +40,17 @@ export interface LeaderboardEntry {
   is_ghost: boolean;
 }
 
+export interface RaceStats {
+  total_commits: number;
+  total_unique_repos: number;
+  total_pushes: number;
+  participant_count: number;
+}
+
 export interface ChallengeWithLeaderboard extends Challenge {
   participants: LeaderboardEntry[];
   daily?: Record<string, { date: string; count: number }[]>;
+  race_stats?: RaceStats;
 }
 
 export interface SuggestedOpponent {
@@ -54,6 +64,7 @@ export interface ActiveChallenge {
   name: string;
   type: ChallengeType;
   duration_type: DurationType;
+  refresh_period: RefreshPeriod;
   share_slug: string;
   end_date: string | null;
   your_commits: number;

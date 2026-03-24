@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api.ts";
-import type { ChallengeType, DurationType, SuggestedOpponent } from "@git-racer/shared";
+import type { ChallengeType, DurationType, RefreshPeriod, SuggestedOpponent } from "@git-racer/shared";
 import GitHubUserSearch from "../components/GitHubUserSearch.tsx";
 
 export default function CreateChallenge() {
@@ -9,6 +9,7 @@ export default function CreateChallenge() {
   const [name, setName] = useState("");
   const [type, setType] = useState<ChallengeType>("1v1");
   const [durationType, setDurationType] = useState<DurationType>("ongoing");
+  const [refreshPeriod, setRefreshPeriod] = useState<RefreshPeriod>("weekly");
   const [opponents, setOpponents] = useState<string[]>([""]);
   const [endDate, setEndDate] = useState("");
   const [error, setError] = useState("");
@@ -48,6 +49,7 @@ export default function CreateChallenge() {
         name: name || `vs ${filteredOpponents.join(", ")}`,
         type,
         duration_type: durationType,
+        refresh_period: refreshPeriod,
         opponents: filteredOpponents,
       };
       if (durationType === "fixed") {
@@ -194,6 +196,34 @@ export default function CreateChallenge() {
               <span className="block">SPRINT</span>
               <span className="block font-mono text-[10px] mt-1 opacity-70">time-limited · has end date</span>
             </button>
+          </div>
+        </div>
+
+        {/* Refresh Period */}
+        <div>
+          <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
+            Counting Period
+          </label>
+          <div className="flex gap-3">
+            {([
+              { value: "daily", label: "DAILY", desc: "resets every day" },
+              { value: "weekly", label: "WEEKLY", desc: "resets every Monday" },
+              { value: "ongoing", label: "ALL TIME", desc: "cumulative from start" },
+            ] as const).map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => setRefreshPeriod(p.value)}
+                className={`btn-arcade flex-1 py-3 font-pixel text-xs ${
+                  refreshPeriod === p.value
+                    ? "bg-arcade-cyan text-black"
+                    : "bg-arcade-surface text-arcade-gray"
+                }`}
+              >
+                <span className="block">{p.label}</span>
+                <span className="block font-mono text-[10px] mt-1 opacity-70">{p.desc}</span>
+              </button>
+            ))}
           </div>
         </div>
 

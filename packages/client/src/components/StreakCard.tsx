@@ -5,12 +5,11 @@ interface Props {
 }
 
 export default function StreakCard({ streaks }: Props) {
-  const peak = Math.max(streaks.this_week, streaks.last_week, 1);
   const trendPositive = streaks.trend_percent >= 0;
 
   return (
     <div className="retro-box bg-arcade-surface p-5">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
         {/* Current streak */}
         <div>
           <p className="font-pixel text-xs text-arcade-gray mb-2 uppercase">Current Streak</p>
@@ -33,7 +32,7 @@ export default function StreakCard({ streaks }: Props) {
           </div>
         </div>
 
-        {/* Best streak */}
+        {/* Longest streak */}
         <div>
           <p className="font-pixel text-xs text-arcade-gray mb-2 uppercase">Best Streak</p>
           <p className="font-pixel text-xl tabular-nums text-arcade-white">
@@ -59,48 +58,47 @@ export default function StreakCard({ streaks }: Props) {
           )}
         </div>
 
-        {/* Week comparison — bar graph */}
+        {/* This week */}
         <div>
-          <p className="font-pixel text-xs text-arcade-gray mb-2 uppercase">Week vs Week</p>
-          <div className="flex items-end gap-3 h-16">
-            {/* Last week bar */}
-            <div className="flex flex-col items-center flex-1">
-              <div
-                className="w-full transition-all"
-                style={{
-                  height: `${Math.max(4, Math.round((streaks.last_week / peak) * 56))}px`,
-                  backgroundColor: "#444",
-                }}
-              />
-              <p className="font-pixel text-[10px] text-arcade-gray mt-1">{streaks.last_week}</p>
-            </div>
-            {/* This week bar */}
-            <div className="flex flex-col items-center flex-1">
-              <div
-                className="w-full transition-all"
-                style={{
-                  height: `${Math.max(4, Math.round((streaks.this_week / peak) * 56))}px`,
-                  backgroundColor: "#00C853",
-                }}
-              />
-              <p className="font-pixel text-[10px] text-arcade-white mt-1">{streaks.this_week}</p>
-            </div>
-          </div>
-          <div className="flex justify-between mt-1">
-            <span className="flex items-center gap-1 font-pixel text-[10px] text-arcade-gray">
-              <span className="inline-block w-2 h-2" style={{ backgroundColor: "#444" }} />
-              LAST
-            </span>
-            <span className="flex items-center gap-1 font-pixel text-[10px] text-arcade-white">
-              <span className="inline-block w-2 h-2" style={{ backgroundColor: "#00C853" }} />
-              THIS
-            </span>
-          </div>
-          <p className={`font-pixel text-[10px] mt-1 ${trendPositive ? "text-arcade-cyan" : "text-arcade-pink"}`}>
-            {trendPositive ? "+" : ""}{streaks.trend_percent}%
+          <p className="font-pixel text-xs text-arcade-gray mb-2 uppercase">This Week</p>
+          <p className="font-pixel text-xl tabular-nums text-arcade-white">
+            {streaks.this_week}
           </p>
+          <p className={`font-pixel text-xs mt-1 ${trendPositive ? "text-arcade-cyan" : "text-arcade-pink"}`}>
+            {trendPositive ? "+" : ""}{streaks.trend_percent}% VS LAST WK
+          </p>
+        </div>
+
+        {/* Best week */}
+        <div>
+          <p className="font-pixel text-xs text-arcade-gray mb-2 uppercase">Best Week</p>
+          <p className="font-pixel text-xl tabular-nums text-arcade-white">
+            {streaks.best_week_commits}
+          </p>
+          {streaks.best_week_start && (
+            <p className="font-mono text-xs text-arcade-gray mt-0.5">
+              {formatDate(streaks.best_week_start)}
+            </p>
+          )}
+          {streaks.best_week_commits > 0 && (
+            <div className="mt-2">
+              <div className="h-3 bg-arcade-bg border-2 border-arcade-border overflow-hidden">
+                <div
+                  className="h-full bg-arcade-cyan transition-all"
+                  style={{
+                    width: `${Math.min(100, (streaks.this_week / streaks.best_week_commits) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }

@@ -1,46 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth.tsx";
 
-function MockRaceCard() {
-  return (
-    <div
-      className="max-w-sm mx-auto p-5"
-      style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <span className="font-pixel text-xs" style={{ color: "var(--green)" }}>RACE IN PROGRESS</span>
-        <span className="text-xs" style={{ color: "var(--muted)" }}>ongoing</span>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="text-center">
-          <img
-            src="https://github.com/ghost.png"
-            alt="you"
-            className="w-12 h-12 rounded-full mx-auto mb-2"
-            style={{ border: "2px solid var(--green)" }}
-          />
-          <p className="text-xs mb-1" style={{ color: "var(--muted)" }}>you</p>
-          <p className="font-pixel text-3xl" style={{ color: "var(--green)" }}>847</p>
-        </div>
-        <div className="text-center">
-          <img
-            src="https://github.com/torvalds.png"
-            alt="torvalds"
-            className="w-12 h-12 rounded-full mx-auto mb-2"
-            style={{ border: "1px solid var(--border)" }}
-          />
-          <p className="text-xs mb-1" style={{ color: "var(--muted)" }}>torvalds</p>
-          <p className="font-pixel text-3xl" style={{ color: "var(--text)" }}>412</p>
-        </div>
-      </div>
-      <div className="relative h-1.5 mt-5 mb-3" style={{ background: "var(--border)" }}>
-        <div className="absolute left-0 top-0 h-full" style={{ width: "67%", background: "var(--green)" }} />
-      </div>
-      <p className="font-pixel text-xs text-center" style={{ color: "var(--green)" }}>YOU LEAD BY 435</p>
-    </div>
-  );
-}
-
 export default function Landing() {
   const { user, loading, login } = useAuth();
 
@@ -105,12 +65,6 @@ export default function Landing() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Mock race */}
-      <div className="mb-16">
-        <h2 className="font-pixel text-sm text-center mb-6" style={{ color: "var(--green)" }}>WHAT A RACE LOOKS LIKE</h2>
-        <MockRaceCard />
       </div>
 
       {/* Bottom CTA */}

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api.ts";
 import type {
   UserStats,
@@ -40,6 +40,7 @@ function RaceStatus({ status }: { status: "winning" | "losing" | "tied" | "none"
 }
 
 function RaceCard({ ch }: { ch: ActiveChallenge }) {
+  const navigate = useNavigate();
   const raceStatus =
     ch.leader_username === "" ? "none" as const
     : ch.leader_commits > ch.your_commits ? "losing" as const
@@ -49,7 +50,6 @@ function RaceCard({ ch }: { ch: ActiveChallenge }) {
   const isSprint = ch.duration_type === "fixed";
   const isFinished = ch.end_date && new Date(ch.end_date) < new Date();
 
-  // Losing uses a muted amber instead of alarming red
   const statusColor =
     raceStatus === "losing" ? "#B45309"
     : raceStatus === "winning" ? "#16A34A"
@@ -57,9 +57,9 @@ function RaceCard({ ch }: { ch: ActiveChallenge }) {
     : undefined;
 
   return (
-    <Link
-      to={`/c/${ch.share_slug}`}
-      className="retro-box bg-arcade-surface p-4 flex flex-col justify-between aspect-square hover:-translate-y-px transition-all"
+    <div
+      onClick={() => navigate(`/c/${ch.share_slug}`)}
+      className="retro-box bg-arcade-surface p-4 flex flex-col justify-between aspect-square hover:-translate-y-px transition-all cursor-pointer"
       style={statusColor ? { borderColor: statusColor } : undefined}
     >
       <div>
@@ -93,7 +93,7 @@ function RaceCard({ ch }: { ch: ActiveChallenge }) {
             : "TIED"}
         </p>
       </div>
-    </Link>
+    </div>
   );
 }
 

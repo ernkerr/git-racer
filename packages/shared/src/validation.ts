@@ -7,6 +7,7 @@ export const createChallengeSchema = z
     name: z.string().min(1).max(100),
     type: z.enum(["1v1", "team"]).default("1v1"),
     duration_type: z.enum(["fixed", "ongoing", "goal"]).default("fixed"),
+    refresh_period: z.enum(["daily", "weekly", "ongoing"]).default("weekly"),
     opponents: z.array(githubUsername).min(1).max(49),
     end_date: z.string().datetime().optional(),
     goal_target: z.number().int().positive().optional(),

@@ -66,6 +66,7 @@ export async function createChallenge(
       name: input.name,
       type: input.type,
       duration_type: input.duration_type,
+      refresh_period: input.refresh_period ?? "weekly",
       start_date: new Date(),
       end_date: input.end_date ? new Date(input.end_date) : null,
       goal_target: input.goal_target ?? null,

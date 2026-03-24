@@ -20,6 +20,7 @@ import { eq, sql } from "drizzle-orm";
 import { createChallengeSchema } from "@git-racer/shared";
 import { createChallenge } from "../services/challenges.js";
 import { refreshCommitData } from "../services/commits.js";
+import { weekStart, today } from "../lib/dates.js";
 import type { AppEnv } from "../types.js";
 
 export const challengeRoutes = new Hono<AppEnv>();
@@ -69,11 +70,22 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
     try { await refreshCommitData(authedUser.username); } catch {}
   }
 
-  // Date range for commit aggregation: challenge start -> end (or today if open-ended)
-  const startDate = challenge.start_date.toISOString().slice(0, 10);
+  // Date range for commit aggregation, based on refresh_period:
+  //   "daily"   → today only
+  //   "weekly"  → Monday of this week through today
+  //   "ongoing" → challenge start_date through end_date (or today)
+  const todayStr = today();
+  let startDate: string;
+  if (challenge.refresh_period === "daily") {
+    startDate = todayStr;
+  } else if (challenge.refresh_period === "weekly") {
+    startDate = weekStart();
+  } else {
+    startDate = challenge.start_date.toISOString().slice(0, 10);
+  }
   const endDate = challenge.end_date
     ? challenge.end_date.toISOString().slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+    : todayStr;
 
   // Leaderboard query: joins participants with their commit snapshots in
   // the challenge date range, plus user avatars. Ghost participants
@@ -122,11 +134,34 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
     daily[u].push({ date: r.date, count: Number(r.commit_count) });
   }
 
+  // Race stats: unique repos and push counts from event_committers (public activity)
+  const statsRows = await db.execute(sql`
+    SELECT
+      cp.github_username,
+      COALESCE(SUM(ec.unique_repos), 0)::int AS unique_repos,
+      COALESCE(SUM(ec.push_count), 0)::int AS push_count
+    FROM challenge_participants cp
+    LEFT JOIN event_committers ec
+      ON ec.github_username = cp.github_username
+      AND ec.date >= ${startDate}
+      AND ec.date <= ${endDate}
+    WHERE cp.challenge_id = ${challenge.id}
+    GROUP BY cp.github_username
+  `);
+
+  const race_stats = {
+    total_commits: leaderboard.reduce((sum, p) => sum + p.commit_count, 0),
+    total_unique_repos: (statsRows.rows as any[]).reduce((sum, r) => sum + Number(r.unique_repos), 0),
+    total_pushes: (statsRows.rows as any[]).reduce((sum, r) => sum + Number(r.push_count), 0),
+    participant_count: leaderboard.length,
+  };
+
   return c.json({
     id: challenge.id,
     name: challenge.name,
     type: challenge.type,
     duration_type: challenge.duration_type,
+    refresh_period: challenge.refresh_period,
     start_date: challenge.start_date.toISOString(),
     end_date: challenge.end_date?.toISOString() ?? null,
     goal_target: challenge.goal_target,
@@ -136,6 +171,7 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
     created_at: challenge.created_at.toISOString(),
     participants: leaderboard,
     daily,
+    race_stats,
   });
 });
 
@@ -164,6 +200,9 @@ challengeRoutes.patch("/:slug", requireAuth, async (c) => {
   }
   if (body.name !== undefined) {
     updates.name = body.name;
+  }
+  if (body.refresh_period !== undefined && ["daily", "weekly", "ongoing"].includes(body.refresh_period)) {
+    updates.refresh_period = body.refresh_period;
   }
 
   if (Object.keys(updates).length > 0) {

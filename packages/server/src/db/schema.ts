@@ -32,6 +32,7 @@ export const challenges = pgTable("challenges", {
   duration_type: varchar("duration_type", { length: 10 })
     .notNull()
     .default("fixed"), // "fixed" | "ongoing" | "goal"
+  refresh_period: varchar("refresh_period", { length: 10 }).notNull().default("weekly"), // "daily" | "weekly" | "ongoing"
   start_date: timestamp("start_date").notNull(),
   end_date: timestamp("end_date"), // null for ongoing challenges
   goal_target: integer("goal_target"), // only for "goal" duration type

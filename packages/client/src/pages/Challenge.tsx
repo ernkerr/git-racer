@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../lib/api.ts";
 import { useAuth } from "../lib/auth.tsx";
 import { CHALLENGE_REFRESH_MS } from "@git-racer/shared";
-import type { ChallengeWithLeaderboard, LeaderboardEntry } from "@git-racer/shared";
+import type { ChallengeWithLeaderboard, LeaderboardEntry, RefreshPeriod } from "@git-racer/shared";
 import RacePath from "../components/RacePath.tsx";
 
 function RaceTypeBadge({ durationType }: { durationType: string }) {
@@ -124,6 +124,7 @@ export default function Challenge() {
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsEndDate, setSettingsEndDate] = useState("");
+  const [settingsRefreshPeriod, setSettingsRefreshPeriod] = useState<RefreshPeriod>("weekly");
   const [saving, setSaving] = useState(false);
 
   const fetchChallenge = async () => {
@@ -133,6 +134,7 @@ export default function Challenge() {
       if (data.end_date) {
         setSettingsEndDate(new Date(data.end_date).toISOString().slice(0, 10));
       }
+      setSettingsRefreshPeriod(data.refresh_period ?? "ongoing");
     } catch {
       // Challenge not found or API error
     } finally {
@@ -176,6 +178,7 @@ export default function Challenge() {
       if (settingsEndDate) {
         body.end_date = new Date(settingsEndDate).toISOString();
       }
+      body.refresh_period = settingsRefreshPeriod;
       await api(`/challenges/${slug}`, {
         method: "PATCH",
         body: JSON.stringify(body),
@@ -265,12 +268,16 @@ export default function Challenge() {
             {challenge.name}
           </h1>
           <p className="font-mono text-xs text-arcade-gray">
-            {new Date(challenge.start_date).toLocaleDateString()} —{" "}
+            {challenge.refresh_period === "daily"
+              ? "Resets daily"
+              : challenge.refresh_period === "weekly"
+              ? "Resets every Monday"
+              : `Since ${new Date(challenge.start_date).toLocaleDateString()}`}
             {challenge.end_date
-              ? new Date(challenge.end_date).toLocaleDateString()
+              ? ` · ends ${new Date(challenge.end_date).toLocaleDateString()}`
               : isGoal
-              ? `FIRST TO ${challenge.goal_target} ${challenge.goal_metric}`
-              : `${pageLabel} IN PROGRESS`}
+              ? ` · first to ${challenge.goal_target} ${challenge.goal_metric}`
+              : ""}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap shrink-0">
@@ -322,6 +329,30 @@ export default function Challenge() {
           <h3 className="font-pixel text-xs text-arcade-cyan">RACE SETTINGS</h3>
 
           <div>
+            <label className="block font-pixel text-xs text-arcade-gray mb-2">COUNTING PERIOD</label>
+            <div className="flex gap-2">
+              {([
+                { value: "daily", label: "DAILY" },
+                { value: "weekly", label: "WEEKLY" },
+                { value: "ongoing", label: "ALL TIME" },
+              ] as const).map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => setSettingsRefreshPeriod(p.value)}
+                  className={`btn-arcade flex-1 py-2 font-pixel text-xs ${
+                    settingsRefreshPeriod === p.value
+                      ? "bg-arcade-cyan text-black"
+                      : "bg-arcade-surface text-arcade-gray"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <label className="block font-pixel text-xs text-arcade-gray mb-2">END DATE (OPTIONAL)</label>
             <input
               type="date"
@@ -369,6 +400,36 @@ export default function Challenge() {
               : "RACE DURATION"
           }
         />
+      )}
+
+      {/* Race Stats */}
+      {challenge.race_stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="retro-box bg-arcade-surface p-4">
+            <p className="font-pixel text-xs text-arcade-gray mb-1">TOTAL COMMITS</p>
+            <p className="font-pixel text-xl tabular-nums text-arcade-white">
+              {challenge.race_stats.total_commits.toLocaleString()}
+            </p>
+          </div>
+          <div className="retro-box bg-arcade-surface p-4">
+            <p className="font-pixel text-xs text-arcade-gray mb-1">REPOS</p>
+            <p className="font-pixel text-xl tabular-nums text-arcade-white">
+              {challenge.race_stats.total_unique_repos.toLocaleString()}
+            </p>
+          </div>
+          <div className="retro-box bg-arcade-surface p-4">
+            <p className="font-pixel text-xs text-arcade-gray mb-1">PUSHES</p>
+            <p className="font-pixel text-xl tabular-nums text-arcade-white">
+              {challenge.race_stats.total_pushes.toLocaleString()}
+            </p>
+          </div>
+          <div className="retro-box bg-arcade-surface p-4">
+            <p className="font-pixel text-xs text-arcade-gray mb-1">RACERS</p>
+            <p className="font-pixel text-xl tabular-nums text-arcade-white">
+              {challenge.race_stats.participant_count}
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Goal progress bar */}

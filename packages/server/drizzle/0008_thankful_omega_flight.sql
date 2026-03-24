@@ -1,0 +1,1 @@
+ALTER TABLE "challenges" ADD COLUMN "refresh_period" varchar(10) DEFAULT 'weekly' NOT NULL;
