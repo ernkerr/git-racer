@@ -104,6 +104,7 @@ export interface StarredUser {
   their_commits: number;
   your_commits: number;
   you_beat_them: boolean;
+  tied: boolean;
 }
 
 export interface StarSuggestion {

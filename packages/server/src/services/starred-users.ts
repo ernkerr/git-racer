@@ -98,6 +98,7 @@ export async function getStarredComparisons(
       their_commits: theirCommits,
       your_commits: yourCommits,
       you_beat_them: yourCommits > theirCommits,
+      tied: yourCommits === theirCommits,
     };
   });
 }

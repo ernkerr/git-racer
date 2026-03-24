@@ -69,7 +69,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
       {/* Starred devs as race cards */}
       {starred.map((s) => {
         // Muted amber when losing instead of alarming red
-        const statusColor = s.you_beat_them ? "#16A34A" : "#B45309";
+        const statusColor = s.tied ? "#EAB308" : s.you_beat_them ? "#16A34A" : "#B45309";
         return (
           <div
             key={s.github_username}
@@ -104,7 +104,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
                   <p className="font-pixel text-xl tabular-nums text-arcade-white">{s.their_commits.toLocaleString()}</p>
                 </div>
                 <span className="font-pixel text-base" style={{ color: statusColor }}>
-                  {s.you_beat_them ? ">" : "<"}
+                  {s.tied ? "=" : s.you_beat_them ? ">" : "<"}
                 </span>
                 <div className="text-center">
                   <p className="font-pixel text-[10px] text-arcade-gray mb-0.5">YOU</p>
@@ -127,7 +127,9 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
             </div>
 
             <p className="font-pixel text-xs mt-2" style={{ color: statusColor }}>
-              {s.you_beat_them
+              {s.tied
+                ? "TIED"
+                : s.you_beat_them
                 ? `YOU LEAD BY ${(s.your_commits - s.their_commits).toLocaleString()}`
                 : `${(s.their_commits - s.your_commits).toLocaleString()} MORE TO BEAT`}
             </p>
