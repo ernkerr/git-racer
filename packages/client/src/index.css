@@ -1,103 +1,82 @@
 @import "tailwindcss";
 
-/* ─── Theme variables ────────────────────────────────────────────────────── */
+/* ─── Design tokens ───────────────────────────────────────────────────────── */
 :root {
-  color-scheme: light;
-  --arcade-bg: #F5F5F4;
-  --arcade-surface: #FFFFFF;
-  --arcade-text: #1C1917;
-  --arcade-muted: #78716C;
-  --arcade-border: #1C1917;
-  --arcade-shadow: #1C1917;
-  --arcade-input-bg: #FFFFFF;
-  --arcade-hover: #F5F5F4;
-  --arcade-checker-a: #1C1917;
-  --arcade-checker-b: #F5F5F4;
-  --arcade-checker-accent-a: #00C853;
-  --arcade-checker-accent-b: #1C1917;
-  --arcade-zone-promote: #F0FDF4;
-  --arcade-zone-demote: #FEF2F2;
-  --arcade-tier-bronze: #FFFBEB;
-  --contrib-0: #E7E5E4;
-  --contrib-1: #BBF7D0;
-  --contrib-2: #4ADE80;
-  --contrib-3: #16A34A;
-  --contrib-4: #00C853;
-}
+  --green:        #00C853;
+  --green-bright: #00FF87;
+  --green-dim:    #00813A;
+  --green-dark:   #003A1A;
 
-[data-theme="dark"] {
-  color-scheme: dark;
-  --arcade-bg: #0A0F0A;
-  --arcade-surface: #111811;
-  --arcade-text: #E8E8E8;
-  --arcade-muted: #777777;
-  --arcade-border: #1E3A1E;
-  --arcade-shadow: #000000;
-  --arcade-input-bg: #141A14;
-  --arcade-hover: #161E16;
-  --arcade-checker-a: #00C853;
-  --arcade-checker-b: #0A0F0A;
-  --arcade-checker-accent-a: #00C853;
-  --arcade-checker-accent-b: #0A0F0A;
-  --arcade-zone-promote: rgba(0, 200, 83, 0.08);
-  --arcade-zone-demote: rgba(220, 38, 38, 0.08);
-  --arcade-tier-bronze: rgba(146, 64, 14, 0.1);
-  --contrib-0: #141A14;
-  --contrib-1: #1A3A1A;
-  --contrib-2: #1F6B2A;
-  --contrib-3: #00A040;
-  --contrib-4: #00C853;
+  --bg:       #0A0E0A;
+  --surface:  #0F140F;
+  --surface2: #141C14;
+  --border:   #1E2E1E;
+  --border-bright: #00C853;
+  --text:     #E8F5E8;
+  --muted:    #5A7A5A;
+  --shadow:   #000000;
+
+  --red:    #FF4444;
+  --yellow: #FFD600;
+  --white:  #E8F5E8;
 }
 
 @theme {
-  --color-arcade-bg: var(--arcade-bg);
-  --color-arcade-surface: var(--arcade-surface);
-  --color-arcade-white: var(--arcade-text);
-  --color-arcade-gray: var(--arcade-muted);
-  --color-arcade-border: var(--arcade-border);
-  --color-arcade-hover: var(--arcade-hover);
-  --color-arcade-pink: #00C853;
-  --color-arcade-yellow: #00FF87;
-  --color-arcade-cyan: #00E676;
-  --color-arcade-red: #FF3333;
+  --color-g:            #00C853;
+  --color-g-bright:     #00FF87;
+  --color-g-dim:        #00813A;
+  --color-arcade-bg:    var(--bg);
+  --color-arcade-surface: var(--surface);
+  --color-arcade-white: var(--text);
+  --color-arcade-gray:  var(--muted);
+  --color-arcade-border: var(--border);
+  --color-arcade-pink:  #00C853;
+  --color-arcade-cyan:  #00E676;
   --color-arcade-green: #00C853;
-
+  --color-arcade-red:   #FF4444;
+  --color-arcade-yellow: #FFD600;
   --font-pixel: "Space Grotesk", system-ui, sans-serif;
 }
 
-/* ─── Global base ────────────────────────────────────────────────────────── */
+/* ─── Global base ─────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
 body {
-  background-color: var(--arcade-bg);
-  color: var(--arcade-text);
+  background-color: var(--bg);
+  color: var(--text);
   font-family: "Space Grotesk", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Subtle pixel grid in dark mode */
-[data-theme="dark"] body {
+/* Subtle dot grid */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
   background-image: radial-gradient(circle, #1A2E1A 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
 }
+#root { position: relative; z-index: 1; }
 
-/* Bold display utility */
+/* ─── Typography ──────────────────────────────────────────────────────────── */
 .font-pixel {
   font-family: "Space Grotesk", system-ui, sans-serif;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
-/* ─── Core primitives ────────────────────────────────────────────────────── */
-
-/* Neo-brutalist card: thick border + hard offset shadow */
+/* ─── Core card primitive ─────────────────────────────────────────────────── */
 .retro-box {
-  border: 3px solid var(--arcade-border);
-  box-shadow: 5px 5px 0px var(--arcade-shadow);
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
-/* Pressable neo-brutalist button */
+/* ─── Button ──────────────────────────────────────────────────────────────── */
 .btn-arcade {
-  border: 3px solid var(--arcade-border);
-  box-shadow: 4px 4px 0px var(--arcade-shadow);
-  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  border: 1px solid var(--border);
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -105,12 +84,11 @@ body {
   font-weight: 700;
 }
 .btn-arcade:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0px var(--arcade-shadow);
+  border-color: var(--green);
+  color: var(--green);
 }
 .btn-arcade:active {
-  transform: translate(3px, 3px);
-  box-shadow: 1px 1px 0px var(--arcade-shadow);
+  opacity: 0.8;
 }
 .btn-arcade:disabled {
   opacity: 0.4;
@@ -118,145 +96,117 @@ body {
   pointer-events: none;
 }
 
-/* ─── Checkerboard patterns ──────────────────────────────────────────────── */
+/* ─── Dividers ────────────────────────────────────────────────────────────── */
 
-/* Finish line divider — bold checkerboard */
-.checker-divider {
-  height: 12px;
-  background-image: repeating-conic-gradient(var(--arcade-checker-a) 0% 25%, var(--arcade-checker-b) 0% 50%);
-  background-size: 12px 12px;
-  border-top: 3px solid var(--arcade-border);
-  border-bottom: 3px solid var(--arcade-border);
-}
-
-/* Accent bar — pink & yellow checkerboard */
+/* Simple green accent line */
 .checker-bar {
-  height: 8px;
-  background-image: repeating-conic-gradient(var(--arcade-checker-accent-a) 0% 25%, var(--arcade-checker-accent-b) 0% 50%);
-  background-size: 8px 8px;
-  border-top: 2px solid var(--arcade-border);
-  border-bottom: 2px solid var(--arcade-border);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--green), transparent);
+  margin: 0;
 }
 
-/* Checkered flag frame — wraps element in a checkered border */
+/* Section divider — dashed green line */
+.checker-divider {
+  height: 1px;
+  border: none;
+  border-top: 1px dashed var(--green-dim);
+  opacity: 0.5;
+}
+
+/* Thin separator */
+.checker-strip {
+  height: 1px;
+  background: var(--border);
+}
+
+/* Checkered frame — replaced with a clean green glow border */
 .checker-frame {
-  padding: 5px;
-  background-image: repeating-conic-gradient(var(--arcade-checker-a) 0% 25%, var(--arcade-checker-b) 0% 50%);
-  background-size: 10px 10px;
+  padding: 3px;
+  background: var(--green);
 }
 .checker-frame > * {
   position: relative;
   z-index: 1;
 }
 
-/* Mini checker strip — small inline accent */
-.checker-strip {
-  height: 4px;
-  background-image: repeating-conic-gradient(var(--arcade-checker-a) 0% 25%, var(--arcade-checker-b) 0% 50%);
-  background-size: 4px 4px;
-}
-
-/* ─── Form input ─────────────────────────────────────────────────────────── */
+/* ─── Form input ──────────────────────────────────────────────────────────── */
 .input-arcade {
-  background-color: var(--arcade-input-bg);
-  border: 3px solid var(--arcade-border);
-  box-shadow: 3px 3px 0px var(--arcade-shadow);
-  color: var(--arcade-text);
+  background-color: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
   font-family: "Space Grotesk", system-ui, sans-serif;
   outline: none;
-  transition: border-color 0.1s, box-shadow 0.1s;
+  transition: border-color 0.15s;
 }
 .input-arcade:focus {
-  border-color: #00C853;
-  box-shadow: 3px 3px 0px #00C853;
+  border-color: var(--green);
 }
 .input-arcade::placeholder {
-  color: var(--arcade-muted);
+  color: var(--muted);
 }
 
-/* ─── Stoplight ──────────────────────────────────────────────────────────── */
+/* ─── Racing stripe ───────────────────────────────────────────────────────── */
+.racing-stripe {
+  height: 2px;
+  background: linear-gradient(90deg, #003A1A, #00C853, #00FF87, #00C853, #003A1A);
+}
 
-/* Full stoplight capsule */
+/* ─── Stoplight ───────────────────────────────────────────────────────────── */
 .stoplight {
   display: inline-flex;
   gap: 8px;
   padding: 8px 14px;
-  background: var(--arcade-surface);
-  border: 3px solid var(--arcade-border);
+  background: var(--surface2);
+  border: 1px solid var(--border);
   border-radius: 999px;
 }
-
 .stoplight-dot {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 2px solid var(--arcade-border);
-  opacity: 0.15;
+  opacity: 0.2;
 }
-
 .stoplight-dot.active {
   opacity: 1;
-  box-shadow: 0 0 8px currentColor;
+  box-shadow: 0 0 10px currentColor;
 }
-
-.stoplight-dot.red { background: #FF3333; color: #FF3333; }
+.stoplight-dot.red    { background: #FF4444; color: #FF4444; }
 .stoplight-dot.yellow { background: #FFD600; color: #FFD600; }
-.stoplight-dot.green { background: #00E676; color: #00E676; }
+.stoplight-dot.green  { background: #00C853; color: #00C853; }
 
-/* Animated stoplight — racing start sequence */
 .stoplight-animated .stoplight-dot {
   animation: stoplight-cycle 3s ease-in-out infinite;
 }
-.stoplight-animated .stoplight-dot.red { animation-delay: 0s; }
+.stoplight-animated .stoplight-dot.red    { animation-delay: 0s; }
 .stoplight-animated .stoplight-dot.yellow { animation-delay: 1s; }
-.stoplight-animated .stoplight-dot.green { animation-delay: 2s; }
+.stoplight-animated .stoplight-dot.green  { animation-delay: 2s; }
 
 @keyframes stoplight-cycle {
-  0%, 5% { opacity: 1; box-shadow: 0 0 14px currentColor; }
-  30%, 100% { opacity: 0.15; box-shadow: none; }
+  0%, 5%    { opacity: 1; box-shadow: 0 0 14px currentColor; }
+  30%, 100% { opacity: 0.2; box-shadow: none; }
 }
 
-/* Mini stoplight for inline race status */
-.stoplight-mini {
-  display: inline-flex;
-  gap: 3px;
-  align-items: center;
-}
-.stoplight-mini-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  opacity: 0.2;
-}
-.stoplight-mini-dot.active {
-  opacity: 1;
-}
-.stoplight-mini-dot.red { background: #FF3333; }
+/* Mini stoplight */
+.stoplight-mini { display: inline-flex; gap: 3px; align-items: center; }
+.stoplight-mini-dot { width: 6px; height: 6px; border-radius: 50%; opacity: 0.25; }
+.stoplight-mini-dot.active { opacity: 1; }
+.stoplight-mini-dot.red    { background: #FF4444; }
 .stoplight-mini-dot.yellow { background: #FFD600; }
-.stoplight-mini-dot.green { background: #00E676; }
+.stoplight-mini-dot.green  { background: #00C853; }
 
-/* Race status stoplight (for cards) */
-.race-status {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-}
-.race-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  opacity: 0.15;
-}
-.race-status-dot.lit {
-  opacity: 1;
-  box-shadow: 0 0 6px currentColor;
-}
-.race-status-dot.red { background: #FF3333; color: #FF3333; }
+/* Race status dots */
+.race-status { display: inline-flex; gap: 4px; align-items: center; }
+.race-status-dot { width: 8px; height: 8px; border-radius: 50%; opacity: 0.2; }
+.race-status-dot.lit { opacity: 1; box-shadow: 0 0 6px currentColor; }
+.race-status-dot.red    { background: #FF4444; color: #FF4444; }
 .race-status-dot.yellow { background: #FFD600; color: #FFD600; }
-.race-status-dot.green { background: #00E676; color: #00E676; }
+.race-status-dot.green  { background: #00C853; color: #00C853; }
 
-/* ─── Racing stripe accent ───────────────────────────────────────────────── */
-.racing-stripe {
-  height: 4px;
-  background: linear-gradient(90deg, #00C853, #00FF87, #00E676, #00C853);
+/* ─── Contribution graph ──────────────────────────────────────────────────── */
+:root {
+  --contrib-0: #0F140F;
+  --contrib-1: #0D2E18;
+  --contrib-2: #1A5C2E;
+  --contrib-3: #00813A;
+  --contrib-4: #00C853;
 }

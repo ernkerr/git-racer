@@ -3,41 +3,40 @@ import { useAuth } from "../lib/auth.tsx";
 
 function MockRaceCard() {
   return (
-    <div className="retro-box bg-arcade-surface p-5 max-w-sm mx-auto">
-      <div className="flex items-center justify-between mb-1">
-        <span className="font-pixel text-[10px] px-1.5 py-0.5 border-2 border-arcade-pink text-arcade-pink">RACE</span>
-        <span className="font-mono text-xs text-arcade-gray">vs torvalds</span>
+    <div
+      className="max-w-sm mx-auto p-5"
+      style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <span className="font-pixel text-xs" style={{ color: "var(--green)" }}>RACE IN PROGRESS</span>
+        <span className="text-xs" style={{ color: "var(--muted)" }}>ongoing</span>
       </div>
-      <div className="grid grid-cols-2 gap-3 mt-3">
+      <div className="grid grid-cols-2 gap-4">
         <div className="text-center">
           <img
             src="https://github.com/ghost.png"
             alt="you"
-            className="w-10 h-10 rounded-none border-3 border-arcade-border mx-auto mb-1"
+            className="w-12 h-12 rounded-full mx-auto mb-2"
+            style={{ border: "2px solid var(--green)" }}
           />
-          <p className="font-pixel text-[10px] text-arcade-gray">you</p>
-          <p className="font-pixel text-3xl tabular-nums text-arcade-pink mt-1">847</p>
+          <p className="text-xs mb-1" style={{ color: "var(--muted)" }}>you</p>
+          <p className="font-pixel text-3xl" style={{ color: "var(--green)" }}>847</p>
         </div>
         <div className="text-center">
           <img
             src="https://github.com/torvalds.png"
             alt="torvalds"
-            className="w-10 h-10 rounded-none border-3 border-arcade-border mx-auto mb-1"
+            className="w-12 h-12 rounded-full mx-auto mb-2"
+            style={{ border: "1px solid var(--border)" }}
           />
-          <p className="font-pixel text-[10px] text-arcade-gray">torvalds</p>
-          <p className="font-pixel text-3xl tabular-nums text-arcade-white mt-1">412</p>
+          <p className="text-xs mb-1" style={{ color: "var(--muted)" }}>torvalds</p>
+          <p className="font-pixel text-3xl" style={{ color: "var(--text)" }}>412</p>
         </div>
       </div>
-      <div className="relative h-5 mt-3 mb-2">
-        <div className="absolute inset-0 flex">
-          <div className="h-full bg-arcade-pink" style={{ width: "67%" }} />
-          <div className="h-full flex-1 bg-arcade-surface border border-arcade-border" />
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="font-pixel text-[10px] text-black bg-arcade-white px-1.5 z-10">VS</span>
-        </div>
+      <div className="relative h-1.5 mt-5 mb-3" style={{ background: "var(--border)" }}>
+        <div className="absolute left-0 top-0 h-full" style={{ width: "67%", background: "var(--green)" }} />
       </div>
-      <p className="font-pixel text-xs text-arcade-pink text-center">YOU LEAD BY 435</p>
+      <p className="font-pixel text-xs text-center" style={{ color: "var(--green)" }}>YOU LEAD BY 435</p>
     </div>
   );
 }
@@ -51,90 +50,81 @@ export default function Landing() {
   return (
     <div>
       {/* Hero */}
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center mb-8">
-        {/* Racing stoplight */}
+      <div className="flex flex-col items-center justify-center min-h-[55vh] text-center">
         <div className="stoplight stoplight-animated mb-10">
           <div className="stoplight-dot red" />
           <div className="stoplight-dot yellow" />
           <div className="stoplight-dot green" />
         </div>
 
-        <h1 className="font-pixel leading-tight mb-6">
-          <span className="block text-3xl md:text-5xl text-arcade-pink">
+        <h1 className="font-pixel leading-tight mb-5">
+          <span className="block text-4xl md:text-6xl" style={{ color: "var(--green)" }}>
             RACE YOUR
           </span>
-          <span className="block text-3xl md:text-5xl text-arcade-white">
+          <span className="block text-4xl md:text-6xl" style={{ color: "var(--text)" }}>
             COMMITS.
           </span>
         </h1>
-        <p className="text-base text-arcade-gray max-w-lg mb-10 leading-relaxed">
-          Look up any developer on GitHub, see your real commit totals head-to-head,
-          and race to outcode them. No leaderboards. Just you vs. whoever you want to beat.
+
+        <p className="text-base mb-10 max-w-md leading-relaxed" style={{ color: "var(--muted)" }}>
+          Look up any developer on GitHub, see your real commit totals
+          head-to-head, and race to outcode them.
         </p>
 
-        <div className="checker-frame inline-block mb-8">
-          <button
-            onClick={login}
-            className="btn-arcade bg-arcade-pink text-black font-pixel text-base px-8 py-4"
-          >
-            START RACING
-          </button>
-        </div>
+        <button
+          onClick={login}
+          className="font-pixel text-sm px-8 py-3 mb-4 transition-colors"
+          style={{ background: "var(--green)", color: "#000" }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--green-bright)"}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "var(--green)"}
+        >
+          SIGN IN WITH GITHUB
+        </button>
 
-        <p className="text-xs text-arcade-gray">
-          We only request read access to your profile. No repo access needed.
+        <p className="text-xs" style={{ color: "var(--muted)" }}>
+          Read-only access. No repo permissions needed.
         </p>
       </div>
 
-      <div className="checker-divider my-10" />
+      {/* Divider */}
+      <div className="my-16" style={{ borderTop: "1px solid var(--border)" }} />
 
       {/* How it works */}
       <div className="max-w-2xl mx-auto mb-16">
-        <h2 className="font-pixel text-lg text-arcade-cyan text-center mb-8">HOW IT WORKS</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="retro-box bg-arcade-surface p-5 text-center">
-            <p className="font-pixel text-2xl text-arcade-pink mb-3">01</p>
-            <p className="font-pixel text-xs text-arcade-white mb-2">PICK YOUR OPPONENT</p>
-            <p className="font-mono text-xs text-arcade-gray leading-relaxed">
-              Search any GitHub username — a friend, a famous dev, your coworker.
-            </p>
-          </div>
-          <div className="retro-box bg-arcade-surface p-5 text-center">
-            <p className="font-pixel text-2xl text-arcade-cyan mb-3">02</p>
-            <p className="font-pixel text-xs text-arcade-white mb-2">LOAD REAL HISTORY</p>
-            <p className="font-mono text-xs text-arcade-gray leading-relaxed">
-              We pull actual commit counts from GitHub — not starting from 0, but your real totals.
-            </p>
-          </div>
-          <div className="retro-box bg-arcade-surface p-5 text-center">
-            <p className="font-pixel text-2xl text-arcade-pink mb-3">03</p>
-            <p className="font-pixel text-xs text-arcade-white mb-2">RACE OR SPRINT</p>
-            <p className="font-mono text-xs text-arcade-gray leading-relaxed">
-              Set a deadline for a sprint, or run an ongoing race with no end date.
-            </p>
-          </div>
+        <h2 className="font-pixel text-sm text-center mb-8" style={{ color: "var(--green)" }}>HOW IT WORKS</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { n: "01", title: "PICK YOUR OPPONENT", body: "Search any GitHub username — a friend, a famous dev, your coworker." },
+            { n: "02", title: "LOAD REAL HISTORY", body: "We pull actual commit counts from GitHub — your real totals, not starting from 0." },
+            { n: "03", title: "RACE OR SPRINT", body: "Set a deadline for a sprint, or run an ongoing race with no end date." },
+          ].map(({ n, title, body }) => (
+            <div key={n} className="p-5" style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}>
+              <p className="font-pixel text-xl mb-3" style={{ color: "var(--green-dim)" }}>{n}</p>
+              <p className="font-pixel text-xs mb-2" style={{ color: "var(--text)" }}>{title}</p>
+              <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>{body}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Mock race preview */}
+      {/* Mock race */}
       <div className="mb-16">
-        <h2 className="font-pixel text-lg text-arcade-cyan text-center mb-6">WHAT A RACE LOOKS LIKE</h2>
+        <h2 className="font-pixel text-sm text-center mb-6" style={{ color: "var(--green)" }}>WHAT A RACE LOOKS LIKE</h2>
         <MockRaceCard />
       </div>
 
-      <div className="checker-divider my-10" />
-
-      {/* Final CTA */}
-      <div className="text-center py-10">
-        <p className="font-pixel text-base text-arcade-white mb-6">READY TO RACE?</p>
-        <div className="checker-frame inline-block">
-          <button
-            onClick={login}
-            className="btn-arcade bg-arcade-pink text-black font-pixel text-base px-8 py-4"
-          >
-            SIGN IN WITH GITHUB
-          </button>
-        </div>
+      {/* Bottom CTA */}
+      <div className="text-center py-12" style={{ borderTop: "1px solid var(--border)" }}>
+        <p className="font-pixel text-base mb-6" style={{ color: "var(--text)" }}>READY TO RACE?</p>
+        <button
+          onClick={login}
+          className="font-pixel text-sm px-8 py-3 transition-colors"
+          style={{ background: "var(--green)", color: "#000" }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--green-bright)"}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "var(--green)"}
+        >
+          SIGN IN WITH GITHUB
+        </button>
       </div>
     </div>
   );
