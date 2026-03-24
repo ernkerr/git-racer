@@ -97,6 +97,8 @@ export interface StarredUser {
 
 export interface StarSuggestion {
   github_username: string;
+  display_name: string;
+  known_for: string;
   avatar_url: string | null;
   commit_count: number;
 }

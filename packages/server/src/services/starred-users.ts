@@ -107,18 +107,18 @@ export async function getStarredComparisons(
  * haven't starred anyone yet. Ordered roughly by name recognition.
  */
 const SUGGESTED_DEVS = [
-  { github_username: "torvalds", display: "Linus Torvalds" },
-  { github_username: "steipete", display: "Peter Steinberger" },
-  { github_username: "rauchg", display: "Guillermo Rauch" },
-  { github_username: "dhh", display: "DHH" },
-  { github_username: "levelsio", display: "Pieter Levels" },
-  { github_username: "sindresorhus", display: "Sindre Sorhus" },
-  { github_username: "taylorotwell", display: "Taylor Otwell" },
-  { github_username: "hwchase17", display: "Harrison Chase" },
-  { github_username: "garrytan", display: "Gary Tan" },
-  { github_username: "karpathy", display: "Andrej Karpathy" },
-  { github_username: "gaearon", display: "Dan Abramov" },
-  { github_username: "tj", display: "TJ Holowaychuk" },
+  { github_username: "torvalds", display_name: "Linus Torvalds", known_for: "Linux & Git creator" },
+  { github_username: "steipete", display_name: "Peter Steinberger", known_for: "PSPDFKit founder" },
+  { github_username: "rauchg", display_name: "Guillermo Rauch", known_for: "Vercel CEO" },
+  { github_username: "dhh", display_name: "DHH", known_for: "Ruby on Rails creator" },
+  { github_username: "levelsio", display_name: "Pieter Levels", known_for: "Nomad List, Photo AI" },
+  { github_username: "sindresorhus", display_name: "Sindre Sorhus", known_for: "1000+ npm packages" },
+  { github_username: "taylorotwell", display_name: "Taylor Otwell", known_for: "Laravel creator" },
+  { github_username: "hwchase17", display_name: "Harrison Chase", known_for: "LangChain CEO" },
+  { github_username: "garrytan", display_name: "Gary Tan", known_for: "Y Combinator President" },
+  { github_username: "karpathy", display_name: "Andrej Karpathy", known_for: "AI researcher, former Tesla" },
+  { github_username: "gaearon", display_name: "Dan Abramov", known_for: "React core team" },
+  { github_username: "tj", display_name: "TJ Holowaychuk", known_for: "Express.js, Koa creator" },
 ];
 
 /**
@@ -134,7 +134,7 @@ const SUGGESTED_DEVS = [
 export async function getStarSuggestions(
   userId: number,
   limit: number = 6
-): Promise<{ github_username: string; avatar_url: string | null; commit_count: number }[]> {
+): Promise<{ github_username: string; display_name: string; known_for: string; avatar_url: string | null; commit_count: number }[]> {
   // Fetch the set of usernames the user has already starred
   const starred = await db
     .select({ github_username: userBenchmarks.github_username })
@@ -149,6 +149,8 @@ export async function getStarSuggestions(
     .slice(0, limit)
     .map((dev) => ({
       github_username: dev.github_username,
+      display_name: dev.display_name,
+      known_for: dev.known_for,
       avatar_url: `https://github.com/${dev.github_username}.png`,
       commit_count: 0,
     }));

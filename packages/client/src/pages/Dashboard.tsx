@@ -49,57 +49,49 @@ function RaceCard({ ch }: { ch: ActiveChallenge }) {
   const isSprint = ch.duration_type === "fixed";
   const isFinished = ch.end_date && new Date(ch.end_date) < new Date();
 
+  // Losing uses a muted amber instead of alarming red
+  const statusColor =
+    raceStatus === "losing" ? "#B45309"
+    : raceStatus === "winning" ? "#16A34A"
+    : raceStatus === "tied" ? "#EAB308"
+    : undefined;
+
   return (
     <Link
       to={`/c/${ch.share_slug}`}
-      className="retro-box bg-arcade-surface p-4 block hover:-translate-y-px transition-all"
-      style={
-        raceStatus === "losing"
-          ? { borderColor: "#DC2626" }
-          : raceStatus === "winning"
-          ? { borderColor: "#16A34A" }
-          : raceStatus === "tied"
-          ? { borderColor: "#EAB308" }
-          : undefined
-      }
+      className="retro-box bg-arcade-surface p-4 flex flex-col justify-between aspect-square hover:-translate-y-px transition-all"
+      style={statusColor ? { borderColor: statusColor } : undefined}
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <RaceStatus status={raceStatus} />
-            <h3 className="font-pixel text-base text-arcade-white">{ch.name}</h3>
-            <span
-              className="font-pixel text-[10px] px-1.5 py-0.5 border-2"
-              style={{
-                borderColor: isSprint ? "#00E676" : "#00C853",
-                color: isSprint ? "#00E676" : "#00C853",
-              }}
-            >
-              {isFinished ? "DONE" : isSprint ? "SPRINT" : "RACE"}
-            </span>
-          </div>
-          <p className="font-mono text-xs text-arcade-gray">
-            {ch.participant_count} participant{ch.participant_count !== 1 ? "s" : ""}
-            {ch.end_date &&
-              ` · ends ${new Date(ch.end_date).toLocaleDateString()}`}
-          </p>
+      <div>
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <RaceStatus status={raceStatus} />
+          <span
+            className="font-pixel text-[10px] px-1.5 py-0.5 border-2"
+            style={{
+              borderColor: isSprint ? "#00E676" : "#00C853",
+              color: isSprint ? "#00E676" : "#00C853",
+            }}
+          >
+            {isFinished ? "DONE" : isSprint ? "SPRINT" : "RACE"}
+          </span>
         </div>
-        <div className="text-right">
-          <p className="font-pixel text-3xl tabular-nums text-arcade-white">
-            {ch.your_commits}
-          </p>
-          <p className="font-pixel text-xs" style={{
-            color: raceStatus === "none" ? "#78716C"
-              : raceStatus === "losing" ? "#DC2626"
-              : raceStatus === "winning" ? "#16A34A"
-              : "#EAB308"
-          }}>
-            {raceStatus === "none" ? "" : raceStatus === "losing"
-              ? `${ch.leader_commits - ch.your_commits} BEHIND`
-              : raceStatus === "winning" ? "YOU LEAD"
-              : "TIED"}
-          </p>
-        </div>
+        <h3 className="font-pixel text-sm text-arcade-white mt-2 leading-tight line-clamp-2">{ch.name}</h3>
+        <p className="font-mono text-[10px] text-arcade-gray mt-1">
+          {ch.participant_count} racer{ch.participant_count !== 1 ? "s" : ""}
+        </p>
+      </div>
+      <div>
+        <p className="font-pixel text-2xl tabular-nums text-arcade-white">
+          {ch.your_commits}
+        </p>
+        <p className="font-pixel text-[10px]" style={{
+          color: raceStatus === "none" ? "#78716C" : statusColor
+        }}>
+          {raceStatus === "none" ? "" : raceStatus === "losing"
+            ? `${ch.leader_commits - ch.your_commits} BEHIND`
+            : raceStatus === "winning" ? "YOU LEAD"
+            : "TIED"}
+        </p>
       </div>
     </Link>
   );
@@ -164,7 +156,23 @@ export default function Dashboard() {
         <ShareButton />
       </div>
 
-      {/* YOUR RACES — top priority */}
+      {/* Stats row — your numbers first */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <StatsCard label="Today" value={stats.today} />
+          <StatsCard label="This Week" value={stats.this_week} />
+          <StatsCard label="This Month" value={stats.this_month} />
+          <StatsCard label="This Year" value={stats.this_year} />
+          <StatsCard label="All Time" value={stats.all_time} />
+        </div>
+      )}
+
+      {/* Streaks & Records */}
+      {streaks && <StreakCard streaks={streaks} />}
+
+      <div className="checker-strip" />
+
+      {/* YOUR RACES */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-pixel text-base text-arcade-cyan">YOUR RACES</h2>
@@ -177,7 +185,7 @@ export default function Dashboard() {
         </div>
 
         {challenges.length > 0 && (
-          <div className="space-y-3 mb-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-3">
             {challenges.map((ch) => <RaceCard key={ch.id} ch={ch} />)}
           </div>
         )}
@@ -194,22 +202,6 @@ export default function Dashboard() {
           showEmpty={challenges.length === 0}
         />
       </div>
-
-      <div className="checker-strip" />
-
-      {/* Stats row */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <StatsCard label="Today" value={stats.today} />
-          <StatsCard label="This Week" value={stats.this_week} />
-          <StatsCard label="This Month" value={stats.this_month} />
-          <StatsCard label="This Year" value={stats.this_year} />
-          <StatsCard label="All Time" value={stats.all_time} />
-        </div>
-      )}
-
-      {/* Streaks & Records */}
-      {streaks && <StreakCard streaks={streaks} />}
 
       <div className="checker-strip" />
 

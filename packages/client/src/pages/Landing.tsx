@@ -67,8 +67,8 @@ export default function Landing() {
         </h1>
 
         <p className="text-base mb-10 max-w-md leading-relaxed" style={{ color: "var(--muted)" }}>
-          Look up any developer on GitHub, see your real commit totals
-          head-to-head, and race to outcode them.
+          Race your friends, race famous developers, and turn your
+          GitHub contributions into a competitive sport.
         </p>
 
         <button
