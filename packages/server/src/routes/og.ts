@@ -41,7 +41,7 @@ ogRoutes.get("/c/:slug", async (c) => {
     ? challenge.end_date.toISOString().slice(0, 10)
     : new Date().toISOString().slice(0, 10);
 
-  // Leaderboard query (same as challenges.ts GET /:slug)
+  // Participant commit totals (same as challenges.ts GET /:slug)
   const rows = await db.execute(sql`
     SELECT
       cp.github_username,

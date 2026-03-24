@@ -413,7 +413,7 @@ cronRoutes.post("/poll-events", async (c) => {
  * GH Archive push events give us an approximate count; this enrichment
  * step replaces those estimates with the user's real contribution numbers.
  * Enriches the top N users by archive commit count over the past `daysBack`
- * days so that week/month leaderboard views also get accurate data.
+ * days so that week/month views also get accurate data.
  *
  * @param date - ISO date string (YYYY-MM-DD) — the anchor date (today)
  * @param topN - Number of top committers to enrich (default: 10)
