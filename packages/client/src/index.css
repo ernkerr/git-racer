@@ -1,64 +1,54 @@
 @import "tailwindcss";
 
-/* ─── Design tokens ───────────────────────────────────────────────────────── */
+/* ─── Tokens ──────────────────────────────────────────────────────────────── */
 :root {
-  --green:        #00C853;
-  --green-bright: #00FF87;
-  --green-dim:    #00813A;
-  --green-dark:   #003A1A;
+  /* Neutrals */
+  --bg:       #0C0C0C;
+  --surface:  #141414;
+  --surface2: #1A1A1A;
+  --border:   #2A2A2A;
+  --text:     #F0F0F0;
+  --muted:    #666666;
+  --subtle:   #333333;
 
-  --bg:       #0A0E0A;
-  --surface:  #0F140F;
-  --surface2: #141C14;
-  --border:   #1E2E1E;
-  --border-bright: #00C853;
-  --text:     #E8F5E8;
-  --muted:    #5A7A5A;
-  --shadow:   #000000;
+  /* Single accent — used sparingly */
+  --green:    #00C853;
+  --green-hi: #00FF87;
+  --green-lo: #005C26;
 
-  --red:    #FF4444;
-  --yellow: #FFD600;
-  --white:  #E8F5E8;
+  /* Status colors */
+  --red:    #EF4444;
+  --yellow: #EAB308;
+
+  --shadow: #000;
 }
 
 @theme {
-  --color-g:            #00C853;
-  --color-g-bright:     #00FF87;
-  --color-g-dim:        #00813A;
-  --color-arcade-bg:    var(--bg);
+  --color-arcade-bg:      var(--bg);
   --color-arcade-surface: var(--surface);
-  --color-arcade-white: var(--text);
-  --color-arcade-gray:  var(--muted);
-  --color-arcade-border: var(--border);
-  --color-arcade-pink:  #00C853;
-  --color-arcade-cyan:  #00E676;
-  --color-arcade-green: #00C853;
-  --color-arcade-red:   #FF4444;
-  --color-arcade-yellow: #FFD600;
+  --color-arcade-white:   var(--text);
+  --color-arcade-gray:    var(--muted);
+  --color-arcade-border:  var(--border);
+  --color-arcade-hover:   var(--surface2);
+  --color-arcade-pink:    var(--green);
+  --color-arcade-cyan:    var(--green-hi);
+  --color-arcade-green:   var(--green);
+  --color-arcade-red:     var(--red);
+  --color-arcade-yellow:  var(--yellow);
   --font-pixel: "Space Grotesk", system-ui, sans-serif;
 }
 
-/* ─── Global base ─────────────────────────────────────────────────────────── */
-* { box-sizing: border-box; }
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
-  background-color: var(--bg);
+  background: var(--bg);
   color: var(--text);
   font-family: "Space Grotesk", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Subtle dot grid */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image: radial-gradient(circle, #1A2E1A 1px, transparent 1px);
-  background-size: 24px 24px;
-  pointer-events: none;
-  z-index: 0;
-}
-#root { position: relative; z-index: 1; }
+#root { position: relative; }
 
 /* ─── Typography ──────────────────────────────────────────────────────────── */
 .font-pixel {
@@ -67,91 +57,83 @@ body::before {
   letter-spacing: -0.02em;
 }
 
-/* ─── Core card primitive ─────────────────────────────────────────────────── */
+/* ─── Card ────────────────────────────────────────────────────────────────── */
 .retro-box {
-  border: 1px solid var(--border);
   background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 /* ─── Button ──────────────────────────────────────────────────────────────── */
 .btn-arcade {
   border: 1px solid var(--border);
-  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  background: var(--surface2);
+  color: var(--text);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-weight: 600;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
 }
 .btn-arcade:hover {
   border-color: var(--green);
   color: var(--green);
 }
-.btn-arcade:active {
-  opacity: 0.8;
-}
+.btn-arcade:active { opacity: 0.75; }
 .btn-arcade:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
   pointer-events: none;
 }
 
-/* ─── Dividers ────────────────────────────────────────────────────────────── */
-
-/* Simple green accent line */
-.checker-bar {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--green), transparent);
-  margin: 0;
-}
-
-/* Section divider — dashed green line */
-.checker-divider {
-  height: 1px;
-  border: none;
-  border-top: 1px dashed var(--green-dim);
-  opacity: 0.5;
-}
-
-/* Thin separator */
-.checker-strip {
-  height: 1px;
-  background: var(--border);
-}
-
-/* Checkered frame — replaced with a clean green glow border */
-.checker-frame {
-  padding: 3px;
-  background: var(--green);
-}
-.checker-frame > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* ─── Form input ──────────────────────────────────────────────────────────── */
+/* ─── Input ───────────────────────────────────────────────────────────────── */
 .input-arcade {
-  background-color: var(--surface2);
+  background: var(--surface2);
   border: 1px solid var(--border);
   color: var(--text);
   font-family: "Space Grotesk", system-ui, sans-serif;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.12s;
 }
-.input-arcade:focus {
-  border-color: var(--green);
-}
-.input-arcade::placeholder {
-  color: var(--muted);
-}
+.input-arcade:focus { border-color: var(--green); }
+.input-arcade::placeholder { color: var(--muted); }
 
-/* ─── Racing stripe ───────────────────────────────────────────────────────── */
+/* ─── Dividers ────────────────────────────────────────────────────────────── */
+
+/* Top-of-page racing stripe */
 .racing-stripe {
   height: 2px;
-  background: linear-gradient(90deg, #003A1A, #00C853, #00FF87, #00C853, #003A1A);
+  background: linear-gradient(90deg, transparent 0%, var(--green) 40%, var(--green-hi) 50%, var(--green) 60%, transparent 100%);
 }
 
-/* ─── Stoplight ───────────────────────────────────────────────────────────── */
+/* Section break — just a border */
+.checker-divider {
+  height: 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+/* Thinner strip */
+.checker-strip {
+  height: 0;
+  border-top: 1px solid var(--subtle);
+}
+
+/* Checker bar — thin green accent */
+.checker-bar {
+  height: 1px;
+  background: var(--border);
+}
+
+/* CTA frame — no pattern, just offset */
+.checker-frame {
+  padding: 2px;
+  background: var(--green);
+  display: inline-block;
+}
+.checker-frame > * { position: relative; z-index: 1; }
+
+/* ─── Stoplights ──────────────────────────────────────────────────────────── */
 .stoplight {
   display: inline-flex;
   gap: 8px;
@@ -161,52 +143,55 @@ body::before {
   border-radius: 999px;
 }
 .stoplight-dot {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  opacity: 0.2;
+  opacity: 0.18;
 }
-.stoplight-dot.active {
-  opacity: 1;
-  box-shadow: 0 0 10px currentColor;
-}
-.stoplight-dot.red    { background: #FF4444; color: #FF4444; }
-.stoplight-dot.yellow { background: #FFD600; color: #FFD600; }
-.stoplight-dot.green  { background: #00C853; color: #00C853; }
+.stoplight-dot.active { opacity: 1; box-shadow: 0 0 8px currentColor; }
+.stoplight-dot.red    { background: #EF4444; color: #EF4444; }
+.stoplight-dot.yellow { background: #EAB308; color: #EAB308; }
+.stoplight-dot.green  { background: var(--green); color: var(--green); }
 
 .stoplight-animated .stoplight-dot {
-  animation: stoplight-cycle 3s ease-in-out infinite;
+  animation: sl-cycle 3s ease-in-out infinite;
 }
 .stoplight-animated .stoplight-dot.red    { animation-delay: 0s; }
 .stoplight-animated .stoplight-dot.yellow { animation-delay: 1s; }
 .stoplight-animated .stoplight-dot.green  { animation-delay: 2s; }
-
-@keyframes stoplight-cycle {
-  0%, 5%    { opacity: 1; box-shadow: 0 0 14px currentColor; }
-  30%, 100% { opacity: 0.2; box-shadow: none; }
+@keyframes sl-cycle {
+  0%, 8%    { opacity: 1; box-shadow: 0 0 12px currentColor; }
+  35%, 100% { opacity: 0.18; box-shadow: none; }
 }
 
-/* Mini stoplight */
+/* Mini stoplight (logo) */
 .stoplight-mini { display: inline-flex; gap: 3px; align-items: center; }
-.stoplight-mini-dot { width: 6px; height: 6px; border-radius: 50%; opacity: 0.25; }
+.stoplight-mini-dot { width: 6px; height: 6px; border-radius: 50%; opacity: 0.3; }
 .stoplight-mini-dot.active { opacity: 1; }
-.stoplight-mini-dot.red    { background: #FF4444; }
-.stoplight-mini-dot.yellow { background: #FFD600; }
-.stoplight-mini-dot.green  { background: #00C853; }
+.stoplight-mini-dot.red    { background: #EF4444; }
+.stoplight-mini-dot.yellow { background: #EAB308; }
+.stoplight-mini-dot.green  { background: var(--green); }
 
-/* Race status dots */
+/* Race status (card dots) */
 .race-status { display: inline-flex; gap: 4px; align-items: center; }
-.race-status-dot { width: 8px; height: 8px; border-radius: 50%; opacity: 0.2; }
-.race-status-dot.lit { opacity: 1; box-shadow: 0 0 6px currentColor; }
-.race-status-dot.red    { background: #FF4444; color: #FF4444; }
-.race-status-dot.yellow { background: #FFD600; color: #FFD600; }
-.race-status-dot.green  { background: #00C853; color: #00C853; }
+.race-status-dot { width: 7px; height: 7px; border-radius: 50%; opacity: 0.18; }
+.race-status-dot.lit { opacity: 1; box-shadow: 0 0 5px currentColor; }
+.race-status-dot.red    { background: #EF4444; color: #EF4444; }
+.race-status-dot.yellow { background: #EAB308; color: #EAB308; }
+.race-status-dot.green  { background: var(--green); color: var(--green); }
 
-/* ─── Contribution graph ──────────────────────────────────────────────────── */
+/* ─── Contribution graph levels ───────────────────────────────────────────── */
 :root {
-  --contrib-0: #0F140F;
+  --contrib-0: #1A1A1A;
   --contrib-1: #0D2E18;
-  --contrib-2: #1A5C2E;
-  --contrib-3: #00813A;
-  --contrib-4: #00C853;
+  --contrib-2: #155A2C;
+  --contrib-3: #1D8A42;
+  --contrib-4: var(--green);
+}
+
+/* ─── League / zone tints ─────────────────────────────────────────────────── */
+:root {
+  --arcade-zone-promote: rgba(0, 200, 83, 0.07);
+  --arcade-zone-demote:  rgba(239, 68, 68, 0.07);
+  --arcade-tier-bronze:  rgba(180, 120, 30, 0.08);
 }
