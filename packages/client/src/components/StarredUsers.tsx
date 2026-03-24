@@ -139,46 +139,45 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
         </div>
       )}
 
-      {/* Famous dev suggestions */}
-      {suggestions.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-pixel text-xs text-arcade-gray uppercase tracking-wider">Race a famous dev</p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {suggestions.map((s) => (
-              <button
-                key={s.github_username}
-                onClick={() => handleRace(s.github_username)}
-                disabled={adding}
-                className="retro-box bg-arcade-surface p-3 text-left hover:bg-arcade-hover transition-colors disabled:opacity-50 cursor-pointer group"
-              >
-                <div className="flex items-center gap-2.5 mb-2">
-                  <img
-                    src={s.avatar_url ?? `https://github.com/${s.github_username}.png`}
-                    alt={s.github_username}
-                    className="w-7 h-7 rounded-full shrink-0"
-                  />
-                  <span className="font-pixel text-xs text-arcade-white truncate leading-tight">{s.display_name}</span>
-                </div>
-                <p className="font-mono text-[10px] text-arcade-gray leading-snug mb-2 line-clamp-1">{s.known_for}</p>
-                <span className="font-pixel text-[10px] text-arcade-gray group-hover:text-arcade-green transition-colors">
-                  RACE →
-                </span>
-              </button>
-            ))}
-          </div>
+      {/* Search + Famous dev suggestions */}
+      <div>
+        <div className="max-w-md mb-3">
+          <GitHubUserSearch
+            value={searchValue}
+            onChange={setSearchValue}
+            onSelect={(username) => handleRace(username)}
+            placeholder="Search any GitHub user to race..."
+          />
         </div>
-      )}
 
-      {/* Search */}
-      <div className="max-w-md">
-        <GitHubUserSearch
-          value={searchValue}
-          onChange={setSearchValue}
-          onSelect={(username) => handleRace(username)}
-          placeholder="Search any GitHub user to race..."
-        />
+        {suggestions.length > 0 && (
+          <>
+            <p className="font-pixel text-xs text-arcade-gray uppercase tracking-wider mb-3">Race a famous dev</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {suggestions.map((s) => (
+                <button
+                  key={s.github_username}
+                  onClick={() => handleRace(s.github_username)}
+                  disabled={adding}
+                  className="retro-box bg-arcade-surface p-3 text-left hover:bg-arcade-hover transition-colors disabled:opacity-50 cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <img
+                      src={s.avatar_url ?? `https://github.com/${s.github_username}.png`}
+                      alt={s.github_username}
+                      className="w-7 h-7 rounded-full shrink-0"
+                    />
+                    <span className="font-pixel text-xs text-arcade-white truncate leading-tight">{s.display_name}</span>
+                  </div>
+                  <p className="font-mono text-[10px] text-arcade-gray leading-snug mb-2 line-clamp-1">{s.known_for}</p>
+                  <span className="font-pixel text-[10px] text-arcade-gray group-hover:text-arcade-green transition-colors">
+                    RACE →
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Empty state */}
