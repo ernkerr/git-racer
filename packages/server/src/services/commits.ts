@@ -29,11 +29,20 @@ export async function refreshCommitData(
   githubUsername: string,
   token?: string
 ): Promise<boolean> {
+  const todayStr = today();
+
+  // Check cache freshness using today's row specifically. If today's row
+  // doesn't exist yet (new day) or was fetched before the TTL window, we
+  // must refresh — even if older rows look fresh.
   const latest = await db
     .select({ fetched_at: commitSnapshots.fetched_at })
     .from(commitSnapshots)
-    .where(eq(commitSnapshots.github_username, githubUsername))
-    .orderBy(desc(commitSnapshots.fetched_at))
+    .where(
+      and(
+        eq(commitSnapshots.github_username, githubUsername),
+        eq(commitSnapshots.date, todayStr)
+      )
+    )
     .limit(1);
 
   if (latest.length > 0) {
