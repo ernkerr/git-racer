@@ -10,10 +10,11 @@ interface GitHubUser {
 interface Props {
   value: string;
   onChange: (username: string) => void;
+  onSelect?: (username: string) => void;
   placeholder?: string;
 }
 
-export default function GitHubUserSearch({ value, onChange, placeholder = "Search GitHub users..." }: Props) {
+export default function GitHubUserSearch({ value, onChange, onSelect, placeholder = "Search GitHub users..." }: Props) {
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<GitHubUser[]>([]);
   const [open, setOpen] = useState(false);
@@ -68,6 +69,7 @@ export default function GitHubUserSearch({ value, onChange, placeholder = "Searc
   const selectUser = (user: GitHubUser) => {
     setQuery(user.login);
     onChange(user.login);
+    onSelect?.(user.login);
     setOpen(false);
     setResults([]);
   };

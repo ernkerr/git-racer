@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { StarredUser, StarSuggestion } from "@git-racer/shared";
 import { api } from "../lib/api.ts";
 import GitHubUserSearch from "./GitHubUserSearch.tsx";
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function StarredUsers({ starred, suggestions, onStar, onUnstar, showEmpty }: Props) {
+  const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
   const [adding, setAdding] = useState(false);
 
@@ -23,7 +25,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
         method: "POST",
         body: JSON.stringify({ github_username: username }),
       });
-      await api<{ share_slug: string }>("/challenges", {
+      const result = await api<{ share_slug: string }>("/challenges", {
         method: "POST",
         body: JSON.stringify({
           name: `vs ${username}`,
@@ -34,6 +36,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
       });
       onStar(username);
       setSearchValue("");
+      navigate(`/c/${result.share_slug}`);
     } catch {
       onStar(username);
       setSearchValue("");
@@ -58,12 +61,8 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
       {/* Search bar — always first */}
       <GitHubUserSearch
         value={searchValue}
-        onChange={(username) => {
-          setSearchValue(username);
-          if (username && username.length > 2 && !username.includes(" ")) {
-            handleRace(username);
-          }
-        }}
+        onChange={setSearchValue}
+        onSelect={(username) => handleRace(username)}
         placeholder="Search any GitHub user to race..."
       />
 
