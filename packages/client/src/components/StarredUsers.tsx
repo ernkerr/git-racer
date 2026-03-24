@@ -8,9 +8,10 @@ interface Props {
   suggestions: StarSuggestion[];
   onStar: (username: string) => void;
   onUnstar: (username: string) => void;
+  showEmpty?: boolean;
 }
 
-export default function StarredUsers({ starred, suggestions, onStar, onUnstar }: Props) {
+export default function StarredUsers({ starred, suggestions, onStar, onUnstar, showEmpty }: Props) {
   const [searchValue, setSearchValue] = useState("");
   const [adding, setAdding] = useState(false);
 
@@ -18,13 +19,10 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
     if (adding) return;
     setAdding(true);
     try {
-      // Star the user
       await api("/starred", {
         method: "POST",
         body: JSON.stringify({ github_username: username }),
       });
-
-      // Create a 1v1 ongoing race
       await api<{ share_slug: string }>("/challenges", {
         method: "POST",
         body: JSON.stringify({
@@ -34,7 +32,6 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
           opponents: [username],
         }),
       });
-
       onStar(username);
       setSearchValue("");
     } catch {
@@ -54,76 +51,91 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
     }
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Starred users comparison cards */}
-      {starred.length > 0 && (
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-          {starred.map((s) => (
-            <div
-              key={s.github_username}
-              className="retro-box shrink-0 w-64 bg-arcade-surface p-4"
-              style={s.you_beat_them ? { borderColor: "#2563EB" } : undefined}
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <img
-                  src={s.avatar_url ?? `https://github.com/${s.github_username}.png`}
-                  alt={s.github_username}
-                  className="w-10 h-10 rounded-none border-2 border-arcade-border shrink-0"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="font-mono text-sm text-arcade-white truncate">{s.display_name}</p>
-                  <p className="font-mono text-xs text-arcade-gray truncate">@{s.github_username}</p>
-                </div>
-                <button
-                  onClick={() => handleUnstar(s.github_username)}
-                  className="text-arcade-pink hover:text-arcade-gray shrink-0 transition-colors"
-                  title="Unstar"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                </button>
-              </div>
+  const hasContent = starred.length > 0 || suggestions.length > 0;
 
-              <div className="flex items-end justify-between">
-                <div>
-                  <p className="font-pixel text-xs text-arcade-gray mb-1">THEM</p>
-                  <p className="font-pixel text-base tabular-nums text-arcade-gray">
-                    {s.their_commits.toLocaleString()}
-                  </p>
-                </div>
-                <div className="text-center px-2">
-                  <span className={`font-pixel text-base ${s.you_beat_them ? "text-arcade-cyan" : "text-arcade-gray"}`}>
-                    {s.you_beat_them ? ">" : "<"}
+  return (
+    <div className="space-y-3">
+      {/* Search bar — always first */}
+      <GitHubUserSearch
+        value={searchValue}
+        onChange={(username) => {
+          setSearchValue(username);
+          if (username && username.length > 2 && !username.includes(" ")) {
+            handleRace(username);
+          }
+        }}
+        placeholder="Search any GitHub user to race..."
+      />
+
+      {/* Starred devs as race cards */}
+      {starred.map((s) => (
+        <div
+          key={s.github_username}
+          className="retro-box bg-arcade-surface p-4"
+          style={s.you_beat_them ? { borderColor: "#16A34A" } : { borderColor: "#DC2626" }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <img
+                src={s.avatar_url ?? `https://github.com/${s.github_username}.png`}
+                alt={s.github_username}
+                className="w-10 h-10 rounded-none border-3 border-arcade-border shrink-0"
+              />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-sm text-arcade-white truncate">{s.display_name || s.github_username}</span>
+                  <span
+                    className="font-pixel text-[10px] px-1.5 py-0.5 border-2 shrink-0"
+                    style={{ borderColor: "#FF006E", color: "#FF006E" }}
+                  >
+                    RACE
                   </span>
                 </div>
-                <div className="text-right">
-                  <p className="font-pixel text-xs text-arcade-gray mb-1">YOU</p>
-                  <p className={`font-pixel text-base tabular-nums ${s.you_beat_them ? "text-arcade-pink" : "text-arcade-white"}`}>
-                    {s.your_commits.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              <div className={`mt-3 font-pixel text-xs text-center py-1 border-3 ${
-                s.you_beat_them
-                  ? "border-arcade-cyan text-arcade-cyan bg-arcade-bg"
-                  : "border-arcade-border text-arcade-gray bg-arcade-bg"
-              }`}>
-                {s.you_beat_them
-                  ? `YOU BEAT ${s.display_name.toUpperCase()}!`
-                  : `${(s.their_commits - s.your_commits).toLocaleString()} MORE TO BEAT`}
+                <p className="font-mono text-xs text-arcade-gray">@{s.github_username}</p>
               </div>
             </div>
-          ))}
-        </div>
-      )}
 
-      {/* Suggestions */}
+            <div className="flex items-center gap-4 shrink-0 ml-4">
+              {/* Commit comparison */}
+              <div className="text-center">
+                <p className="font-pixel text-[10px] text-arcade-gray mb-0.5">THEM</p>
+                <p className="font-pixel text-xl tabular-nums text-arcade-white">{s.their_commits.toLocaleString()}</p>
+              </div>
+              <span className="font-pixel text-base" style={{ color: s.you_beat_them ? "#16A34A" : "#DC2626" }}>
+                {s.you_beat_them ? ">" : "<"}
+              </span>
+              <div className="text-center">
+                <p className="font-pixel text-[10px] text-arcade-gray mb-0.5">YOU</p>
+                <p className="font-pixel text-xl tabular-nums" style={{ color: s.you_beat_them ? "#FF006E" : "var(--arcade-white)" }}>
+                  {s.your_commits.toLocaleString()}
+                </p>
+              </div>
+
+              {/* Unstar */}
+              <button
+                onClick={() => handleUnstar(s.github_username)}
+                className="text-arcade-gray hover:text-arcade-pink transition-colors ml-2"
+                title="Remove"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <p className="font-pixel text-xs mt-2" style={{ color: s.you_beat_them ? "#16A34A" : "#DC2626" }}>
+            {s.you_beat_them
+              ? `YOU LEAD BY ${(s.your_commits - s.their_commits).toLocaleString()}`
+              : `${(s.their_commits - s.your_commits).toLocaleString()} MORE TO BEAT`}
+          </p>
+        </div>
+      ))}
+
+      {/* Suggestions — famous devs shown as race previews */}
       {suggestions.length > 0 && (
         <div>
-          <p className="font-pixel text-xs text-arcade-gray mb-2 uppercase">Suggested</p>
+          <p className="font-pixel text-xs text-arcade-gray mb-2 uppercase">Race a Famous Dev</p>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {suggestions.map((s) => (
               <button
@@ -137,27 +149,26 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar }:
                   alt={s.github_username}
                   className="w-6 h-6 rounded-none border-2 border-arcade-border"
                 />
-                <span className="font-mono text-sm text-arcade-white truncate max-w-[100px]">{s.github_username}</span>
-                <span className="font-pixel text-xs text-arcade-cyan">RACE</span>
+                <div className="text-left">
+                  <p className="font-mono text-sm text-arcade-white">{s.github_username}</p>
+                  {s.commit_count > 0 && (
+                    <p className="font-pixel text-[10px] text-arcade-gray">{s.commit_count.toLocaleString()} commits</p>
+                  )}
+                </div>
+                <span className="font-pixel text-xs text-arcade-pink ml-1">RACE</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Search to race anyone */}
-      <div>
-        <GitHubUserSearch
-          value={searchValue}
-          onChange={(username) => {
-            setSearchValue(username);
-            if (username && username.length > 2 && !username.includes(" ")) {
-              handleRace(username);
-            }
-          }}
-          placeholder="Search for a GitHub user to race..."
-        />
-      </div>
+      {/* Empty state — only shown when no races exist either */}
+      {showEmpty && !hasContent && (
+        <div className="retro-box bg-arcade-surface p-8 text-center">
+          <p className="font-pixel text-sm text-arcade-gray mb-2">NO RACES YET.</p>
+          <p className="font-mono text-xs text-arcade-gray">Search above to race any GitHub user.</p>
+        </div>
+      )}
     </div>
   );
 }

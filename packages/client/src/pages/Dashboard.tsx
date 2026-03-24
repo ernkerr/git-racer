@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { api } from "../lib/api.ts";
 import type {
   UserStats,
@@ -17,7 +17,6 @@ import StarredUsers from "../components/StarredUsers.tsx";
 import StreakCard from "../components/StreakCard.tsx";
 import SocialCircle from "../components/SocialCircle.tsx";
 import ShareButton from "../components/ShareButton.tsx";
-import GitHubUserSearch from "../components/GitHubUserSearch.tsx";
 
 function StatsCard({ label, value }: { label: string; value: number }) {
   return (
@@ -106,52 +105,6 @@ function RaceCard({ ch }: { ch: ActiveChallenge }) {
   );
 }
 
-function RaceSearchBar() {
-  const navigate = useNavigate();
-  const [opponent, setOpponent] = useState("");
-  const [starting, setStarting] = useState(false);
-
-  const startRace = async (username: string) => {
-    if (!username.trim() || starting) return;
-    setStarting(true);
-    try {
-      const result = await api<{ share_slug: string }>("/challenges", {
-        method: "POST",
-        body: JSON.stringify({
-          name: `vs ${username}`,
-          type: "1v1",
-          duration_type: "ongoing",
-          opponents: [username],
-        }),
-      });
-      navigate(`/c/${result.share_slug}`);
-    } catch {
-      setStarting(false);
-    }
-  };
-
-  return (
-    <div className="retro-box bg-arcade-surface p-4">
-      <p className="font-pixel text-xs text-arcade-cyan mb-3">RACE SOMEONE</p>
-      <div className="flex gap-3">
-        <div className="flex-1">
-          <GitHubUserSearch
-            value={opponent}
-            onChange={setOpponent}
-            placeholder="Search any GitHub user..."
-          />
-        </div>
-        <button
-          onClick={() => startRace(opponent)}
-          disabled={!opponent.trim() || starting}
-          className="btn-arcade bg-arcade-pink text-black font-pixel text-xs px-4 py-2 shrink-0 disabled:opacity-40"
-        >
-          {starting ? "..." : "GO"}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 export default function Dashboard() {
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -211,8 +164,38 @@ export default function Dashboard() {
         <ShareButton />
       </div>
 
-      {/* Race Someone — primary action */}
-      <RaceSearchBar />
+      {/* YOUR RACES — top priority */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-pixel text-base text-arcade-cyan">YOUR RACES</h2>
+          <Link
+            to="/challenges/new"
+            className="btn-arcade bg-arcade-pink text-black font-pixel text-xs px-3 py-2"
+          >
+            NEW RACE
+          </Link>
+        </div>
+
+        {challenges.length > 0 && (
+          <div className="space-y-3 mb-3">
+            {challenges.map((ch) => <RaceCard key={ch.id} ch={ch} />)}
+          </div>
+        )}
+
+        {/* Starred devs as race cards, merged in */}
+        <StarredUsers
+          starred={starred}
+          suggestions={suggestions}
+          onStar={loadStarred}
+          onUnstar={(username) => {
+            setStarred((prev) => prev.filter((s) => s.github_username !== username));
+            loadStarred();
+          }}
+          showEmpty={challenges.length === 0}
+        />
+      </div>
+
+      <div className="checker-strip" />
 
       {/* Stats row */}
       {stats && (
@@ -227,48 +210,6 @@ export default function Dashboard() {
 
       {/* Streaks & Records */}
       {streaks && <StreakCard streaks={streaks} />}
-
-      <div className="checker-strip" />
-
-      {/* Active Races */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-pixel text-base text-arcade-cyan">YOUR RACES</h2>
-          <Link
-            to="/challenges/new"
-            className="btn-arcade bg-arcade-pink text-black font-pixel text-xs px-3 py-2"
-          >
-            NEW RACE
-          </Link>
-        </div>
-
-        {challenges.length === 0 ? (
-          <div className="retro-box bg-arcade-surface p-8 text-center">
-            <p className="font-pixel text-sm text-arcade-gray mb-4">NO ACTIVE RACES YET.</p>
-            <p className="font-mono text-xs text-arcade-gray">
-              Use the search bar above to race any GitHub user.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {challenges.map((ch) => <RaceCard key={ch.id} ch={ch} />)}
-          </div>
-        )}
-      </div>
-
-      {/* Starred Users — directly under races */}
-      <div>
-        <h2 className="font-pixel text-base text-arcade-cyan mb-3">STARRED DEVS</h2>
-        <StarredUsers
-          starred={starred}
-          suggestions={suggestions}
-          onStar={loadStarred}
-          onUnstar={(username) => {
-            setStarred((prev) => prev.filter((s) => s.github_username !== username));
-            loadStarred();
-          }}
-        />
-      </div>
 
       <div className="checker-strip" />
 
