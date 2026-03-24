@@ -29,19 +29,20 @@ leaderboardRoutes.get("/", async (c) => {
   const limit = Math.min(parseInt(c.req.query("limit") || "100", 10), 100);
   const { start, end } = periodRange(period);
 
-  // Behavioral bot detection: instead of a hard daily cap, we filter out accounts
-  // whose push patterns match commit-farming scripts. A farming account pushes
-  // hundreds of times per day, almost always one commit per push, to only 1-2 repos.
-  // Real developers push less frequently, batch multiple commits, and spread across repos.
+  // Behavioral bot detection: filter accounts whose archive push patterns match
+  // commit-farming scripts. The key signal: farming accounts do hundreds of pushes
+  // per day, each with exactly 1 commit (commit_count == push_count), to only 1-2 repos.
+  // This is the classic green-square farming pattern — automated scripts that run
+  // `git commit && git push` in a tight loop all day.
   //
-  // An account must meet ALL THREE conditions to be excluded (AND, not OR):
-  //   1. push_count > 20/day      — high daily push frequency
-  //   2. >85% single-commit pushes — nearly all pushes are single commits
-  //   3. unique_repos <= 2         — concentrated in very few repos
+  // An account is excluded if it meets ALL THREE conditions (AND, not OR):
+  //   1. push_count > 100/day       — very high push frequency
+  //   2. commit_count == push_count — exactly 1 commit per push (no batching at all)
+  //   3. unique_repos <= 2          — concentrated in very few repos
   //
+  // Real prolific developers batch commits and push to many repos.
   // Users with GraphQL-verified data in commit_snapshots bypass archive filtering
-  // entirely via GREATEST, so this only affects archive-only accounts.
-  // A generous fallback cap (500/day) still prevents true outliers from breaking display.
+  // entirely via GREATEST, so legitimate high-volume developers are unaffected.
   const ARCHIVE_FALLBACK_CAP = 500;
 
   // The query is structured as:
@@ -70,8 +71,8 @@ leaderboardRoutes.get("/", async (c) => {
         FROM event_committers
         WHERE date >= ${start} AND date <= ${end}
           AND NOT (
-            push_count > 20
-            AND single_commit_pushes::float / NULLIF(push_count, 0) > 0.85
+            push_count > 50
+            AND commit_count::float / NULLIF(push_count, 0) >= 45
             AND unique_repos <= 2
           )
         GROUP BY github_username

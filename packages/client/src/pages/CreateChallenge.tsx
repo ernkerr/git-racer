@@ -4,20 +4,13 @@ import { api } from "../lib/api.ts";
 import type { ChallengeType, DurationType, SuggestedOpponent } from "@git-racer/shared";
 import GitHubUserSearch from "../components/GitHubUserSearch.tsx";
 
-const DURATION_LABELS: Record<DurationType, string> = {
-  fixed: "FIXED",
-  ongoing: "ONGOING",
-  goal: "GOAL",
-};
-
 export default function CreateChallenge() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [type, setType] = useState<ChallengeType>("1v1");
-  const [durationType, setDurationType] = useState<DurationType>("fixed");
+  const [durationType, setDurationType] = useState<DurationType>("ongoing");
   const [opponents, setOpponents] = useState<string[]>([""]);
   const [endDate, setEndDate] = useState("");
-  const [goalTarget, setGoalTarget] = useState(100);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [suggested, setSuggested] = useState<SuggestedOpponent[]>([]);
@@ -29,6 +22,14 @@ export default function CreateChallenge() {
       .then(setSuggested)
       .catch(() => {});
   }, []);
+
+  // Auto-generate race name from opponents
+  useEffect(() => {
+    const filled = opponents.filter((o) => o.trim());
+    if (filled.length > 0 && !name) {
+      setName(`vs ${filled.join(", ")}`);
+    }
+  }, [opponents]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,17 +45,13 @@ export default function CreateChallenge() {
 
     try {
       const body: Record<string, unknown> = {
-        name,
+        name: name || `vs ${filteredOpponents.join(", ")}`,
         type,
         duration_type: durationType,
         opponents: filteredOpponents,
       };
       if (durationType === "fixed") {
         body.end_date = new Date(endDate || defaultEnd).toISOString();
-      }
-      if (durationType === "goal") {
-        body.goal_target = goalTarget;
-        body.goal_metric = "commits";
       }
 
       const result = await api<{ share_slug: string }>("/challenges", {
@@ -90,85 +87,24 @@ export default function CreateChallenge() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h1 className="font-pixel text-2xl text-arcade-white mb-8">
-        CREATE A RACE
+      <h1 className="font-pixel text-2xl text-arcade-white mb-2">
+        START A RACE
       </h1>
+      <p className="font-mono text-sm text-arcade-gray mb-8">
+        Pick someone to race. We'll load your real commit totals from GitHub history.
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Race Name */}
+        {/* Opponent first */}
         <div>
           <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
-            Race Name
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Weekend Sprint"
-            required
-            className="input-arcade w-full px-3 py-2"
-          />
-        </div>
-
-        {/* Race Type */}
-        <div>
-          <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
-            Type
-          </label>
-          <div className="flex gap-3">
-            {(["1v1", "team"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => {
-                  setType(t);
-                  if (t === "1v1") setOpponents([opponents[0] || ""]);
-                }}
-                className={`btn-arcade flex-1 py-2 font-pixel text-xs ${
-                  type === t
-                    ? "bg-arcade-pink text-black"
-                    : "bg-arcade-surface text-arcade-gray"
-                }`}
-              >
-                {t === "1v1" ? "1V1" : "TEAM"}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Duration Type */}
-        <div>
-          <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
-            Duration
-          </label>
-          <div className="flex gap-3">
-            {(["fixed", "ongoing", "goal"] as const).map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setDurationType(d)}
-                className={`btn-arcade flex-1 py-2 font-pixel text-xs ${
-                  durationType === d
-                    ? "bg-arcade-pink text-black"
-                    : "bg-arcade-surface text-arcade-gray"
-                }`}
-              >
-                {DURATION_LABELS[d]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Opponents */}
-        <div>
-          <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
-            {type === "1v1" ? "Opponent" : "Participants"} (GitHub username)
+            {type === "1v1" ? "Who are you racing?" : "Participants"} (GitHub username)
           </label>
 
           {/* Suggested opponents */}
           {suggested.length > 0 && (
             <div className="mb-3">
-              <p className="font-pixel text-xs text-arcade-gray mb-2 uppercase">Suggested</p>
+              <p className="font-pixel text-xs text-arcade-gray mb-2 uppercase">Quick Pick</p>
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {suggested.map((s) => (
                   <button
@@ -228,11 +164,44 @@ export default function CreateChallenge() {
           </p>
         </div>
 
-        {/* End Date (fixed only) */}
+        {/* Race type: Race vs Sprint */}
+        <div>
+          <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
+            Type
+          </label>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setDurationType("ongoing")}
+              className={`btn-arcade flex-1 py-3 font-pixel text-xs ${
+                durationType === "ongoing"
+                  ? "bg-arcade-pink text-black"
+                  : "bg-arcade-surface text-arcade-gray"
+              }`}
+            >
+              <span className="block">RACE</span>
+              <span className="block font-mono text-[10px] mt-1 opacity-70">ongoing · no end date</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDurationType("fixed")}
+              className={`btn-arcade flex-1 py-3 font-pixel text-xs ${
+                durationType === "fixed"
+                  ? "bg-arcade-cyan text-black"
+                  : "bg-arcade-surface text-arcade-gray"
+              }`}
+            >
+              <span className="block">SPRINT</span>
+              <span className="block font-mono text-[10px] mt-1 opacity-70">time-limited · has end date</span>
+            </button>
+          </div>
+        </div>
+
+        {/* End Date (sprint only) */}
         {durationType === "fixed" && (
           <div>
             <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
-              End Date
+              Sprint End Date
             </label>
             <input
               type="date"
@@ -244,21 +213,45 @@ export default function CreateChallenge() {
           </div>
         )}
 
-        {/* Goal Target (goal only) */}
-        {durationType === "goal" && (
-          <div>
-            <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
-              Goal: First to ___ commits
-            </label>
-            <input
-              type="number"
-              min={1}
-              value={goalTarget}
-              onChange={(e) => setGoalTarget(parseInt(e.target.value) || 1)}
-              className="input-arcade w-full px-3 py-2"
-            />
+        {/* Race Type: 1v1 vs Team */}
+        <div>
+          <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
+            Format
+          </label>
+          <div className="flex gap-3">
+            {(["1v1", "team"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => {
+                  setType(t);
+                  if (t === "1v1") setOpponents([opponents[0] || ""]);
+                }}
+                className={`btn-arcade flex-1 py-2 font-pixel text-xs ${
+                  type === t
+                    ? "bg-arcade-pink text-black"
+                    : "bg-arcade-surface text-arcade-gray"
+                }`}
+              >
+                {t === "1v1" ? "1V1" : "TEAM"}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
+
+        {/* Race Name */}
+        <div>
+          <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
+            Race Name (optional)
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. vs torvalds"
+            className="input-arcade w-full px-3 py-2"
+          />
+        </div>
 
         {error && (
           <p className="font-pixel text-xs text-red-600">{error}</p>
@@ -269,7 +262,7 @@ export default function CreateChallenge() {
           disabled={submitting}
           className="btn-arcade w-full bg-arcade-pink text-black font-pixel text-base py-4 uppercase"
         >
-          {submitting ? "CREATING..." : "START RACE"}
+          {submitting ? "STARTING..." : durationType === "fixed" ? "START SPRINT" : "START RACE"}
         </button>
       </form>
     </div>

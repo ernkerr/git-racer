@@ -52,6 +52,7 @@ export interface ActiveChallenge {
   id: number;
   name: string;
   type: ChallengeType;
+  duration_type: DurationType;
   share_slug: string;
   end_date: string | null;
   your_commits: number;

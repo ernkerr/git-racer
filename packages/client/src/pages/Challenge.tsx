@@ -3,7 +3,114 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../lib/api.ts";
 import { useAuth } from "../lib/auth.tsx";
 import { CHALLENGE_REFRESH_MS } from "@git-racer/shared";
-import type { ChallengeWithLeaderboard } from "@git-racer/shared";
+import type { ChallengeWithLeaderboard, LeaderboardEntry } from "@git-racer/shared";
+
+function RaceTypeBadge({ durationType }: { durationType: string }) {
+  const isSprint = durationType === "fixed";
+  return (
+    <span
+      className="font-pixel text-[11px] px-2 py-1 border-3"
+      style={{
+        borderColor: isSprint ? "#06B6D4" : "#FF006E",
+        color: isSprint ? "#06B6D4" : "#FF006E",
+        backgroundColor: "var(--arcade-surface)",
+      }}
+    >
+      {isSprint ? "SPRINT" : durationType === "ongoing" ? "RACE" : "GOAL"}
+    </span>
+  );
+}
+
+function HeadToHead({
+  you,
+  them,
+  isFinished,
+}: {
+  you: LeaderboardEntry | null;
+  them: LeaderboardEntry | null;
+  isFinished: boolean;
+}) {
+  if (!you || !them) return null;
+
+  const youWin = you.commit_count > them.commit_count;
+  const tied = you.commit_count === them.commit_count;
+  const gap = Math.abs(you.commit_count - them.commit_count);
+  const total = you.commit_count + them.commit_count;
+  const youPct = total > 0 ? (you.commit_count / total) * 100 : 50;
+
+  return (
+    <div className="retro-box bg-arcade-surface p-5 mb-6">
+      {/* Labels */}
+      <div className="grid grid-cols-2 gap-4 mb-3">
+        <div className="text-center">
+          <img
+            src={you.avatar_url || `https://github.com/${you.github_username}.png`}
+            alt={you.github_username}
+            className="w-12 h-12 rounded-none border-3 border-arcade-border mx-auto mb-2"
+          />
+          <p className="font-pixel text-xs text-arcade-gray">{you.github_username}</p>
+          <p
+            className="font-pixel text-4xl tabular-nums mt-1"
+            style={{ color: youWin ? "#FF006E" : tied ? "#EAB308" : "var(--arcade-white)" }}
+          >
+            {you.commit_count.toLocaleString()}
+          </p>
+        </div>
+        <div className="text-center">
+          <img
+            src={them.avatar_url || `https://github.com/${them.github_username}.png`}
+            alt={them.github_username}
+            className="w-12 h-12 rounded-none border-3 border-arcade-border mx-auto mb-2"
+          />
+          <p className="font-pixel text-xs text-arcade-gray">{them.github_username}</p>
+          <p
+            className="font-pixel text-4xl tabular-nums mt-1"
+            style={{ color: !youWin && !tied ? "#FF006E" : tied ? "#EAB308" : "var(--arcade-white)" }}
+          >
+            {them.commit_count.toLocaleString()}
+          </p>
+        </div>
+      </div>
+
+      {/* VS divider bar */}
+      <div className="relative h-6 mb-3">
+        <div className="absolute inset-y-0 left-0 right-0 flex">
+          <div
+            className="h-full transition-all duration-500"
+            style={{
+              width: `${youPct}%`,
+              backgroundColor: youWin ? "#FF006E" : tied ? "#EAB308" : "#374151",
+            }}
+          />
+          <div
+            className="h-full flex-1"
+            style={{
+              backgroundColor: !youWin && !tied ? "#FF006E" : "#374151",
+            }}
+          />
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="font-pixel text-xs text-black bg-arcade-white px-2 z-10">VS</span>
+        </div>
+      </div>
+
+      {/* Status line */}
+      <p className="font-pixel text-sm text-center" style={{
+        color: youWin ? "#FF006E" : tied ? "#EAB308" : "#06B6D4"
+      }}>
+        {tied
+          ? "TIED"
+          : youWin
+          ? isFinished
+            ? `YOU WIN! +${gap} COMMITS`
+            : `YOU LEAD BY ${gap}`
+          : isFinished
+          ? `YOU LOSE. ${gap} BEHIND`
+          : `${gap} COMMITS BEHIND`}
+      </p>
+    </div>
+  );
+}
 
 export default function Challenge() {
   const { slug } = useParams<{ slug: string }>();
@@ -107,11 +214,22 @@ export default function Challenge() {
   const isParticipant = user && challenge.participants.some(
     (p) => p.github_username === user.github_username
   );
-  const isFinished = challenge.end_date && new Date(challenge.end_date) < new Date();
+  const isFinished = challenge.end_date ? new Date(challenge.end_date) < new Date() : false;
   const isGoal = challenge.duration_type === "goal";
   const goalReached = isGoal && challenge.goal_target &&
     challenge.participants.some((p) => p.commit_count >= challenge.goal_target!);
   const canJoin = user && !isParticipant && !isFinished && !goalReached && challenge.type === "team";
+
+  // For 1v1: find "you" and "them"
+  const you1v1 = user
+    ? challenge.participants.find((p) => p.github_username === user.github_username) ?? null
+    : null;
+  const them1v1 = challenge.type === "1v1"
+    ? challenge.participants.find((p) => p.github_username !== user?.github_username) ?? null
+    : null;
+  const show1v1 = challenge.type === "1v1" && you1v1 && them1v1;
+
+  const pageLabel = challenge.duration_type === "fixed" ? "SPRINT" : "RACE";
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -129,23 +247,29 @@ export default function Challenge() {
       <div className="flex items-start justify-between mb-6 gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h1 className="font-pixel text-2xl text-arcade-white">
-              {challenge.name}
-            </h1>
-            <span className="font-pixel text-[11px] px-2 py-1 bg-arcade-surface border-3 border-arcade-border text-arcade-gray">
-              {challenge.type.toUpperCase()}
-            </span>
+            <RaceTypeBadge durationType={challenge.duration_type} />
+            {challenge.type === "team" && (
+              <span className="font-pixel text-[11px] px-2 py-1 bg-arcade-surface border-3 border-arcade-border text-arcade-gray">
+                TEAM
+              </span>
+            )}
+            {(isFinished || goalReached) && (
+              <span className="font-pixel text-[11px] px-2 py-1 text-arcade-pink border-3"
+                style={{ borderColor: "#FF006E" }}>
+                FINISHED
+              </span>
+            )}
           </div>
+          <h1 className="font-pixel text-2xl text-arcade-white mb-1">
+            {challenge.name}
+          </h1>
           <p className="font-mono text-xs text-arcade-gray">
             {new Date(challenge.start_date).toLocaleDateString()} —{" "}
             {challenge.end_date
               ? new Date(challenge.end_date).toLocaleDateString()
               : isGoal
               ? `FIRST TO ${challenge.goal_target} ${challenge.goal_metric}`
-              : "ONGOING"}
-            {(isFinished || goalReached) && (
-              <span className="font-pixel text-xs text-arcade-pink ml-2">FINISHED</span>
-            )}
+              : `${pageLabel} IN PROGRESS`}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap shrink-0">
@@ -224,6 +348,11 @@ export default function Challenge() {
         </div>
       )}
 
+      {/* 1v1 Head-to-Head display */}
+      {show1v1 && (
+        <HeadToHead you={you1v1} them={them1v1} isFinished={isFinished} />
+      )}
+
       {/* Goal progress bar */}
       {isGoal && challenge.goal_target && challenge.participants.length > 0 && (
         <div className="retro-box bg-arcade-surface p-4 mb-6">
@@ -275,46 +404,78 @@ export default function Challenge() {
         </div>
       )}
 
-      {/* Participants table */}
-      <div className="retro-box bg-arcade-surface overflow-hidden">
-        <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 bg-arcade-bg border-b-4 border-arcade-border">
-          <span className="font-pixel text-xs text-arcade-cyan">#</span>
-          <span className="font-pixel text-xs text-arcade-cyan">RACER</span>
-          <span className="font-pixel text-xs text-arcade-cyan">COMMITS</span>
-        </div>
-        {challenge.participants.map((p, i) => (
-          <div
-            key={p.github_username}
-            className={`grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 items-center ${
-              i === 0 ? "bg-arcade-pink/10" : ""
-            } ${
-              user?.github_username === p.github_username
-                ? "border-l-4 border-arcade-pink"
-                : ""
-            }`}
-          >
-            <span className="font-pixel text-xs text-arcade-gray w-6 text-center">
-              {i + 1}
-            </span>
-            <div className="flex items-center gap-3">
-              <img
-                src={p.avatar_url || `https://github.com/${p.github_username}.png`}
-                alt={p.github_username}
-                className="w-8 h-8 rounded-none border-3 border-arcade-border"
-              />
-              <span className="font-mono text-sm text-arcade-white">
-                {p.github_username}
-                {p.is_ghost && (
-                  <span className="font-pixel text-[11px] text-arcade-gray ml-1">(public)</span>
-                )}
+      {/* Participants table — for team races or when not logged in */}
+      {(challenge.type === "team" || !user) && (
+        <div className="retro-box bg-arcade-surface overflow-hidden">
+          <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 bg-arcade-bg border-b-4 border-arcade-border">
+            <span className="font-pixel text-xs text-arcade-cyan">#</span>
+            <span className="font-pixel text-xs text-arcade-cyan">RACER</span>
+            <span className="font-pixel text-xs text-arcade-cyan">COMMITS</span>
+          </div>
+          {challenge.participants.map((p, i) => (
+            <div
+              key={p.github_username}
+              className={`grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 items-center ${
+                i === 0 ? "bg-arcade-pink/10" : ""
+              } ${
+                user?.github_username === p.github_username
+                  ? "border-l-4 border-arcade-pink"
+                  : ""
+              }`}
+            >
+              <span className="font-pixel text-xs text-arcade-gray w-6 text-center">
+                {i + 1}
+              </span>
+              <div className="flex items-center gap-3">
+                <img
+                  src={p.avatar_url || `https://github.com/${p.github_username}.png`}
+                  alt={p.github_username}
+                  className="w-8 h-8 rounded-none border-3 border-arcade-border"
+                />
+                <span className="font-mono text-sm text-arcade-white">
+                  {p.github_username}
+                  {p.is_ghost && (
+                    <span className="font-pixel text-[11px] text-arcade-gray ml-1">(public)</span>
+                  )}
+                </span>
+              </div>
+              <span className="font-pixel text-xl tabular-nums text-arcade-white">
+                {p.commit_count.toLocaleString()}
               </span>
             </div>
-            <span className="font-pixel text-xl tabular-nums text-arcade-white">
-              {p.commit_count.toLocaleString()}
-            </span>
+          ))}
+        </div>
+      )}
+
+      {/* For 1v1 with no user session, show a plain list */}
+      {challenge.type === "1v1" && !user && (
+        <div className="retro-box bg-arcade-surface overflow-hidden">
+          <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 bg-arcade-bg border-b-4 border-arcade-border">
+            <span className="font-pixel text-xs text-arcade-cyan">#</span>
+            <span className="font-pixel text-xs text-arcade-cyan">RACER</span>
+            <span className="font-pixel text-xs text-arcade-cyan">COMMITS</span>
           </div>
-        ))}
-      </div>
+          {challenge.participants.map((p, i) => (
+            <div
+              key={p.github_username}
+              className={`grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 items-center ${i === 0 ? "bg-arcade-pink/10" : ""}`}
+            >
+              <span className="font-pixel text-xs text-arcade-gray w-6 text-center">{i + 1}</span>
+              <div className="flex items-center gap-3">
+                <img
+                  src={p.avatar_url || `https://github.com/${p.github_username}.png`}
+                  alt={p.github_username}
+                  className="w-8 h-8 rounded-none border-3 border-arcade-border"
+                />
+                <span className="font-mono text-sm text-arcade-white">{p.github_username}</span>
+              </div>
+              <span className="font-pixel text-xl tabular-nums text-arcade-white">
+                {p.commit_count.toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <p className="font-mono text-xs text-arcade-gray mt-4 text-center">
         Stats refresh automatically every 60 seconds. Commit data cached for up to 4 hours.

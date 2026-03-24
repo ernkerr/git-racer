@@ -31,7 +31,7 @@ interface PushEvent {
  * saves it atomically alongside data upserts to prevent double-counting.
  */
 interface PollResult {
-  users: Map<string, { avatar_url: string; commit_count: number }>;
+  users: Map<string, { avatar_url: string; commit_count: number; single_commit_pushes: number; repos: Set<string> }>;
   events_processed: number;
   new_data: boolean;
   stateToSave: { etag: string | null; seen_ids: string[] };

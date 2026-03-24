@@ -1,6 +1,6 @@
 # Git Racer Architecture
 
-A competitive commit-tracking platform that turns GitHub activity into a game. Race friends, climb leaderboards, and compete in weekly leagues — all based on real commit data.
+A social commit-racing platform that turns GitHub activity into a competitive sport. Race any developer — friends, colleagues, or famous figures — head-to-head using real commit history. No global leaderboard; the focus is on personal, meaningful races against people you choose.
 
 ## Table of Contents
 
@@ -8,9 +8,9 @@ A competitive commit-tracking platform that turns GitHub activity into a game. R
 - [Project Structure](#project-structure)
 - [Data Pipeline](#data-pipeline)
 - [The Dual-Source Blending Strategy](#the-dual-source-blending-strategy)
-- [Leaderboard](#leaderboard)
+- [Leaderboard](#leaderboard) *(infrastructure; not surfaced in main UI)*
 - [Weekly Leagues](#weekly-leagues)
-- [Races (Challenges)](#races-challenges)
+- [Races (Challenges)](#races-challenges) *(primary product feature)*
 - [Social Features](#social-features)
 - [Authentication](#authentication)
 - [Database Schema](#database-schema)
@@ -256,7 +256,11 @@ Monday 00:00 UTC         Sunday 23:59 UTC    Monday 07:00 UTC
 
 ## Races (Challenges)
 
-Head-to-head or team competitions:
+Social, head-to-head or team competitions against people you choose. The focus is on racing specific people — not a global leaderboard. Commits are loaded from **real GitHub history** (not starting from 0), so results reflect actual accumulated work.
+
+**UI Terminology:**
+- `duration_type = "ongoing"` → displayed as **RACE** (no end date, watch over time)
+- `duration_type = "fixed"` → displayed as **SPRINT** (set end date, time-bounded)
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -269,11 +273,11 @@ Head-to-head or team competitions:
 │  │  the opponent  │      │  via share link    │  │
 │  └───────────────┘      └────────────────────┘  │
 │                                                  │
-│  Duration Types:                                 │
+│  Duration Types (DB values → UI labels):         │
 │  ┌────────────────────────────────────────────┐  │
-│  │ fixed   │ Set end date, most commits wins  │  │
-│  │ ongoing │ No end date, runs indefinitely   │  │
-│  │ goal    │ First to N commits wins          │  │
+│  │ ongoing │ RACE   │ No end date             │  │
+│  │ fixed   │ SPRINT │ Set end date            │  │
+│  │ goal    │ GOAL   │ First to N commits wins │  │
 │  └────────────────────────────────────────────┘  │
 │                                                  │
 │  Each race has a unique 8-char share slug:       │
@@ -282,6 +286,8 @@ Head-to-head or team competitions:
 ```
 
 **Ghost participants**: When you create a 1v1 race against someone who hasn't signed up, they're added as a "ghost." Their public commit data is tracked through GH Archive, so the race still works — they just won't see it unless they sign up and check the link.
+
+**How commits are counted**: For each race, commits are summed from `start_date` to `end_date` (or today for ongoing races). This uses the `commit_snapshots` table (GraphQL-verified data), so the count reflects real GitHub contributions — not an arbitrary starting point.
 
 ---
 

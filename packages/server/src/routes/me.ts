@@ -84,7 +84,7 @@ meRoutes.get("/dashboard", async (c) => {
     // the current user's commit total, and the overall leader.
     db.execute(sql`
       WITH user_challenges AS (
-        SELECT c.id, c.name, c.type, c.share_slug, c.end_date, c.start_date, c.created_at
+        SELECT c.id, c.name, c.type, c.duration_type, c.share_slug, c.end_date, c.start_date, c.created_at
         FROM challenges c
         INNER JOIN challenge_participants cp ON cp.challenge_id = c.id
         WHERE cp.github_username = ${username}
@@ -106,6 +106,7 @@ meRoutes.get("/dashboard", async (c) => {
         uc.id,
         uc.name,
         uc.type,
+        uc.duration_type,
         uc.share_slug,
         uc.end_date,
         (SELECT COUNT(*)::int FROM challenge_participants cp2 WHERE cp2.challenge_id = uc.id) AS participant_count,
@@ -148,6 +149,7 @@ meRoutes.get("/dashboard", async (c) => {
     id: r.id,
     name: r.name,
     type: r.type,
+    duration_type: r.duration_type,
     share_slug: r.share_slug,
     end_date: r.end_date?.toISOString?.() ?? r.end_date ?? null,
     your_commits: Number(r.your_commits),

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api.ts";
 import type {
   UserStats,
@@ -17,7 +17,7 @@ import StarredUsers from "../components/StarredUsers.tsx";
 import StreakCard from "../components/StreakCard.tsx";
 import SocialCircle from "../components/SocialCircle.tsx";
 import ShareButton from "../components/ShareButton.tsx";
-import Leaderboard from "../components/Leaderboard.tsx";
+import GitHubUserSearch from "../components/GitHubUserSearch.tsx";
 
 function StatsCard({ label, value }: { label: string; value: number }) {
   return (
@@ -37,6 +37,122 @@ function RaceStatus({ status }: { status: "winning" | "losing" | "tied" | "none"
       <span className={`race-status-dot yellow ${status === "tied" ? "lit" : ""}`} />
       <span className={`race-status-dot green ${status === "winning" ? "lit" : ""}`} />
     </span>
+  );
+}
+
+function RaceCard({ ch }: { ch: ActiveChallenge }) {
+  const raceStatus =
+    ch.leader_username === "" ? "none" as const
+    : ch.leader_commits > ch.your_commits ? "losing" as const
+    : ch.leader_commits < ch.your_commits ? "winning" as const
+    : "tied" as const;
+
+  const isSprint = ch.duration_type === "fixed";
+  const isFinished = ch.end_date && new Date(ch.end_date) < new Date();
+
+  return (
+    <Link
+      to={`/c/${ch.share_slug}`}
+      className="retro-box bg-arcade-surface p-4 block hover:-translate-y-px transition-all"
+      style={
+        raceStatus === "losing"
+          ? { borderColor: "#DC2626" }
+          : raceStatus === "winning"
+          ? { borderColor: "#16A34A" }
+          : raceStatus === "tied"
+          ? { borderColor: "#EAB308" }
+          : undefined
+      }
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <RaceStatus status={raceStatus} />
+            <h3 className="font-pixel text-base text-arcade-white">{ch.name}</h3>
+            <span
+              className="font-pixel text-[10px] px-1.5 py-0.5 border-2"
+              style={{
+                borderColor: isSprint ? "#06B6D4" : "#FF006E",
+                color: isSprint ? "#06B6D4" : "#FF006E",
+              }}
+            >
+              {isFinished ? "DONE" : isSprint ? "SPRINT" : "RACE"}
+            </span>
+          </div>
+          <p className="font-mono text-xs text-arcade-gray">
+            {ch.participant_count} participant{ch.participant_count !== 1 ? "s" : ""}
+            {ch.end_date &&
+              ` · ends ${new Date(ch.end_date).toLocaleDateString()}`}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-pixel text-3xl tabular-nums text-arcade-white">
+            {ch.your_commits}
+          </p>
+          <p className="font-pixel text-xs" style={{
+            color: raceStatus === "none" ? "#78716C"
+              : raceStatus === "losing" ? "#DC2626"
+              : raceStatus === "winning" ? "#16A34A"
+              : "#EAB308"
+          }}>
+            {raceStatus === "none" ? "" : raceStatus === "losing"
+              ? `${ch.leader_commits - ch.your_commits} BEHIND`
+              : raceStatus === "winning" ? "YOU LEAD"
+              : "TIED"}
+          </p>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function RaceSearchBar() {
+  const navigate = useNavigate();
+  const [opponent, setOpponent] = useState("");
+  const [starting, setStarting] = useState(false);
+
+  const startRace = async (username: string) => {
+    if (!username.trim() || starting) return;
+    setStarting(true);
+    try {
+      const result = await api<{ share_slug: string }>("/challenges", {
+        method: "POST",
+        body: JSON.stringify({
+          name: `vs ${username}`,
+          type: "1v1",
+          duration_type: "ongoing",
+          opponents: [username],
+        }),
+      });
+      navigate(`/c/${result.share_slug}`);
+    } catch {
+      setStarting(false);
+    }
+  };
+
+  return (
+    <div className="retro-box bg-arcade-surface p-4">
+      <p className="font-pixel text-xs text-arcade-cyan mb-3">RACE SOMEONE</p>
+      <div className="flex gap-3">
+        <div className="flex-1">
+          <GitHubUserSearch
+            value={opponent}
+            onChange={setOpponent}
+            placeholder="Search any GitHub user..."
+          />
+        </div>
+        <button
+          onClick={() => startRace(opponent)}
+          disabled={!opponent.trim() || starting}
+          className="btn-arcade bg-arcade-pink text-black font-pixel text-xs px-4 py-2 shrink-0 disabled:opacity-40"
+        >
+          {starting ? "..." : "GO"}
+        </button>
+      </div>
+      <p className="font-mono text-xs text-arcade-gray mt-2">
+        Commits are loaded from their real GitHub history — not starting from 0.
+      </p>
+    </div>
   );
 }
 
@@ -98,6 +214,9 @@ export default function Dashboard() {
         <ShareButton />
       </div>
 
+      {/* Race Someone — primary action */}
+      <RaceSearchBar />
+
       {/* Stats row */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -117,7 +236,7 @@ export default function Dashboard() {
       {/* Active Races */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-pixel text-base text-arcade-cyan">ACTIVE RACES</h2>
+          <h2 className="font-pixel text-base text-arcade-cyan">YOUR RACES</h2>
           <Link
             to="/challenges/new"
             className="btn-arcade bg-arcade-pink text-black font-pixel text-xs px-3 py-2"
@@ -129,74 +248,24 @@ export default function Dashboard() {
         {challenges.length === 0 ? (
           <div className="retro-box bg-arcade-surface p-8 text-center">
             <p className="font-pixel text-sm text-arcade-gray mb-4">NO ACTIVE RACES YET.</p>
-            <Link
-              to="/challenges/new"
-              className="font-pixel text-sm text-arcade-cyan hover:text-arcade-pink transition-colors"
-            >
-              CREATE YOUR FIRST RACE
-            </Link>
+            <p className="font-mono text-xs text-arcade-gray">
+              Use the search bar above to race any GitHub user.
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {challenges.map((ch) => {
-              const raceStatus =
-                ch.leader_username === "" ? "none" as const
-                : ch.leader_commits > ch.your_commits ? "losing" as const
-                : ch.leader_commits < ch.your_commits ? "winning" as const
-                : "tied" as const;
-
-              return (
-                <Link
-                  key={ch.id}
-                  to={`/c/${ch.share_slug}`}
-                  className="retro-box bg-arcade-surface p-4 block hover:-translate-y-px transition-all"
-                  style={
-                    raceStatus === "losing"
-                      ? { borderColor: "#DC2626" }
-                      : raceStatus === "winning"
-                      ? { borderColor: "#16A34A" }
-                      : raceStatus === "tied"
-                      ? { borderColor: "#EAB308" }
-                      : undefined
-                  }
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <RaceStatus status={raceStatus} />
-                        <h3 className="font-pixel text-base text-arcade-white">{ch.name}</h3>
-                      </div>
-                      <p className="font-mono text-xs text-arcade-gray mt-1">
-                        {ch.participant_count} participants
-                        {ch.end_date &&
-                          ` · ends ${new Date(ch.end_date).toLocaleDateString()}`}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-pixel text-3xl tabular-nums text-arcade-white">
-                        {ch.your_commits}
-                      </p>
-                      <p className="font-pixel text-xs" style={{
-                        color: raceStatus === "none" ? "#78716C"
-                          : raceStatus === "losing" ? "#DC2626"
-                          : raceStatus === "winning" ? "#16A34A"
-                          : "#EAB308"
-                      }}>
-                        {raceStatus === "none" ? "" : raceStatus === "losing"
-                          ? `${ch.leader_commits - ch.your_commits} BEHIND`
-                          : raceStatus === "winning" ? "YOU LEAD"
-                          : "TIED"}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+            {challenges.map((ch) => <RaceCard key={ch.id} ch={ch} />)}
           </div>
         )}
       </div>
 
       <div className="checker-strip" />
+
+      {/* Social Circle */}
+      <div>
+        <h2 className="font-pixel text-base text-arcade-cyan mb-3">YOUR CIRCLE</h2>
+        <SocialCircle data={socialData} loading={socialLoading} />
+      </div>
 
       {/* Starred Users */}
       <div>
@@ -212,20 +281,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Social Circle */}
-      <div>
-        <h2 className="font-pixel text-base text-arcade-cyan mb-3">YOUR CIRCLE</h2>
-        <SocialCircle data={socialData} loading={socialLoading} />
-      </div>
-
       <div className="checker-divider" />
-
-      {/* Global Leaderboard */}
-      <div>
-        <Leaderboard />
-      </div>
-
-      <div className="checker-strip" />
 
       {/* Weekly League */}
       <div>
@@ -245,6 +301,8 @@ export default function Dashboard() {
           <ContributionGraph days={contributions.days} totalYear={contributions.total_year} />
         </div>
       )}
+
+      <div className="checker-strip" />
     </div>
   );
 }
