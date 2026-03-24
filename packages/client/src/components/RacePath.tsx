@@ -55,7 +55,7 @@ export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePat
           {rival && (
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1 font-pixel text-[10px] text-arcade-white">
-                <span className="inline-block w-2 h-2" style={{ backgroundColor: "#FF006E" }} />
+                <span className="inline-block w-2 h-2" style={{ backgroundColor: "#00C853" }} />
                 YOU
               </span>
               <span className="flex items-center gap-1 font-pixel text-[10px] text-arcade-white">
@@ -66,7 +66,7 @@ export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePat
           )}
           <span
             className="font-pixel text-[10px] px-2 py-1 border-2"
-            style={{ borderColor: "#06B6D4", color: "#06B6D4" }}
+            style={{ borderColor: "#00E676", color: "#00E676" }}
           >
             {label}
           </span>
@@ -90,7 +90,7 @@ export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePat
               <div key={date} className="flex items-end gap-px flex-1 min-w-0">
                 <div
                   className="flex-1 min-w-0"
-                  style={{ height: `${yH}px`, backgroundColor: "#FF006E" }}
+                  style={{ height: `${yH}px`, backgroundColor: "#00C853" }}
                   title={`${date}: you ${y}`}
                 />
                 <div

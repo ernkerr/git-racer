@@ -12,8 +12,8 @@ function RaceTypeBadge({ durationType }: { durationType: string }) {
     <span
       className="font-pixel text-[11px] px-2 py-1 border-3"
       style={{
-        borderColor: isSprint ? "#06B6D4" : "#FF006E",
-        color: isSprint ? "#06B6D4" : "#FF006E",
+        borderColor: isSprint ? "#00E676" : "#00C853",
+        color: isSprint ? "#00E676" : "#00C853",
         backgroundColor: "var(--arcade-surface)",
       }}
     >
@@ -52,7 +52,7 @@ function HeadToHead({
           <p className="font-pixel text-xs text-arcade-gray">{you.github_username}</p>
           <p
             className="font-pixel text-4xl tabular-nums mt-1"
-            style={{ color: youWin ? "#FF006E" : tied ? "#EAB308" : "var(--arcade-white)" }}
+            style={{ color: youWin ? "#00C853" : tied ? "#EAB308" : "var(--arcade-white)" }}
           >
             {you.commit_count.toLocaleString()}
           </p>
@@ -66,7 +66,7 @@ function HeadToHead({
           <p className="font-pixel text-xs text-arcade-gray">{them.github_username}</p>
           <p
             className="font-pixel text-4xl tabular-nums mt-1"
-            style={{ color: !youWin && !tied ? "#FF006E" : tied ? "#EAB308" : "var(--arcade-white)" }}
+            style={{ color: !youWin && !tied ? "#00C853" : tied ? "#EAB308" : "var(--arcade-white)" }}
           >
             {them.commit_count.toLocaleString()}
           </p>
@@ -80,13 +80,13 @@ function HeadToHead({
             className="h-full transition-all duration-500"
             style={{
               width: `${youPct}%`,
-              backgroundColor: youWin ? "#FF006E" : tied ? "#EAB308" : "#374151",
+              backgroundColor: youWin ? "#00C853" : tied ? "#EAB308" : "#374151",
             }}
           />
           <div
             className="h-full flex-1"
             style={{
-              backgroundColor: !youWin && !tied ? "#FF006E" : "#374151",
+              backgroundColor: !youWin && !tied ? "#00C853" : "#374151",
             }}
           />
         </div>
@@ -97,7 +97,7 @@ function HeadToHead({
 
       {/* Status line */}
       <p className="font-pixel text-sm text-center" style={{
-        color: youWin ? "#FF006E" : tied ? "#EAB308" : "#06B6D4"
+        color: youWin ? "#00C853" : tied ? "#EAB308" : "#00E676"
       }}>
         {tied
           ? "TIED"
@@ -256,7 +256,7 @@ export default function Challenge() {
             )}
             {(isFinished || goalReached) && (
               <span className="font-pixel text-[11px] px-2 py-1 text-arcade-pink border-3"
-                style={{ borderColor: "#FF006E" }}>
+                style={{ borderColor: "#00C853" }}>
                 FINISHED
               </span>
             )}
@@ -399,7 +399,7 @@ export default function Challenge() {
 
       {/* Join CTA for visitors */}
       {!isParticipant && challenge.type === "team" && !isFinished && !goalReached && (
-        <div className="retro-box bg-arcade-pink/10 p-4 mb-6 text-center" style={{ borderColor: "#FF006E" }}>
+        <div className="retro-box bg-arcade-pink/10 p-4 mb-6 text-center" style={{ borderColor: "#00C853" }}>
           {user ? (
             <button
               onClick={handleJoin}

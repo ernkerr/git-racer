@@ -71,8 +71,8 @@ function RaceCard({ ch }: { ch: ActiveChallenge }) {
             <span
               className="font-pixel text-[10px] px-1.5 py-0.5 border-2"
               style={{
-                borderColor: isSprint ? "#06B6D4" : "#FF006E",
-                color: isSprint ? "#06B6D4" : "#FF006E",
+                borderColor: isSprint ? "#00E676" : "#00C853",
+                color: isSprint ? "#00E676" : "#00C853",
               }}
             >
               {isFinished ? "DONE" : isSprint ? "SPRINT" : "RACE"}

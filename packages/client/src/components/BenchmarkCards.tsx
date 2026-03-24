@@ -91,7 +91,7 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
             className={`retro-box shrink-0 w-64 bg-arcade-surface p-4 ${
               b.you_beat_them ? "border-arcade-cyan" : ""
             }`}
-            style={b.you_beat_them ? { borderColor: "#2563EB" } : undefined}
+            style={b.you_beat_them ? { borderColor: "#00C853" } : undefined}
           >
             {/* Dev info */}
             <div className="flex items-center gap-3 mb-3">

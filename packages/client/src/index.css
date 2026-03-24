@@ -13,40 +13,40 @@
   --arcade-hover: #F5F5F4;
   --arcade-checker-a: #1C1917;
   --arcade-checker-b: #F5F5F4;
-  --arcade-checker-accent-a: #FF006E;
-  --arcade-checker-accent-b: #FFE600;
-  --arcade-zone-promote: #EFF6FF;
+  --arcade-checker-accent-a: #00C853;
+  --arcade-checker-accent-b: #1C1917;
+  --arcade-zone-promote: #F0FDF4;
   --arcade-zone-demote: #FEF2F2;
   --arcade-tier-bronze: #FFFBEB;
   --contrib-0: #E7E5E4;
-  --contrib-1: #FDE68A;
-  --contrib-2: #FBBF24;
-  --contrib-3: #F59E0B;
-  --contrib-4: #FF006E;
+  --contrib-1: #BBF7D0;
+  --contrib-2: #4ADE80;
+  --contrib-3: #16A34A;
+  --contrib-4: #00C853;
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --arcade-bg: #0C0C0C;
-  --arcade-surface: #151515;
+  --arcade-bg: #0A0F0A;
+  --arcade-surface: #111811;
   --arcade-text: #E8E8E8;
   --arcade-muted: #777777;
-  --arcade-border: #333333;
+  --arcade-border: #1E3A1E;
   --arcade-shadow: #000000;
-  --arcade-input-bg: #1A1A1A;
-  --arcade-hover: #1C1C1C;
-  --arcade-checker-a: #D4D4D4;
-  --arcade-checker-b: #1A1A1A;
-  --arcade-checker-accent-a: #FF006E;
-  --arcade-checker-accent-b: #FFE600;
-  --arcade-zone-promote: rgba(37, 99, 235, 0.08);
-  --arcade-zone-demote: rgba(255, 0, 110, 0.08);
+  --arcade-input-bg: #141A14;
+  --arcade-hover: #161E16;
+  --arcade-checker-a: #00C853;
+  --arcade-checker-b: #0A0F0A;
+  --arcade-checker-accent-a: #00C853;
+  --arcade-checker-accent-b: #0A0F0A;
+  --arcade-zone-promote: rgba(0, 200, 83, 0.08);
+  --arcade-zone-demote: rgba(220, 38, 38, 0.08);
   --arcade-tier-bronze: rgba(146, 64, 14, 0.1);
-  --contrib-0: #1A1A1A;
-  --contrib-1: #3D2E00;
-  --contrib-2: #6B4F00;
-  --contrib-3: #A67B00;
-  --contrib-4: #FF006E;
+  --contrib-0: #141A14;
+  --contrib-1: #1A3A1A;
+  --contrib-2: #1F6B2A;
+  --contrib-3: #00A040;
+  --contrib-4: #00C853;
 }
 
 @theme {
@@ -56,11 +56,11 @@
   --color-arcade-gray: var(--arcade-muted);
   --color-arcade-border: var(--arcade-border);
   --color-arcade-hover: var(--arcade-hover);
-  --color-arcade-pink: #FF006E;
-  --color-arcade-yellow: #FFE600;
-  --color-arcade-cyan: #2563EB;
+  --color-arcade-pink: #00C853;
+  --color-arcade-yellow: #00FF87;
+  --color-arcade-cyan: #00E676;
   --color-arcade-red: #FF3333;
-  --color-arcade-green: #00E676;
+  --color-arcade-green: #00C853;
 
   --font-pixel: "Space Grotesk", system-ui, sans-serif;
 }
@@ -74,7 +74,7 @@ body {
 
 /* Subtle pixel grid in dark mode */
 [data-theme="dark"] body {
-  background-image: radial-gradient(circle, #1A1A1A 1px, transparent 1px);
+  background-image: radial-gradient(circle, #1A2E1A 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
@@ -167,8 +167,8 @@ body {
   transition: border-color 0.1s, box-shadow 0.1s;
 }
 .input-arcade:focus {
-  border-color: #2563EB;
-  box-shadow: 3px 3px 0px #2563EB;
+  border-color: #00C853;
+  box-shadow: 3px 3px 0px #00C853;
 }
 .input-arcade::placeholder {
   color: var(--arcade-muted);
@@ -258,5 +258,5 @@ body {
 /* ─── Racing stripe accent ───────────────────────────────────────────────── */
 .racing-stripe {
   height: 4px;
-  background: linear-gradient(90deg, #FF006E, #FFE600, #00E676, #2563EB);
+  background: linear-gradient(90deg, #00C853, #00FF87, #00E676, #00C853);
 }

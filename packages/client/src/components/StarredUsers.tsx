@@ -86,7 +86,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
                   <span className="font-mono text-sm text-arcade-white truncate">{s.display_name || s.github_username}</span>
                   <span
                     className="font-pixel text-[10px] px-1.5 py-0.5 border-2 shrink-0"
-                    style={{ borderColor: "#FF006E", color: "#FF006E" }}
+                    style={{ borderColor: "#00C853", color: "#00C853" }}
                   >
                     RACE
                   </span>
@@ -106,7 +106,7 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
               </span>
               <div className="text-center">
                 <p className="font-pixel text-[10px] text-arcade-gray mb-0.5">YOU</p>
-                <p className="font-pixel text-xl tabular-nums" style={{ color: s.you_beat_them ? "#FF006E" : "var(--arcade-white)" }}>
+                <p className="font-pixel text-xl tabular-nums" style={{ color: s.you_beat_them ? "#00C853" : "var(--arcade-white)" }}>
                   {s.your_commits.toLocaleString()}
                 </p>
               </div>

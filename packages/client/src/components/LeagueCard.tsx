@@ -9,8 +9,8 @@ const TIER_CONFIG: Record<LeagueTier, {
   bronze:   { label: "BRONZE",   color: "text-[#92400E]", borderColor: "#92400E", barColor: "bg-[#92400E]"  },
   silver:   { label: "SILVER",   color: "text-arcade-gray",  borderColor: "#78716C", barColor: "bg-arcade-gray" },
   gold:     { label: "GOLD",     color: "text-[#B45309]", borderColor: "#B45309", barColor: "bg-[#F59E0B]"  },
-  platinum: { label: "PLATINUM", color: "text-arcade-cyan",  borderColor: "#2563EB", barColor: "bg-arcade-cyan" },
-  diamond:  { label: "DIAMOND",  color: "text-arcade-pink",  borderColor: "#FF006E", barColor: "bg-arcade-pink" },
+  platinum: { label: "PLATINUM", color: "text-arcade-cyan",  borderColor: "#00C853", barColor: "bg-arcade-cyan" },
+  diamond:  { label: "DIAMOND",  color: "text-arcade-pink",  borderColor: "#00C853", barColor: "bg-arcade-pink" },
 };
 
 const ALL_TIERS: LeagueTier[] = ["bronze", "silver", "gold", "platinum", "diamond"];

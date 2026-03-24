@@ -116,7 +116,7 @@ export default function CreateChallenge() {
                         ? "bg-arcade-cyan/20 text-arcade-cyan"
                         : "bg-arcade-surface text-arcade-gray"
                     }`}
-                    style={opponents.includes(s.github_username) ? { borderColor: "#2563EB" } : undefined}
+                    style={opponents.includes(s.github_username) ? { borderColor: "#00C853" } : undefined}
                   >
                     <img
                       src={s.avatar_url || `https://github.com/${s.github_username}.png`}
