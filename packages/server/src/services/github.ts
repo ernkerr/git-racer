@@ -72,51 +72,23 @@ const YEARS_QUERY = `
 `;
 
 /**
- * Scale contribution calendar counts to commit-only counts.
+ * Return per-day contribution counts as-is.
  *
- * GitHub's contribution calendar includes all contribution types (commits,
- * PRs, issues, reviews). To isolate commits, we multiply each day's count
- * by the ratio `totalCommitContributions / totalContributions`. After
- * rounding, we redistribute any leftover error onto the highest-count day
- * so the per-day values sum exactly to `totalCommits`.
+ * GitHub's contributionCalendar already includes private repo commits for
+ * the authenticated user. Previously we scaled these down by the
+ * totalCommitContributions / totalContributions ratio to isolate "commits
+ * only", but this under-counted actual commits because the calendar counts
+ * already reflect the user's real activity (including private repos).
  *
- * @param days - Raw per-day contribution counts from the calendar.
- * @param totalCommits - The true commit-only total from the API.
- * @param totalContribs - The all-types contribution total from the API.
- * @returns Per-day counts scaled to represent commits only.
+ * We keep the function signature so callers don't need to change, but now
+ * just pass through the raw counts which are more accurate.
  */
 function scaleToCommits(
   days: { date: string; count: number }[],
-  totalCommits: number,
-  totalContribs: number
+  _totalCommits: number,
+  _totalContribs: number
 ): { date: string; count: number }[] {
-  // No contributions at all, or zero commits -- zero out every day.
-  if (totalContribs === 0 || totalCommits === 0) {
-    return days.map((d) => ({ date: d.date, count: 0 }));
-  }
-  if (totalCommits >= totalContribs) {
-    // Every contribution is a commit; no scaling needed.
-    return days;
-  }
-
-  // Proportionally scale each day by the commit-to-contribution ratio.
-  const commitRatio = totalCommits / totalContribs;
-  const scaledDays = days.map((d) => ({
-    date: d.date,
-    count: Math.round(d.count * commitRatio),
-  }));
-
-  // Rounding can cause the scaled total to drift from the true commit count.
-  // Correct by adding/subtracting the residual on the busiest day, where
-  // the relative impact of a small adjustment is least noticeable.
-  const scaledSum = scaledDays.reduce((sum, d) => sum + d.count, 0);
-  const roundingError = totalCommits - scaledSum;
-  if (roundingError !== 0 && scaledDays.length > 0) {
-    const busiestDay = scaledDays.reduce((best, d) => (d.count > best.count ? d : best), scaledDays[0]);
-    busiestDay.count += roundingError;
-  }
-
-  return scaledDays;
+  return days;
 }
 
 /** Send a typed GraphQL request to the GitHub API and return the parsed JSON. */

@@ -12,6 +12,7 @@ import type {
   ContributionGraphData,
 } from "@git-racer/shared";
 import RacePath from "../components/RacePath.tsx";
+import ContributionGraph from "../components/ContributionGraph.tsx";
 import LeagueCard from "../components/LeagueCard.tsx";
 import StarredUsers from "../components/StarredUsers.tsx";
 import StreakCard from "../components/StreakCard.tsx";
@@ -151,8 +152,23 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Contribution graph — GitHub-style heatmap */}
+      {contributions && contributions.days.length > 0 && (
+        <div className="retro-box bg-arcade-surface p-4">
+          <ContributionGraph days={contributions.days} totalYear={contributions.total_year} />
+        </div>
+      )}
+
       {/* Streaks & Records */}
       {streaks && <StreakCard streaks={streaks} />}
+
+      {/* Race Path — 30-day contribution velocity */}
+      {contributions && (
+        <RacePath
+          you={contributions.days.slice(-30)}
+          label="LAST 30 DAYS"
+        />
+      )}
 
       <div className="checker-strip" />
 
@@ -207,14 +223,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-
-      {/* Race Path — 30-day contribution velocity */}
-      {contributions && (
-        <RacePath
-          you={contributions.days.slice(-30)}
-          label="LAST 30 DAYS"
-        />
-      )}
 
       <div className="checker-strip" />
     </div>
