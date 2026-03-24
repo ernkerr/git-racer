@@ -149,9 +149,6 @@ function RaceSearchBar() {
           {starting ? "..." : "GO"}
         </button>
       </div>
-      <p className="font-mono text-xs text-arcade-gray mt-2">
-        Commits are loaded from their real GitHub history — not starting from 0.
-      </p>
     </div>
   );
 }
@@ -259,15 +256,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div className="checker-strip" />
-
-      {/* Social Circle */}
-      <div>
-        <h2 className="font-pixel text-base text-arcade-cyan mb-3">YOUR CIRCLE</h2>
-        <SocialCircle data={socialData} loading={socialLoading} />
-      </div>
-
-      {/* Starred Users */}
+      {/* Starred Users — directly under races */}
       <div>
         <h2 className="font-pixel text-base text-arcade-cyan mb-3">STARRED DEVS</h2>
         <StarredUsers
@@ -279,6 +268,14 @@ export default function Dashboard() {
             loadStarred();
           }}
         />
+      </div>
+
+      <div className="checker-strip" />
+
+      {/* Social Circle */}
+      <div>
+        <h2 className="font-pixel text-base text-arcade-cyan mb-3">YOUR CIRCLE</h2>
+        <SocialCircle data={socialData} loading={socialLoading} />
       </div>
 
       <div className="checker-divider" />
