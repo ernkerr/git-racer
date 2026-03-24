@@ -1,0 +1,131 @@
+interface DayData {
+  date: string;
+  count: number;
+}
+
+interface RacePathProps {
+  you: DayData[];
+  rival?: { username: string; data: DayData[] } | null;
+  label?: string;
+}
+
+/** Merge two sparse day arrays into a unified date axis, filling missing days with 0. */
+function buildAxis(a: DayData[], b?: DayData[]): string[] {
+  const dates = new Set<string>();
+  a.forEach((d) => dates.add(d.date));
+  b?.forEach((d) => dates.add(d.date));
+  return Array.from(dates).sort();
+}
+
+function toMap(days: DayData[]): Map<string, number> {
+  return new Map(days.map((d) => [d.date, d.count]));
+}
+
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePathProps) {
+  const axis = buildAxis(you, rival?.data);
+  const youMap = toMap(you);
+  const rivalMap = rival ? toMap(rival.data) : null;
+
+  const allCounts = axis.flatMap((d) => {
+    const y = youMap.get(d) ?? 0;
+    const r = rivalMap?.get(d) ?? 0;
+    return [y, r];
+  });
+  const peak = Math.max(...allCounts, 1);
+
+  const BAR_H = 140; // max bar height in px
+  const GAP = rival ? 1 : 2; // px gap between bars
+  const firstDate = axis[0] ?? "";
+  const lastDate = axis[axis.length - 1] ?? "";
+
+  return (
+    <div className="retro-box bg-arcade-surface p-4">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-1">
+        <div>
+          <p className="font-pixel text-xs text-arcade-white tracking-widest">RACE PATH</p>
+          <p className="font-mono text-[10px] text-arcade-gray mt-0.5">CONTRIBUTION VELOCITY</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {rival && (
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 font-pixel text-[10px] text-arcade-white">
+                <span className="inline-block w-2 h-2" style={{ backgroundColor: "#FF006E" }} />
+                YOU
+              </span>
+              <span className="flex items-center gap-1 font-pixel text-[10px] text-arcade-white">
+                <span className="inline-block w-2 h-2" style={{ backgroundColor: "#00FF87" }} />
+                {rival.username.toUpperCase().slice(0, 8)}
+              </span>
+            </div>
+          )}
+          <span
+            className="font-pixel text-[10px] px-2 py-1 border-2"
+            style={{ borderColor: "#06B6D4", color: "#06B6D4" }}
+          >
+            {label}
+          </span>
+        </div>
+      </div>
+
+      {/* Bar chart */}
+      <div
+        className="flex items-end gap-px mt-4 overflow-hidden"
+        style={{ height: `${BAR_H}px`, gap: `${GAP}px` }}
+      >
+        {axis.map((date) => {
+          const y = youMap.get(date) ?? 0;
+          const r = rivalMap?.get(date) ?? 0;
+          const yH = Math.max(1, Math.round((y / peak) * BAR_H));
+          const rH = Math.max(r > 0 ? 1 : 0, Math.round((r / peak) * BAR_H));
+
+          if (rival) {
+            // Grouped: two bars side by side per day
+            return (
+              <div key={date} className="flex items-end gap-px flex-1 min-w-0">
+                <div
+                  className="flex-1 min-w-0"
+                  style={{ height: `${yH}px`, backgroundColor: "#FF006E" }}
+                  title={`${date}: you ${y}`}
+                />
+                <div
+                  className="flex-1 min-w-0"
+                  style={{ height: `${rH}px`, backgroundColor: "#00FF87" }}
+                  title={`${date}: ${rival.username} ${r}`}
+                />
+              </div>
+            );
+          }
+
+          // Single bar
+          return (
+            <div
+              key={date}
+              className="flex-1 min-w-0"
+              style={{ height: `${yH}px`, backgroundColor: "#00FF87" }}
+              title={`${date}: ${y} commits`}
+            />
+          );
+        })}
+      </div>
+
+      {/* Bottom axis labels + peak */}
+      <div className="flex items-center justify-between mt-2">
+        <span className="font-mono text-[10px] text-arcade-gray">
+          {firstDate ? formatDate(firstDate) : ""}
+        </span>
+        <span className="font-mono text-[10px] text-arcade-gray">
+          V_PEAK: {peak} CO/D
+        </span>
+        <span className="font-mono text-[10px] text-arcade-gray">
+          {lastDate ? formatDate(lastDate) : ""}
+        </span>
+      </div>
+    </div>
+  );
+}

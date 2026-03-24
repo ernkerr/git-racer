@@ -11,7 +11,7 @@ import type {
   UserStreakInfo,
   ContributionGraphData,
 } from "@git-racer/shared";
-import ContributionGraph from "../components/ContributionGraph.tsx";
+import RacePath from "../components/RacePath.tsx";
 import LeagueCard from "../components/LeagueCard.tsx";
 import StarredUsers from "../components/StarredUsers.tsx";
 import StreakCard from "../components/StreakCard.tsx";
@@ -233,11 +233,12 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Contribution Graph */}
+      {/* Race Path — 30-day contribution velocity */}
       {contributions && (
-        <div className="retro-box bg-arcade-surface p-5">
-          <ContributionGraph days={contributions.days} totalYear={contributions.total_year} />
-        </div>
+        <RacePath
+          you={contributions.days.slice(-30)}
+          label="LAST 30 DAYS"
+        />
       )}
 
       <div className="checker-strip" />

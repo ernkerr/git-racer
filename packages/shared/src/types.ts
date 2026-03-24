@@ -40,6 +40,7 @@ export interface LeaderboardEntry {
 
 export interface ChallengeWithLeaderboard extends Challenge {
   participants: LeaderboardEntry[];
+  daily?: Record<string, { date: string; count: number }[]>;
 }
 
 export interface SuggestedOpponent {

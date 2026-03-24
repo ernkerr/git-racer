@@ -103,6 +103,25 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
     is_ghost: r.is_ghost,
   }));
 
+  // Per-day commit breakdown for each participant (used for Race Path chart).
+  const dailyRows = await db.execute(sql`
+    SELECT cs.github_username, cs.date, cs.commit_count
+    FROM commit_snapshots cs
+    INNER JOIN challenge_participants cp
+      ON cp.github_username = cs.github_username
+      AND cp.challenge_id = ${challenge.id}
+    WHERE cs.date >= ${startDate}
+      AND cs.date <= ${endDate}
+    ORDER BY cs.github_username, cs.date ASC
+  `);
+
+  const daily: Record<string, { date: string; count: number }[]> = {};
+  for (const r of dailyRows.rows as any[]) {
+    const u = r.github_username as string;
+    if (!daily[u]) daily[u] = [];
+    daily[u].push({ date: r.date, count: Number(r.commit_count) });
+  }
+
   return c.json({
     id: challenge.id,
     name: challenge.name,
@@ -116,6 +135,7 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
     share_slug: challenge.share_slug,
     created_at: challenge.created_at.toISOString(),
     participants: leaderboard,
+    daily,
   });
 });
 

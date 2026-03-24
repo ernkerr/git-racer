@@ -4,6 +4,7 @@ import { api } from "../lib/api.ts";
 import { useAuth } from "../lib/auth.tsx";
 import { CHALLENGE_REFRESH_MS } from "@git-racer/shared";
 import type { ChallengeWithLeaderboard, LeaderboardEntry } from "@git-racer/shared";
+import RacePath from "../components/RacePath.tsx";
 
 function RaceTypeBadge({ durationType }: { durationType: string }) {
   const isSprint = durationType === "fixed";
@@ -351,6 +352,23 @@ export default function Challenge() {
       {/* 1v1 Head-to-Head display */}
       {show1v1 && (
         <HeadToHead you={you1v1} them={them1v1} isFinished={isFinished} />
+      )}
+
+      {/* Race Path — daily velocity chart for 1v1 */}
+      {show1v1 && challenge.daily && (
+        <RacePath
+          you={challenge.daily[you1v1!.github_username] ?? []}
+          rival={
+            them1v1
+              ? { username: them1v1.github_username, data: challenge.daily[them1v1.github_username] ?? [] }
+              : null
+          }
+          label={
+            challenge.end_date
+              ? `${new Date(challenge.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} — ${new Date(challenge.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+              : "RACE DURATION"
+          }
+        />
       )}
 
       {/* Goal progress bar */}
