@@ -10,14 +10,17 @@
   },
   "dependencies": {
     "@git-racer/shared": "workspace:*",
+    "postprocessing": "^6.39.0",
     "react": "^19.0",
     "react-dom": "^19.0",
-    "react-router-dom": "^7.1"
+    "react-router-dom": "^7.1",
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1",
     "@types/react": "^19.0",
     "@types/react-dom": "^19.0",
+    "@types/three": "^0.183.1",
     "@vitejs/plugin-react": "^4.3",
     "tailwindcss": "^4.1",
     "typescript": "^5.7",

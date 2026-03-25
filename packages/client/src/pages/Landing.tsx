@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth.tsx";
+import Hyperspeed from "../components/Hyperspeed.tsx";
 
 export default function Landing() {
   const { user, loading, login } = useAuth();
@@ -9,48 +10,56 @@ export default function Landing() {
 
   return (
     <div>
-      {/* Hero */}
-      <div className="flex flex-col items-center justify-center min-h-[55vh] text-center">
-        <div className="stoplight stoplight-animated mb-10">
-          <div className="stoplight-dot red" />
-          <div className="stoplight-dot yellow" />
-          <div className="stoplight-dot green" />
+      {/* Hero — Hyperspeed background with content on top */}
+      <div className="relative flex flex-col items-center justify-center text-center -my-10" style={{ minHeight: "calc(100vh - 3.5rem - 2px)" }}>
+        <div className="absolute inset-0 -mx-6 overflow-hidden" style={{ zIndex: 0 }}>
+          <Hyperspeed />
+          {/* gradient fade so content below blends smoothly */}
+          <div
+            className="absolute bottom-0 left-0 right-0 h-32"
+            style={{ background: "linear-gradient(to top, var(--bg), transparent)" }}
+          />
         </div>
 
-        <h1 className="font-pixel leading-tight mb-5">
-          <span className="block text-4xl md:text-6xl" style={{ color: "var(--green)" }}>
-            RACE YOUR
-          </span>
-          <span className="block text-4xl md:text-6xl" style={{ color: "var(--text)" }}>
-            COMMITS.
-          </span>
-        </h1>
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <h1 className="font-pixel leading-tight mb-5">
+            <span className="block text-4xl md:text-6xl" style={{ color: "var(--green)" }}>
+              RACE YOUR
+            </span>
+            <span className="block text-4xl md:text-6xl" style={{ color: "var(--text)" }}>
+              COMMITS.
+            </span>
+          </h1>
 
-        <p className="text-base mb-10 max-w-md leading-relaxed" style={{ color: "var(--muted)" }}>
-          Race your friends, race famous developers, and turn your
-          GitHub contributions into a competitive sport.
-        </p>
+          <p
+            className="text-base mb-10 max-w-md mx-auto leading-relaxed"
+            style={{
+              color: "var(--text)",
+              textShadow: "0 1px 8px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.7)",
+            }}
+          >
+            Race your friends, race famous developers, and turn your
+            GitHub contributions into a competitive sport.
+          </p>
 
-        <button
-          onClick={login}
-          className="font-pixel text-sm px-8 py-3 mb-4 transition-colors"
-          style={{ background: "var(--green)", color: "#000" }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--green-bright)"}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "var(--green)"}
-        >
-          SIGN IN WITH GITHUB
-        </button>
+          <button
+            onClick={login}
+            className="font-pixel text-sm px-8 py-3 mb-4 transition-colors"
+            style={{ background: "var(--green)", color: "#000" }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--green-bright)"}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "var(--green)"}
+          >
+            SIGN IN WITH GITHUB
+          </button>
 
-        <p className="text-xs" style={{ color: "var(--muted)" }}>
-          Read-only access. No repo permissions needed.
-        </p>
+          <p className="text-xs" style={{ color: "var(--muted)" }}>
+            Read-only access. No repo permissions needed.
+          </p>
+        </div>
       </div>
 
-      {/* Divider */}
-      <div className="my-16" style={{ borderTop: "1px solid var(--border)" }} />
-
       {/* How it works */}
-      <div className="max-w-2xl mx-auto mb-16">
+      <div className="max-w-2xl mx-auto py-16">
         <h2 className="font-pixel text-sm text-center mb-8" style={{ color: "var(--green)" }}>HOW IT WORKS</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[

@@ -17,10 +17,10 @@ export default function Layout() {
             className="font-pixel text-base flex items-center gap-2"
             style={{ color: "var(--green)" }}
           >
-            <span className="stoplight-mini">
-              <span className="stoplight-mini-dot red active" />
-              <span className="stoplight-mini-dot yellow active" />
-              <span className="stoplight-mini-dot green active" />
+            <span className="stoplight stoplight-animated" style={{ padding: "4px 8px", gap: "4px" }}>
+              <span className="stoplight-dot red" style={{ width: 8, height: 8 }} />
+              <span className="stoplight-dot yellow" style={{ width: 8, height: 8 }} />
+              <span className="stoplight-dot green" style={{ width: 8, height: 8 }} />
             </span>
             GIT RACER
           </Link>
