@@ -1,19 +1,16 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth.tsx";
-import { useTheme } from "../lib/theme.ts";
 import Hyperspeed from "../components/Hyperspeed.tsx";
 
 export default function Landing() {
   const { user, loading, login } = useAuth();
-  const { theme, toggle } = useTheme();
 
   if (loading) return null;
   if (user) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="min-h-screen bg-arcade-bg text-arcade-white">
-      {/* ── Header (same as Layout but self-contained) ── */}
-      <div className="racing-stripe" />
+      {/* ── Header ── */}
       <header style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)", position: "relative", zIndex: 10 }}>
         <nav className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <span className="font-pixel text-base flex items-center gap-2" style={{ color: "var(--green)" }}>
@@ -24,40 +21,22 @@ export default function Landing() {
             </span>
             GIT RACER
           </span>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggle}
-              className="w-8 h-8 flex items-center justify-center transition-colors"
-              style={{ color: "var(--muted)" }}
-              title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            >
-              {theme === "dark" ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
-            </button>
-            <button
-              onClick={login}
-              className="font-pixel text-xs px-4 py-2 transition-colors"
-              style={{ background: "var(--green)", color: "#000", border: "none" }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--green-bright)"}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "var(--green)"}
-            >
-              SIGN IN
-            </button>
-          </div>
+          <button
+            onClick={login}
+            className="font-pixel text-xs px-4 py-2 transition-colors"
+            style={{ background: "var(--green)", color: "#000", border: "none" }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--green-hi)"}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "var(--green)"}
+          >
+            SIGN IN
+          </button>
         </nav>
       </header>
 
       {/* ── Hero — full viewport, Hyperspeed behind ── */}
       <section
         className="relative flex items-center justify-center"
-        style={{ height: "calc(100vh - 3.5rem - 2px)" }}
+        style={{ height: "calc(100vh - 3.5rem)" }}
       >
         {/* Background animation */}
         <div className="absolute inset-0 overflow-hidden">
@@ -67,8 +46,8 @@ export default function Landing() {
         {/* Dark scrim for readability */}
         <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)" }} />
 
-        {/* Content */}
-        <div className="relative z-10 text-center px-6">
+        {/* Content — shifted up with pb-32 */}
+        <div className="relative z-10 text-center px-6 pb-32">
           <h1 className="font-pixel leading-tight mb-5">
             <span className="block text-4xl md:text-6xl" style={{ color: "var(--green)" }}>
               RACE YOUR
@@ -85,17 +64,13 @@ export default function Landing() {
 
           <button
             onClick={login}
-            className="font-pixel text-sm px-8 py-3 mb-4 transition-colors"
+            className="font-pixel text-sm px-8 py-3 transition-colors"
             style={{ background: "var(--green)", color: "#000" }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--green-bright)"}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--green-hi)"}
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "var(--green)"}
           >
             SIGN IN WITH GITHUB
           </button>
-
-          <p className="text-xs" style={{ color: "var(--muted)" }}>
-            Read-only access. No repo permissions needed.
-          </p>
         </div>
 
         {/* Bottom fade into next section */}
@@ -104,6 +79,11 @@ export default function Landing() {
           style={{ background: "linear-gradient(to top, var(--bg), transparent)" }}
         />
       </section>
+
+      {/* ── Below the fold ── */}
+      <p className="text-xs text-center py-6" style={{ color: "var(--muted)" }}>
+        Read-only access. No repo permissions needed.
+      </p>
 
       {/* ── How it works ── */}
       <div className="max-w-2xl mx-auto px-6 py-16">
@@ -130,7 +110,7 @@ export default function Landing() {
           onClick={login}
           className="font-pixel text-sm px-8 py-3 transition-colors"
           style={{ background: "var(--green)", color: "#000" }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--green-bright)"}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--green-hi)"}
           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "var(--green)"}
         >
           SIGN IN WITH GITHUB
