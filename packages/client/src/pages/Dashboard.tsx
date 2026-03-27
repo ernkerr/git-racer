@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api.ts";
+import { useAuth } from "../lib/auth.tsx";
 import type {
   UserStats,
   ActiveChallenge,
@@ -83,6 +84,67 @@ function RaceCard({ ch }: { ch: ActiveChallenge }) {
 }
 
 
+function BadgeEmbed({ username, siteUrl }: { username: string; siteUrl: string }) {
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [copied, setCopied] = useState(false);
+
+  const badgeUrl = `${siteUrl}/api/badge/${username}?theme=${theme}`;
+  const markdown = `[![Git Racer Stats](${badgeUrl})](${siteUrl})`;
+
+  const copy = () => {
+    navigator.clipboard.writeText(markdown).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="retro-box bg-arcade-surface p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-pixel text-xs text-arcade-gray uppercase">Add to GitHub Profile</h3>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setTheme("dark")}
+            className={`font-mono text-[10px] px-2 py-0.5 rounded ${theme === "dark" ? "bg-arcade-green text-arcade-bg" : "text-arcade-gray hover:text-arcade-white"}`}
+          >
+            DARK
+          </button>
+          <button
+            onClick={() => setTheme("light")}
+            className={`font-mono text-[10px] px-2 py-0.5 rounded ${theme === "light" ? "bg-arcade-green text-arcade-bg" : "text-arcade-gray hover:text-arcade-white"}`}
+          >
+            LIGHT
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-3 flex justify-center">
+        <img
+          src={`/api/badge/${username}?theme=${theme}`}
+          alt="Git Racer Stats Badge"
+          className="max-w-full"
+          key={theme}
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          readOnly
+          value={markdown}
+          className="flex-1 bg-arcade-bg text-arcade-gray font-mono text-[11px] px-3 py-1.5 rounded border border-arcade-border outline-none focus:border-arcade-green"
+          onClick={(e) => (e.target as HTMLInputElement).select()}
+        />
+        <button
+          onClick={copy}
+          className="btn-arcade font-pixel text-[10px] px-3 py-1.5 whitespace-nowrap"
+        >
+          {copied ? "COPIED!" : "COPY"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [challenges, setChallenges] = useState<ActiveChallenge[]>([]);
@@ -94,6 +156,7 @@ export default function Dashboard() {
   const [contributions, setContributions] = useState<ContributionGraphData | null>(null);
   const [loading, setLoading] = useState(true);
   const [socialLoading, setSocialLoading] = useState(true);
+  const { user } = useAuth();
 
   const loadStarred = useCallback(() => {
     api<StarredUser[]>("/starred?period=week").then(setStarred).catch(() => {});
@@ -208,6 +271,16 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* GitHub Profile Badge */}
+      {user && (
+        <div>
+          <h2 className="font-pixel text-base text-arcade-cyan mb-3">GITHUB BADGE</h2>
+          <BadgeEmbed username={user.github_username} siteUrl={user.site_url} />
+        </div>
+      )}
+
+      <div className="checker-strip" />
 
       {/* Contribution graph + Race Path — at the bottom */}
       {contributions && contributions.days.length > 0 && (

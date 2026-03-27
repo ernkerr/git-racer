@@ -20,6 +20,7 @@ import { benchmarkRoutes } from "./routes/benchmarks.js";
 import { starredRoutes } from "./routes/starred.js";
 import { socialRoutes } from "./routes/social.js";
 import { ogRoutes } from "./routes/og.js";
+import { badgeRoutes } from "./routes/badge.js";
 
 const app = new Hono().basePath("/api");
 
@@ -55,5 +56,6 @@ app.route("/benchmarks", benchmarkRoutes);
 app.route("/starred", starredRoutes);
 app.route("/social", socialRoutes);
 app.route("/og", ogRoutes);
+app.route("/badge", badgeRoutes);
 
 export default app;

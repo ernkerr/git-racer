@@ -10,6 +10,7 @@ const envSchema = z.object({
   JWT_EXPIRY: z.string().default("7d"),
   API_URL: z.string().url().default("http://localhost:3000"),
   CLIENT_URL: z.string().url().default("http://localhost:5173"),
+  SITE_URL: z.string().url().optional(),
   NODE_ENV: z.string().default("production"),
 });
 

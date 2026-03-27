@@ -4,6 +4,7 @@ export interface User {
   github_username: string;
   avatar_url: string | null;
   created_at: string;
+  site_url: string;
 }
 
 export type ChallengeType = "1v1" | "team";

@@ -39,7 +39,7 @@ meRoutes.get("/", async (c) => {
     .limit(1);
 
   if (!user) return c.json({ error: "User not found" }, 404);
-  return c.json(user);
+  return c.json({ ...user, site_url: env.SITE_URL || env.CLIENT_URL });
 });
 
 /**
