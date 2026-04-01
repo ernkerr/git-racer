@@ -85,10 +85,9 @@ function RaceCard({ ch }: { ch: ActiveChallenge }) {
 
 
 function BadgeEmbed({ username, siteUrl }: { username: string; siteUrl: string }) {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [copied, setCopied] = useState(false);
 
-  const badgeUrl = `${siteUrl}/api/badge/${username}?theme=${theme}`;
+  const badgeUrl = `${siteUrl}/api/badge/${username}`;
   const markdown = `[![Git Racer Stats](${badgeUrl})](${siteUrl})`;
 
   const copy = () => {
@@ -100,30 +99,15 @@ function BadgeEmbed({ username, siteUrl }: { username: string; siteUrl: string }
 
   return (
     <div className="retro-box bg-arcade-surface p-4">
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3">
         <h3 className="font-pixel text-xs text-arcade-gray uppercase">Add to GitHub Profile</h3>
-        <div className="flex gap-1">
-          <button
-            onClick={() => setTheme("dark")}
-            className={`font-mono text-[10px] px-2 py-0.5 rounded ${theme === "dark" ? "bg-arcade-green text-arcade-bg" : "text-arcade-gray hover:text-arcade-white"}`}
-          >
-            DARK
-          </button>
-          <button
-            onClick={() => setTheme("light")}
-            className={`font-mono text-[10px] px-2 py-0.5 rounded ${theme === "light" ? "bg-arcade-green text-arcade-bg" : "text-arcade-gray hover:text-arcade-white"}`}
-          >
-            LIGHT
-          </button>
-        </div>
       </div>
 
-      <div className="mb-3 flex justify-center">
+      <div className="mb-3">
         <img
-          src={`/api/badge/${username}?theme=${theme}`}
+          src={`/api/badge/${username}`}
           alt="Git Racer Stats Badge"
-          className="max-w-full"
-          key={theme}
+          className="w-full"
         />
       </div>
 
