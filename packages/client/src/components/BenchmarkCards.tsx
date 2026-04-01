@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FamousDevBenchmark } from "@git-racer/shared";
 import { api } from "../lib/api.ts";
+import RaceTrack from "./RaceTrack.tsx";
 
 const CATEGORY_LABELS: Record<string, string> = {
   all: "All",
@@ -115,26 +116,11 @@ export default function BenchmarkCards({ benchmarks, onAdded, onRemoved }: Props
               )}
             </div>
 
-            {/* Comparison */}
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="font-pixel text-xs text-arcade-gray mb-1">THEIRS</p>
-                <p className="font-pixel text-base tabular-nums text-arcade-gray">
-                  {b.their_commits}
-                </p>
-              </div>
-              <div className="text-center px-2">
-                <span className={`font-pixel text-base ${b.you_beat_them ? "text-arcade-cyan" : "text-arcade-gray"}`}>
-                  {b.you_beat_them ? ">" : "<"}
-                </span>
-              </div>
-              <div className="text-right">
-                <p className="font-pixel text-xs text-arcade-gray mb-1">YOU</p>
-                <p className={`font-pixel text-base tabular-nums ${b.you_beat_them ? "text-arcade-pink" : "text-arcade-white"}`}>
-                  {b.your_commits}
-                </p>
-              </div>
-            </div>
+            {/* Race track */}
+            <RaceTrack
+              yourCommits={b.your_commits}
+              theirCommits={b.their_commits}
+            />
 
             {/* Status */}
             <div className={`mt-3 font-pixel text-xs text-center py-1 border-3 ${

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { StarredUser, StarSuggestion } from "@git-racer/shared";
 import { api } from "../lib/api.ts";
 import GitHubUserSearch from "./GitHubUserSearch.tsx";
+import RaceTrack from "./RaceTrack.tsx";
 
 interface Props {
   starred: StarredUser[];
@@ -62,11 +63,6 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
       {starred.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {starred.map((s) => {
-            const total = s.your_commits + s.their_commits;
-            const youPct = total > 0 ? (s.your_commits / total) * 100 : 50;
-            const winning = s.your_commits > s.their_commits;
-            const diff = Math.abs(s.your_commits - s.their_commits);
-
             return (
               <div
                 key={s.github_username}
@@ -101,39 +97,11 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
                   </button>
                 </div>
 
-                {/* Score comparison */}
-                <div className="flex items-baseline justify-between mb-2">
-                  <div>
-                    <span className="font-pixel text-lg tabular-nums" style={{
-                      color: winning ? "var(--green)" : s.tied ? "var(--yellow)" : "var(--text)",
-                    }}>
-                      {s.your_commits.toLocaleString()}
-                    </span>
-                    <span className="font-mono text-[10px] text-arcade-gray ml-1.5">you</span>
-                  </div>
-                  <span className="font-mono text-[10px]" style={{
-                    color: s.tied ? "var(--yellow)" : winning ? "var(--green)" : "var(--muted)",
-                  }}>
-                    {s.tied ? "tied" : winning ? `+${diff.toLocaleString()}` : `-${diff.toLocaleString()}`}
-                  </span>
-                  <div className="text-right">
-                    <span className="font-mono text-[10px] text-arcade-gray mr-1.5">them</span>
-                    <span className="font-pixel text-lg tabular-nums text-arcade-white">
-                      {s.their_commits.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="h-1.5 flex rounded-full overflow-hidden" style={{ background: "var(--surface2)" }}>
-                  <div
-                    className="h-full transition-all duration-500"
-                    style={{
-                      width: `${youPct}%`,
-                      background: winning ? "var(--green)" : s.tied ? "var(--yellow)" : "var(--muted)",
-                    }}
-                  />
-                </div>
+                {/* Race track */}
+                <RaceTrack
+                  yourCommits={s.your_commits}
+                  theirCommits={s.their_commits}
+                />
               </div>
             );
           })}
