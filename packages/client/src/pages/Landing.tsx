@@ -5,8 +5,7 @@ import Hyperspeed from "../components/Hyperspeed.tsx";
 export default function Landing() {
   const { user, loading, login } = useAuth();
 
-  if (loading) return null;
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (!loading && user) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="min-h-screen bg-arcade-bg text-arcade-white">
