@@ -63,12 +63,18 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
 
   if (!challenge) return c.json({ error: "Challenge not found" }, 404);
 
-  // Only refresh the logged-in user's commit data (not all participants)
-  // to avoid expensive GitHub API calls for every page view.
-  const authedUser = c.get("user") as { username?: string } | undefined;
-  if (authedUser?.username) {
-    try { await refreshCommitData(authedUser.username); } catch {}
-  }
+  // Refresh commit data for all participants so the leaderboard is up to date.
+  // Each call is individually caught so one failure doesn't block the rest.
+  const participantRows = await db
+    .select({ github_username: challengeParticipants.github_username })
+    .from(challengeParticipants)
+    .where(eq(challengeParticipants.challenge_id, challenge.id));
+
+  await Promise.all(
+    participantRows.map((p) =>
+      refreshCommitData(p.github_username).catch(() => {})
+    )
+  );
 
   // Date range for commit aggregation, based on refresh_period:
   //   "daily"   → today only
