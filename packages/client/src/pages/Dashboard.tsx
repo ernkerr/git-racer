@@ -104,11 +104,13 @@ function BadgeEmbed({ username, siteUrl }: { username: string; siteUrl: string }
       </div>
 
       <div className="mb-3 flex justify-center">
-        <img
-          src={`/api/badge/${username}`}
-          alt="Git Racer Stats Badge"
-          className="max-w-full"
-        />
+        <div className="bg-[#0C0C0C] border border-[#2A2A2A] rounded-md p-2 inline-block max-w-full">
+          <img
+            src={`/api/badge/${username}`}
+            alt="Git Racer Stats Badge"
+            className="max-w-full"
+          />
+        </div>
       </div>
 
       <div className="flex gap-2">
