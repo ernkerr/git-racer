@@ -88,7 +88,7 @@ function BadgeEmbed({ username, siteUrl }: { username: string; siteUrl: string }
   const [copied, setCopied] = useState(false);
 
   const badgeUrl = `${siteUrl}/api/badge/${username}`;
-  const markdown = `[![Git Racer Stats](${badgeUrl})](${siteUrl})`;
+  const markdown = `<a href="${siteUrl}"><img src="${badgeUrl}" alt="Git Racer Stats" width="100%"></a>`;
 
   const copy = () => {
     navigator.clipboard.writeText(markdown).then(() => {
@@ -103,11 +103,11 @@ function BadgeEmbed({ username, siteUrl }: { username: string; siteUrl: string }
         <h3 className="font-pixel text-xs text-arcade-gray uppercase">Add to GitHub Profile</h3>
       </div>
 
-      <div className="mb-3">
+      <div className="mb-3 flex justify-center">
         <img
           src={`/api/badge/${username}`}
           alt="Git Racer Stats Badge"
-          className="w-full"
+          className="max-w-full"
         />
       </div>
 
