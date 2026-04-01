@@ -5,7 +5,7 @@ interface RaceTrackProps {
 }
 
 const CAR_H = 60; // px
-const CAR_BOTTOM_PAD = -18; // px — compensate for transparent padding below wheels in the PNG
+const CAR_BOTTOM_PAD = 0; // px — images are now cropped to content
 
 function Lane({
   label,
