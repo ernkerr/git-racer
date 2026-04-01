@@ -11,12 +11,21 @@ interface RacePathProps {
   label?: string;
 }
 
-/** Merge two sparse day arrays into a unified date axis, filling missing days with 0. */
+/** Merge two sparse day arrays into a continuous date axis, filling gaps with 0-count days. */
 function buildAxis(a: DayData[], b?: DayData[]): string[] {
   const dates = new Set<string>();
   a.forEach((d) => dates.add(d.date));
   b?.forEach((d) => dates.add(d.date));
-  return Array.from(dates).sort();
+  const sorted = Array.from(dates).sort();
+  if (sorted.length < 2) return sorted;
+  // Fill in every day between first and last
+  const result: string[] = [];
+  const start = new Date(sorted[0] + "T00:00:00");
+  const end = new Date(sorted[sorted.length - 1] + "T00:00:00");
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    result.push(d.toISOString().slice(0, 10));
+  }
+  return result;
 }
 
 function toMap(days: DayData[]): Map<string, number> {
@@ -44,6 +53,7 @@ export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePat
   const BAR_H = 140; // max bar height in px
   const GAP = rival ? 1 : 2; // px gap between bars
   const firstDate = axis[0] ?? "";
+  const midDate = axis[Math.floor(axis.length / 2)] ?? "";
   const lastDate = axis[axis.length - 1] ?? "";
 
   return (
@@ -152,6 +162,9 @@ export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePat
       <div className="flex items-center justify-between mt-2">
         <span className="font-mono text-[10px] text-arcade-gray">
           {firstDate ? formatDate(firstDate) : ""}
+        </span>
+        <span className="font-mono text-[10px] text-arcade-gray">
+          {midDate ? formatDate(midDate) : ""}
         </span>
         <span className="font-mono text-[10px] text-arcade-gray">
           {lastDate ? formatDate(lastDate) : ""}
