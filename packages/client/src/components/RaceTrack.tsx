@@ -102,7 +102,7 @@ export default function RaceTrack({ yourCommits, theirCommits, theirLabel = "the
         <img
           src="/finish-line.png"
           alt="finish"
-          className="h-20 w-auto"
+          className="h-28 w-auto"
           style={{ imageRendering: "pixelated" }}
         />
       </div>
