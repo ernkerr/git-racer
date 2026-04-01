@@ -6,7 +6,7 @@
  * maximize coverage.
  */
 import { db } from "../db/index.js";
-import { userBenchmarks, commitSnapshots, eventCommitters } from "../db/schema.js";
+import { userBenchmarks, commitSnapshots, eventCommitters, challenges, challengeParticipants } from "../db/schema.js";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { periodRange } from "../lib/dates.js";
 
@@ -34,6 +34,8 @@ export async function getStarredComparisons(
   their_commits: number;
   your_commits: number;
   you_beat_them: boolean;
+  tied: boolean;
+  share_slug: string | null;
 }[]> {
   const { start, end } = periodRange(period);
 
@@ -88,6 +90,30 @@ export async function getStarredComparisons(
 
   const yourCommits = commitMap.get(username) ?? 0;
 
+  // Look up 1v1 challenge slugs for each starred user.
+  // Finds the most recently created 1v1 challenge where both the authenticated
+  // user and the starred user are participants.
+  const starredUsernames = starred.map((s) => s.github_username);
+  const slugRows = starredUsernames.length > 0
+    ? await db.execute(sql`
+        SELECT DISTINCT ON (cp2.github_username)
+          cp2.github_username AS rival,
+          c.share_slug
+        FROM challenges c
+        INNER JOIN challenge_participants cp1
+          ON cp1.challenge_id = c.id AND cp1.github_username = ${username}
+        INNER JOIN challenge_participants cp2
+          ON cp2.challenge_id = c.id
+          AND cp2.github_username IN (${sql.join(starredUsernames.map((u) => sql`${u}`), sql`, `)})
+        WHERE c.type = '1v1'
+        ORDER BY cp2.github_username, c.created_at DESC
+      `)
+    : { rows: [] };
+
+  const slugMap = new Map(
+    (slugRows.rows as any[]).map((r) => [r.rival, r.share_slug as string])
+  );
+
   // Map each starred developer into a comparison result
   return starred.map((s) => {
     const theirCommits = commitMap.get(s.github_username) ?? 0;
@@ -99,6 +125,7 @@ export async function getStarredComparisons(
       your_commits: yourCommits,
       you_beat_them: yourCommits > theirCommits,
       tied: yourCommits === theirCommits,
+      share_slug: slugMap.get(s.github_username) ?? null,
     };
   });
 }

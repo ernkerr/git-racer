@@ -70,7 +70,8 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
             return (
               <div
                 key={s.github_username}
-                className="retro-box bg-arcade-surface p-4 group"
+                onClick={() => s.share_slug && navigate(`/c/${s.share_slug}`)}
+                className={`retro-box bg-arcade-surface p-4 group ${s.share_slug ? "cursor-pointer hover:bg-arcade-hover transition-colors" : ""}`}
               >
                 {/* Opponent row */}
                 <div className="flex items-center justify-between mb-3">

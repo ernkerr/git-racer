@@ -39,6 +39,8 @@ export interface LeaderboardEntry {
   avatar_url: string | null;
   commit_count: number;
   is_ghost: boolean;
+  unique_repos?: number;
+  push_count?: number;
 }
 
 export interface RaceStats {
@@ -106,6 +108,7 @@ export interface StarredUser {
   your_commits: number;
   you_beat_them: boolean;
   tied: boolean;
+  share_slug: string | null;
 }
 
 export interface StarSuggestion {
