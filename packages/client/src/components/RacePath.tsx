@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 interface DayData {
   date: string;
   count: number;
@@ -27,6 +29,7 @@ function formatDate(dateStr: string) {
 }
 
 export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePathProps) {
+  const [hover, setHover] = useState<{ date: string; x: number } | null>(null);
   const axis = buildAxis(you, rival?.data);
   const youMap = toMap(you);
   const rivalMap = rival ? toMap(rival.data) : null;
@@ -75,43 +78,74 @@ export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePat
 
       {/* Bar chart */}
       <div
-        className="flex items-end gap-px mt-4 overflow-hidden"
+        className="relative flex items-end gap-px mt-4 overflow-hidden"
         style={{ height: `${BAR_H}px`, gap: `${GAP}px` }}
+        onMouseLeave={() => setHover(null)}
       >
         {axis.map((date) => {
           const y = youMap.get(date) ?? 0;
           const r = rivalMap?.get(date) ?? 0;
           const yH = Math.max(1, Math.round((y / peak) * BAR_H));
           const rH = Math.max(r > 0 ? 1 : 0, Math.round((r / peak) * BAR_H));
+          const isHovered = hover?.date === date;
+
+          const barProps = {
+            onMouseEnter: (e: React.MouseEvent) => {
+              const rect = (e.currentTarget.parentElement?.parentElement as HTMLElement)?.getBoundingClientRect();
+              const barRect = e.currentTarget.getBoundingClientRect();
+              const x = barRect.left + barRect.width / 2 - (rect?.left ?? 0);
+              setHover({ date, x });
+            },
+          };
 
           if (rival) {
-            // Grouped: two bars side by side per day
             return (
-              <div key={date} className="flex items-end gap-px flex-1 min-w-0">
+              <div key={date} className="flex items-end gap-px flex-1 min-w-0" {...barProps}>
                 <div
-                  className="flex-1 min-w-0"
-                  style={{ height: `${yH}px`, backgroundColor: "#00C853" }}
-                  title={`${date}: you ${y}`}
+                  className="flex-1 min-w-0 transition-opacity"
+                  style={{ height: `${yH}px`, backgroundColor: "#00C853", opacity: hover && !isHovered ? 0.4 : 1 }}
                 />
                 <div
-                  className="flex-1 min-w-0"
-                  style={{ height: `${rH}px`, backgroundColor: "#00FF87" }}
-                  title={`${date}: ${rival.username} ${r}`}
+                  className="flex-1 min-w-0 transition-opacity"
+                  style={{ height: `${rH}px`, backgroundColor: "#00FF87", opacity: hover && !isHovered ? 0.4 : 1 }}
                 />
               </div>
             );
           }
 
-          // Single bar
           return (
             <div
               key={date}
-              className="flex-1 min-w-0"
-              style={{ height: `${yH}px`, backgroundColor: "#00FF87" }}
-              title={`${date}: ${y} commits`}
+              className="flex-1 min-w-0 transition-opacity"
+              style={{ height: `${yH}px`, backgroundColor: "#00FF87", opacity: hover && !isHovered ? 0.4 : 1 }}
+              {...barProps}
             />
           );
         })}
+
+        {/* Tooltip */}
+        {hover && (() => {
+          const y = youMap.get(hover.date) ?? 0;
+          const r = rivalMap?.get(hover.date) ?? 0;
+          return (
+            <div
+              className="absolute bottom-full mb-2 pointer-events-none z-10"
+              style={{ left: `${hover.x}px`, transform: "translateX(-50%)" }}
+            >
+              <div className="bg-arcade-bg border-2 border-arcade-border px-3 py-2 whitespace-nowrap">
+                <p className="font-mono text-[10px] text-arcade-gray mb-1">{formatDate(hover.date)}</p>
+                <p className="font-pixel text-xs text-arcade-white">
+                  {y} commit{y !== 1 ? "s" : ""}
+                </p>
+                {rival && (
+                  <p className="font-pixel text-xs" style={{ color: "#00FF87" }}>
+                    {rival.username}: {r}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Bottom axis labels + peak */}
