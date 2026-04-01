@@ -5,7 +5,7 @@ interface RaceTrackProps {
 }
 
 const CAR_H = 60; // px
-const CAR_BOTTOM_PAD = -16; // px — compensate for transparent padding below wheels in the PNG
+const CAR_BOTTOM_PAD = -18; // px — compensate for transparent padding below wheels in the PNG
 
 function Lane({
   label,
@@ -24,7 +24,7 @@ function Lane({
     <div>
       <div className="flex items-end" style={{ height: `${CAR_H}px` }}>
         <span
-          className="font-pixel text-[9px] w-10 shrink-0 uppercase truncate pb-0.5"
+          className="font-pixel text-[9px] w-10 shrink-0 uppercase truncate"
           style={{ color: isWinner ? "var(--green)" : "var(--muted)" }}
         >
           {label}
