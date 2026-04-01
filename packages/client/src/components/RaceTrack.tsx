@@ -4,6 +4,9 @@ interface RaceTrackProps {
   theirLabel?: string;
 }
 
+const CAR_H = 40; // px
+const WHEEL_OFFSET = 4; // px from bottom of car image to wheel center
+
 export default function RaceTrack({ yourCommits, theirCommits, theirLabel = "them" }: RaceTrackProps) {
   const max = Math.max(yourCommits, theirCommits, 1);
   const TRACK_END = 75;
@@ -11,10 +14,15 @@ export default function RaceTrack({ yourCommits, theirCommits, theirLabel = "the
   const themPct = (theirCommits / max) * TRACK_END;
   const youWin = yourCommits >= theirCommits;
 
+  // Line sits at wheel level: WHEEL_OFFSET px from the bottom of the lane
+  const lineBottom = `${WHEEL_OFFSET}px`;
+  // Car bottom aligned so wheels rest on the line
+  const carBottom = 0;
+
   return (
     <div className="relative pr-16">
-      {/* Shared finish line – centered between both lanes */}
-      <div className="absolute right-0 top-0 bottom-0 flex items-center justify-center z-10">
+      {/* Shared finish line – right side, centered between both lanes */}
+      <div className="absolute right-0 top-0 bottom-0 flex items-center justify-center z-20">
         <img
           src="/finish-line.png"
           alt="finish"
@@ -25,23 +33,25 @@ export default function RaceTrack({ yourCommits, theirCommits, theirLabel = "the
 
       {/* You lane */}
       <div className="mb-2">
-        <div className="flex items-center" style={{ height: "48px" }}>
-          <span className="font-pixel text-[9px] text-arcade-gray w-10 shrink-0 uppercase">you</span>
+        <div className="flex items-end" style={{ height: `${CAR_H + 4}px` }}>
+          <span className="font-pixel text-[9px] text-arcade-gray w-10 shrink-0 uppercase" style={{ paddingBottom: `${WHEEL_OFFSET}px` }}>
+            you
+          </span>
           <div className="flex-1 relative h-full">
-            {/* Solid gray track line */}
+            {/* Track line – stops before the flag area */}
             <div
-              className="absolute left-0 right-0"
-              style={{ bottom: "4px", height: "3px", background: "#444" }}
+              className="absolute left-0"
+              style={{ bottom: lineBottom, height: "1px", background: "#555", right: "0" }}
             />
-            {/* Car – bottom-aligned, on top of line */}
+            {/* Car on top of line */}
             <img
               src={youWin ? "/car-green.png" : "/car-gray.png"}
               alt="your car"
               className="absolute z-10 transition-all duration-500"
               style={{
                 left: `${youPct}%`,
-                bottom: 0,
-                height: "40px",
+                bottom: carBottom,
+                height: `${CAR_H}px`,
                 width: "auto",
                 imageRendering: "pixelated",
               }}
@@ -64,15 +74,15 @@ export default function RaceTrack({ yourCommits, theirCommits, theirLabel = "the
 
       {/* Them lane */}
       <div>
-        <div className="flex items-center" style={{ height: "48px" }}>
-          <span className="font-pixel text-[9px] text-arcade-gray w-10 shrink-0 uppercase truncate">
+        <div className="flex items-end" style={{ height: `${CAR_H + 4}px` }}>
+          <span className="font-pixel text-[9px] text-arcade-gray w-10 shrink-0 uppercase truncate" style={{ paddingBottom: `${WHEEL_OFFSET}px` }}>
             {theirLabel}
           </span>
           <div className="flex-1 relative h-full">
-            {/* Solid gray track line */}
+            {/* Track line */}
             <div
-              className="absolute left-0 right-0"
-              style={{ bottom: "4px", height: "3px", background: "#444" }}
+              className="absolute left-0"
+              style={{ bottom: lineBottom, height: "1px", background: "#555", right: "0" }}
             />
             {/* Car */}
             <img
@@ -81,8 +91,8 @@ export default function RaceTrack({ yourCommits, theirCommits, theirLabel = "the
               className="absolute z-10 transition-all duration-500"
               style={{
                 left: `${themPct}%`,
-                bottom: 0,
-                height: "40px",
+                bottom: carBottom,
+                height: `${CAR_H}px`,
                 width: "auto",
                 imageRendering: "pixelated",
               }}
