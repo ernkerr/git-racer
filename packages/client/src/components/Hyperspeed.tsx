@@ -810,11 +810,21 @@ export default function Hyperspeed({ effectOptions }: { effectOptions?: Partial<
     const merged = { ...GIT_RACER_PRESET, ...effectOptions, colors: { ...GIT_RACER_PRESET.colors, ...effectOptions?.colors } };
     const resolved = { ...merged, distortion: distortions[merged.distortion] ?? distortions.xyDistortion };
 
-    const app = new HyperspeedApp(container, resolved as any);
-    appRef.current = app;
-    app.init();
+    // Wait for the browser to lay out the container before initializing WebGL
+    let rafId: number;
+    const tryInit = () => {
+      if (!container.offsetWidth || !container.offsetHeight) {
+        rafId = requestAnimationFrame(tryInit);
+        return;
+      }
+      const app = new HyperspeedApp(container, resolved as any);
+      appRef.current = app;
+      app.init();
+    };
+    rafId = requestAnimationFrame(tryInit);
 
     return () => {
+      cancelAnimationFrame(rafId);
       if (appRef.current) {
         appRef.current.dispose();
         appRef.current = null;
