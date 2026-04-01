@@ -38,7 +38,7 @@ function Lane({
             className="absolute z-10 transition-all duration-500"
             style={{
               left: `${pct}%`,
-              bottom: "1px",
+              bottom: 0,
               height: `${CAR_H}px`,
               width: "auto",
               imageRendering: "pixelated",
@@ -68,7 +68,7 @@ function Lane({
 
 export default function RaceTrack({ yourCommits, theirCommits, theirLabel = "them" }: RaceTrackProps) {
   const max = Math.max(yourCommits, theirCommits, 1);
-  const TRACK_END = 90;
+  const TRACK_END = 65; // keep cars behind the right edge of the track
   const youPct = (yourCommits / max) * TRACK_END;
   const themPct = (theirCommits / max) * TRACK_END;
   const youWin = yourCommits >= theirCommits;
