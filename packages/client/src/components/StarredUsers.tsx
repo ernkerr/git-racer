@@ -84,6 +84,11 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
                       <span className="font-mono text-[10px] text-arcade-gray leading-tight">
                         @{s.github_username}
                       </span>
+                      {s.known_for && (
+                        <span className="font-mono text-[10px] text-arcade-gray leading-tight block">
+                          {s.known_for}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <button

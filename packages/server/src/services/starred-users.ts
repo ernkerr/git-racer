@@ -114,6 +114,9 @@ export async function getStarredComparisons(
     (slugRows.rows as any[]).map((r) => [r.rival, r.share_slug as string])
   );
 
+  // Build a lookup for known_for from the curated suggestions list
+  const knownForMap = new Map(SUGGESTED_DEVS.map((d) => [d.github_username, d.known_for]));
+
   // Map each starred developer into a comparison result
   return starred.map((s) => {
     const theirCommits = commitMap.get(s.github_username) ?? 0;
@@ -126,6 +129,7 @@ export async function getStarredComparisons(
       you_beat_them: yourCommits > theirCommits,
       tied: yourCommits === theirCommits,
       share_slug: slugMap.get(s.github_username) ?? null,
+      known_for: knownForMap.get(s.github_username),
     };
   });
 }

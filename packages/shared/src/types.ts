@@ -109,6 +109,7 @@ export interface StarredUser {
   you_beat_them: boolean;
   tied: boolean;
   share_slug: string | null;
+  known_for?: string;
 }
 
 export interface StarSuggestion {
