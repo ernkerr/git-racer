@@ -17,6 +17,12 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
   const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
   const [adding, setAdding] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{
+    username: string;
+    displayName: string;
+    shareSlug: string;
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleRace(username: string) {
     if (adding) return;
@@ -52,6 +58,21 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
       onUnstar(username);
     } catch {
       // ignore
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    try {
+      await api(`/challenges/${pendingDelete.shareSlug}`, { method: "DELETE" });
+      await api(`/starred/${pendingDelete.username}`, { method: "DELETE" });
+      onUnstar(pendingDelete.username);
+    } catch {
+      // ignore
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
     }
   }
 
@@ -92,9 +113,16 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
                     </div>
                   </div>
                   <button
-                    onClick={() => handleUnstar(s.github_username)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPendingDelete({
+                        username: s.github_username,
+                        displayName: s.display_name || s.github_username,
+                        shareSlug: s.share_slug ?? "",
+                      });
+                    }}
                     className="text-arcade-gray hover:text-arcade-red transition-colors opacity-0 group-hover:opacity-100"
-                    title="Remove"
+                    title="End race"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -159,6 +187,41 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
         <div className="retro-box bg-arcade-surface p-8 text-center space-y-3">
           <p className="font-pixel text-sm text-arcade-gray">No races yet</p>
           <p className="font-mono text-xs text-arcade-gray">Search for a GitHub user to start your first race.</p>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {pendingDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => !deleting && setPendingDelete(null)}
+        >
+          <div
+            className="retro-box bg-arcade-surface p-6 max-w-sm mx-4 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-pixel text-sm text-arcade-white">END RACE</h3>
+            <p className="font-mono text-xs text-arcade-gray">
+              Are you sure you want to end the race against{" "}
+              <span className="text-arcade-white">{pendingDelete.displayName}</span>?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setPendingDelete(null)}
+                disabled={deleting}
+                className="font-pixel text-xs text-arcade-gray hover:text-arcade-white transition-colors px-3 py-1.5 disabled:opacity-50"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                className="font-pixel text-xs bg-arcade-red/20 text-arcade-red hover:bg-arcade-red/30 transition-colors px-3 py-1.5 rounded border border-arcade-red/40 disabled:opacity-50"
+              >
+                {deleting ? "ENDING..." : "END RACE"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
