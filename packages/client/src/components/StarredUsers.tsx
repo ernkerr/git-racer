@@ -197,11 +197,11 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
           onClick={() => !deleting && setPendingDelete(null)}
         >
           <div
-            className="retro-box bg-arcade-surface p-6 max-w-sm mx-4 space-y-4"
+            className="retro-box bg-arcade-surface p-6 max-w-md mx-4 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="font-pixel text-sm text-arcade-white">END RACE</h3>
-            <p className="font-mono text-xs text-arcade-gray">
+            <p className="font-mono text-xs text-arcade-gray whitespace-nowrap">
               Are you sure you want to end the race against{" "}
               <span className="text-arcade-white">{pendingDelete.displayName}</span>?
             </p>
