@@ -23,7 +23,10 @@ function Lane({
   return (
     <div>
       <div className="flex items-end" style={{ height: `${CAR_H}px` }}>
-        <span className="font-pixel text-[9px] text-arcade-gray w-10 shrink-0 uppercase truncate pb-0.5">
+        <span
+          className="font-pixel text-[9px] w-10 shrink-0 uppercase truncate pb-0.5"
+          style={{ color: isWinner ? "var(--green)" : "var(--muted)" }}
+        >
           {label}
         </span>
         <div className="flex-1 relative h-full">
