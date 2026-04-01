@@ -75,7 +75,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
               key={i}
               x={labelWidth + m.col * step}
               y={10}
-              style={{ fill: "var(--arcade-muted)" }}
+              style={{ fill: "var(--muted)" }}
               fontSize={9}
             >
               {m.label}
@@ -88,7 +88,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
               key={label}
               x={labelWidth - 4}
               y={headerHeight + [1, 3, 5][i] * step + cellSize - 1}
-              style={{ fill: "var(--arcade-muted)" }}
+              style={{ fill: "var(--muted)" }}
               fontSize={9}
               textAnchor="end"
             >
@@ -112,7 +112,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
                   height={cellSize}
                   rx={0}
                   fill={fill}
-                  style={{ stroke: "var(--arcade-border)" }}
+                  style={{ stroke: "var(--border)" }}
                   strokeWidth={0.5}
                   className="cursor-pointer"
                   onMouseEnter={(e) => {
@@ -149,10 +149,10 @@ export default function ContributionGraph({ days, totalYear }: Props) {
         <div
           className="fixed z-50 text-xs px-2 py-1 pointer-events-none whitespace-nowrap border-2"
           style={{
-            backgroundColor: "var(--arcade-text)",
-            color: "var(--arcade-bg)",
-            borderColor: "var(--arcade-border)",
-            boxShadow: "3px 3px 0px var(--arcade-shadow)",
+            backgroundColor: "var(--text)",
+            color: "var(--bg)",
+            borderColor: "var(--border)",
+            boxShadow: "3px 3px 0px var(--shadow)",
             left: tooltip.x,
             top: tooltip.y,
             transform: "translate(-50%, -100%)",

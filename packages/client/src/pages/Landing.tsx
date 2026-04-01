@@ -94,7 +94,7 @@ export default function Landing() {
             { n: "03", title: "RACE OR SPRINT", body: "Set a deadline for a sprint, or run an ongoing race with no end date." },
           ].map(({ n, title, body }) => (
             <div key={n} className="p-5" style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}>
-              <p className="font-pixel text-xl mb-3" style={{ color: "var(--green-dim)" }}>{n}</p>
+              <p className="font-pixel text-xl mb-3" style={{ color: "var(--green-lo)" }}>{n}</p>
               <p className="font-pixel text-xs mb-2" style={{ color: "var(--text)" }}>{title}</p>
               <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>{body}</p>
             </div>

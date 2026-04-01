@@ -32,7 +32,7 @@ export default function LeagueCard({ league }: Props) {
       style={{
         borderColor: config.borderColor,
         borderWidth: "4px",
-        backgroundColor: league.tier === "bronze" ? "var(--arcade-tier-bronze)" : "var(--arcade-surface)",
+        backgroundColor: league.tier === "bronze" ? "var(--arcade-tier-bronze)" : "var(--surface)",
       }}
     >
       {/* Header */}
@@ -100,7 +100,7 @@ export default function LeagueCard({ league }: Props) {
                         ? "var(--arcade-zone-promote)"
                         : isDemoteZone
                         ? "var(--arcade-zone-demote)"
-                        : "var(--arcade-bg)",
+                        : "var(--bg)",
                     }
                   : undefined
               }
