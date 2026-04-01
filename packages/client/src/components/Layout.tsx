@@ -5,7 +5,7 @@ export default function Layout() {
   const { user, login, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-arcade-bg text-arcade-white">
+    <div className="min-h-screen bg-arcade-bg text-arcade-white overflow-x-hidden">
       <div className="racing-stripe" />
 
       <header style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>

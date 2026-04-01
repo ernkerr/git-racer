@@ -6,6 +6,7 @@ import { CHALLENGE_REFRESH_MS } from "@git-racer/shared";
 import type { ChallengeWithLeaderboard, LeaderboardEntry, RefreshPeriod } from "@git-racer/shared";
 import RacePath from "../components/RacePath.tsx";
 import RaceTrack from "../components/RaceTrack.tsx";
+import ShareModal from "../components/ShareModal.tsx";
 
 function RaceTypeBadge({ durationType }: { durationType: string }) {
   const isSprint = durationType === "fixed";
@@ -135,7 +136,7 @@ export default function Challenge() {
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsEndDate, setSettingsEndDate] = useState("");
   const [settingsRefreshPeriod, setSettingsRefreshPeriod] = useState<RefreshPeriod>("weekly");
@@ -204,25 +205,6 @@ export default function Challenge() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const copyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const shareToX = () => {
-    const leader = challenge!.participants[0];
-    const text = leader
-      ? `${leader.github_username} leads "${challenge!.name}" with ${leader.commit_count} commits. Can you beat them?`
-      : `Join my commit race "${challenge!.name}" on Git Racer!`;
-    const url = window.location.href;
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
-      "_blank",
-      "noopener,noreferrer,width=550,height=420"
-    );
   };
 
   if (loading) return <div className="font-pixel text-sm text-arcade-gray">LOADING RACE...</div>;
@@ -294,7 +276,7 @@ export default function Challenge() {
               : ""}
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap shrink-0">
+        <div className="flex gap-2 shrink-0">
           {canJoin && (
             <button
               onClick={handleJoin}
@@ -305,94 +287,16 @@ export default function Challenge() {
             </button>
           )}
           <button
-            onClick={copyLink}
-            className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-xs px-4 py-2"
+            onClick={() => setShowShare(true)}
+            className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-xs px-4 py-2 flex items-center gap-1.5"
           >
-            {copied ? "COPIED!" : "COPY LINK"}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            SHARE
           </button>
-          <button
-            onClick={shareToX}
-            className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-xs px-4 py-2"
-          >
-            SHARE TO X
-          </button>
-          {isCreator && (
-            <>
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-xs px-4 py-2"
-              >
-                SETTINGS
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="btn-arcade font-pixel text-xs px-4 py-2"
-                style={{ borderColor: "#DC2626", backgroundColor: "var(--arcade-zone-demote)", color: "#DC2626" }}
-              >
-                {deleting ? "..." : "DELETE"}
-              </button>
-            </>
-          )}
         </div>
       </div>
-
-      {/* Settings panel */}
-      {showSettings && isCreator && (
-        <div className="retro-box bg-arcade-surface p-4 mb-6 space-y-4">
-          <h3 className="font-pixel text-xs text-arcade-cyan">RACE SETTINGS</h3>
-
-          <div>
-            <label className="block font-pixel text-xs text-arcade-gray mb-2">COUNTING PERIOD</label>
-            <div className="flex gap-2">
-              {([
-                { value: "daily", label: "DAILY" },
-                { value: "weekly", label: "WEEKLY" },
-                { value: "ongoing", label: "ALL TIME" },
-              ] as const).map((p) => (
-                <button
-                  key={p.value}
-                  type="button"
-                  onClick={() => setSettingsRefreshPeriod(p.value)}
-                  className={`btn-arcade flex-1 py-2 font-pixel text-xs ${
-                    settingsRefreshPeriod === p.value
-                      ? "bg-arcade-cyan text-black"
-                      : "bg-arcade-surface text-arcade-gray"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block font-pixel text-xs text-arcade-gray mb-2">END DATE (OPTIONAL)</label>
-            <input
-              type="date"
-              value={settingsEndDate}
-              onChange={(e) => setSettingsEndDate(e.target.value)}
-              className="input-arcade w-full px-3 py-2"
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={handleSaveSettings}
-              disabled={saving}
-              className="btn-arcade bg-arcade-cyan text-white font-pixel text-xs px-4 py-2"
-            >
-              {saving ? "SAVING..." : "SAVE"}
-            </button>
-            <button
-              onClick={() => setShowSettings(false)}
-              className="btn-arcade bg-arcade-surface text-arcade-gray font-pixel text-xs px-4 py-2"
-            >
-              CANCEL
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* 1v1 Head-to-Head display */}
       {show1v1 && (
@@ -573,6 +477,96 @@ export default function Challenge() {
       <p className="font-mono text-xs text-arcade-gray mt-4 text-center">
         Stats refresh automatically every 60 seconds. Commit data cached for up to 4 hours.
       </p>
+
+      {/* Creator controls at bottom */}
+      {isCreator && (
+        <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--border)" }}>
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="btn-arcade bg-arcade-surface text-arcade-white font-pixel text-xs px-4 py-2"
+            >
+              {showSettings ? "HIDE SETTINGS" : "SETTINGS"}
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="btn-arcade font-pixel text-xs px-4 py-2"
+              style={{ borderColor: "#DC2626", backgroundColor: "var(--arcade-zone-demote)", color: "#DC2626" }}
+            >
+              {deleting ? "..." : "DELETE RACE"}
+            </button>
+          </div>
+
+          {showSettings && (
+            <div className="retro-box bg-arcade-surface p-4 space-y-4">
+              <h3 className="font-pixel text-xs text-arcade-cyan">RACE SETTINGS</h3>
+
+              <div>
+                <label className="block font-pixel text-xs text-arcade-gray mb-2">COUNTING PERIOD</label>
+                <div className="flex gap-2">
+                  {([
+                    { value: "daily", label: "DAILY" },
+                    { value: "weekly", label: "WEEKLY" },
+                    { value: "ongoing", label: "ALL TIME" },
+                  ] as const).map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => setSettingsRefreshPeriod(p.value)}
+                      className={`btn-arcade flex-1 py-2 font-pixel text-xs ${
+                        settingsRefreshPeriod === p.value
+                          ? "bg-arcade-cyan text-black"
+                          : "bg-arcade-surface text-arcade-gray"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-pixel text-xs text-arcade-gray mb-2">END DATE (OPTIONAL)</label>
+                <input
+                  type="date"
+                  value={settingsEndDate}
+                  onChange={(e) => setSettingsEndDate(e.target.value)}
+                  className="input-arcade w-full px-3 py-2"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={saving}
+                  className="btn-arcade bg-arcade-cyan text-white font-pixel text-xs px-4 py-2"
+                >
+                  {saving ? "SAVING..." : "SAVE"}
+                </button>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="btn-arcade bg-arcade-surface text-arcade-gray font-pixel text-xs px-4 py-2"
+                >
+                  CANCEL
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Share drawer/modal */}
+      <ShareModal
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        shareText={
+          challenge.participants[0]
+            ? `${challenge.participants[0].github_username} leads "${challenge.name}" with ${challenge.participants[0].commit_count} commits. Can you beat them?`
+            : `Join my commit race "${challenge.name}" on Git Racer!`
+        }
+        shareUrl={window.location.href}
+      />
     </div>
   );
 }
