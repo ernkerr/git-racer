@@ -5,6 +5,7 @@ interface RaceTrackProps {
 }
 
 const CAR_H = 40; // px
+const CAR_BOTTOM_PAD = -8; // px — compensate for transparent padding below wheels in the PNG
 
 function Lane({
   label,
@@ -38,7 +39,7 @@ function Lane({
             className="absolute z-10 transition-all duration-500"
             style={{
               left: `${pct}%`,
-              bottom: 0,
+              bottom: `${CAR_BOTTOM_PAD}px`,
               height: `${CAR_H}px`,
               width: "auto",
               imageRendering: "pixelated",
