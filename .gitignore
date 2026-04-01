@@ -1,9 +1,9 @@
 node_modules
 dist
 .env
+.env.*
 *.local
 .DS_Store
 drizzle/meta
 .vercel
-.env*.local
-.env.local
+*.tsbuildinfo
