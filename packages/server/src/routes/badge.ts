@@ -12,7 +12,7 @@ import { cors } from "hono/cors";
 import { validateGitHubUser } from "../services/github.js";
 import { refreshCommitData, getUserStatsFast } from "../services/commits.js";
 import { computeStreaks } from "../services/streaks.js";
-import { renderStatsBadge, renderErrorBadge } from "../services/badge-svg.js";
+import { renderStatsBadge, renderErrorBadge, type BadgeTheme } from "../services/badge-svg.js";
 import { env } from "../lib/env.js";
 
 export const badgeRoutes = new Hono();
@@ -22,6 +22,7 @@ badgeRoutes.use("*", cors({ origin: "*" }));
 
 badgeRoutes.get("/:username", async (c) => {
   const username = c.req.param("username");
+  const theme = (c.req.query("theme") === "light" ? "light" : "dark") as BadgeTheme;
   const siteUrl = env.SITE_URL || env.CLIENT_URL;
 
   // Validate user exists on GitHub
@@ -29,7 +30,7 @@ badgeRoutes.get("/:username", async (c) => {
   if (!ghUser) {
     c.header("Content-Type", "image/svg+xml");
     c.header("Cache-Control", "public, max-age=300");
-    return c.body(renderErrorBadge("User not found", siteUrl));
+    return c.body(renderErrorBadge("User not found", siteUrl, theme));
   }
 
   // Refresh commit cache (respects 4hr TTL)
@@ -50,6 +51,7 @@ badgeRoutes.get("/:username", async (c) => {
     stats,
     streaks,
     siteUrl,
+    theme,
   });
 
   c.header("Content-Type", "image/svg+xml");

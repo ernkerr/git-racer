@@ -87,8 +87,9 @@ function RaceCard({ ch }: { ch: ActiveChallenge }) {
 function BadgeEmbed({ username, siteUrl }: { username: string; siteUrl: string }) {
   const [copied, setCopied] = useState(false);
 
-  const badgeUrl = `${siteUrl}/api/badge/${username}`;
-  const markdown = `<a href="${siteUrl}"><img src="${badgeUrl}" alt="Git Racer Stats" width="100%"></a>`;
+  const darkUrl = `${siteUrl}/api/badge/${username}?theme=dark`;
+  const lightUrl = `${siteUrl}/api/badge/${username}?theme=light`;
+  const markdown = `[![Git Racer Stats](${darkUrl}#gh-dark-mode-only)](${siteUrl})\n[![Git Racer Stats](${lightUrl}#gh-light-mode-only)](${siteUrl})`;
 
   const copy = () => {
     navigator.clipboard.writeText(markdown).then(() => {
@@ -104,13 +105,11 @@ function BadgeEmbed({ username, siteUrl }: { username: string; siteUrl: string }
       </div>
 
       <div className="mb-3 flex justify-center">
-        <div className="bg-[#0C0C0C] border border-[#2A2A2A] rounded-md p-2 inline-block max-w-full">
-          <img
-            src={`/api/badge/${username}`}
-            alt="Git Racer Stats Badge"
-            className="max-w-full"
-          />
-        </div>
+        <img
+          src={`/api/badge/${username}?theme=dark`}
+          alt="Git Racer Stats Badge"
+          className="max-w-full"
+        />
       </div>
 
       <div className="flex gap-2">
