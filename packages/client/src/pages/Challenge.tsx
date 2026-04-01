@@ -80,36 +80,6 @@ function HeadToHead({
         theirLabel={them.github_username.slice(0, 5)}
       />
 
-      {/* Per-participant stats */}
-      {(you.unique_repos !== undefined || you.push_count !== undefined) && (
-        <div className="grid grid-cols-2 gap-4 mt-3 mb-3">
-          <div className="text-center space-y-1">
-            <div className="flex justify-center gap-4">
-              <div>
-                <p className="font-pixel text-[10px] text-arcade-gray">REPOS</p>
-                <p className="font-pixel text-sm tabular-nums text-arcade-white">{(you.unique_repos ?? 0).toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="font-pixel text-[10px] text-arcade-gray">PUSHES</p>
-                <p className="font-pixel text-sm tabular-nums text-arcade-white">{(you.push_count ?? 0).toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-          <div className="text-center space-y-1">
-            <div className="flex justify-center gap-4">
-              <div>
-                <p className="font-pixel text-[10px] text-arcade-gray">REPOS</p>
-                <p className="font-pixel text-sm tabular-nums text-arcade-white">{(them.unique_repos ?? 0).toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="font-pixel text-[10px] text-arcade-gray">PUSHES</p>
-                <p className="font-pixel text-sm tabular-nums text-arcade-white">{(them.push_count ?? 0).toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Status line */}
       <p className="font-pixel text-sm text-center" style={{
         color: youWin ? "#00C853" : tied ? "#EAB308" : "#00E676"
