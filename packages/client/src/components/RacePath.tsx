@@ -148,13 +148,10 @@ export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePat
         })()}
       </div>
 
-      {/* Bottom axis labels + peak */}
+      {/* Bottom axis labels */}
       <div className="flex items-center justify-between mt-2">
         <span className="font-mono text-[10px] text-arcade-gray">
           {firstDate ? formatDate(firstDate) : ""}
-        </span>
-        <span className="font-mono text-[10px] text-arcade-gray">
-          V_PEAK: {peak} CO/D
         </span>
         <span className="font-mono text-[10px] text-arcade-gray">
           {lastDate ? formatDate(lastDate) : ""}
