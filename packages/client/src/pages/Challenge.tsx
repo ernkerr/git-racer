@@ -72,11 +72,21 @@ function HeadToHead({
         </div>
       </div>
 
-      {/* Race track visualization */}
+      {/* Race track visualization — showing both styles for comparison */}
+      <p className="font-pixel text-[9px] text-arcade-gray mb-1">ASPHALT STYLE</p>
       <RaceTrack
         yourCommits={you.commit_count}
         theirCommits={them.commit_count}
         theirLabel={them.github_username.slice(0, 5)}
+        trackStyle="asphalt"
+      />
+      <div className="mt-4" />
+      <p className="font-pixel text-[9px] text-arcade-gray mb-1">RETRO STYLE</p>
+      <RaceTrack
+        yourCommits={you.commit_count}
+        theirCommits={them.commit_count}
+        theirLabel={them.github_username.slice(0, 5)}
+        trackStyle="retro"
       />
 
       {/* Per-participant stats */}
