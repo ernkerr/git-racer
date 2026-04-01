@@ -5,6 +5,7 @@ import { useAuth } from "../lib/auth.tsx";
 import { CHALLENGE_REFRESH_MS } from "@git-racer/shared";
 import type { ChallengeWithLeaderboard, LeaderboardEntry, RefreshPeriod } from "@git-racer/shared";
 import RacePath from "../components/RacePath.tsx";
+import RaceTrack from "../components/RaceTrack.tsx";
 
 function RaceTypeBadge({ durationType }: { durationType: string }) {
   const isSprint = durationType === "fixed";
@@ -36,8 +37,6 @@ function HeadToHead({
   const youWin = you.commit_count > them.commit_count;
   const tied = you.commit_count === them.commit_count;
   const gap = Math.abs(you.commit_count - them.commit_count);
-  const total = you.commit_count + them.commit_count;
-  const youPct = total > 0 ? (you.commit_count / total) * 100 : 50;
 
   return (
     <div className="retro-box bg-arcade-surface p-5 mb-6">
@@ -73,31 +72,16 @@ function HeadToHead({
         </div>
       </div>
 
-      {/* VS divider bar */}
-      <div className="relative h-6 mb-3">
-        <div className="absolute inset-y-0 left-0 right-0 flex">
-          <div
-            className="h-full transition-all duration-500"
-            style={{
-              width: `${youPct}%`,
-              backgroundColor: youWin ? "#00C853" : tied ? "#EAB308" : "#374151",
-            }}
-          />
-          <div
-            className="h-full flex-1"
-            style={{
-              backgroundColor: !youWin && !tied ? "#00C853" : "#374151",
-            }}
-          />
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="font-pixel text-xs text-black bg-arcade-white px-2 z-10">VS</span>
-        </div>
-      </div>
+      {/* Race track visualization */}
+      <RaceTrack
+        yourCommits={you.commit_count}
+        theirCommits={them.commit_count}
+        theirLabel={them.github_username.slice(0, 5)}
+      />
 
       {/* Per-participant stats */}
       {(you.unique_repos !== undefined || you.push_count !== undefined) && (
-        <div className="grid grid-cols-2 gap-4 mb-3">
+        <div className="grid grid-cols-2 gap-4 mt-3 mb-3">
           <div className="text-center space-y-1">
             <div className="flex justify-center gap-4">
               <div>
