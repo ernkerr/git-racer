@@ -4,8 +4,8 @@ interface RaceTrackProps {
   theirLabel?: string;
 }
 
-const CAR_H = 52; // px
-const CAR_BOTTOM_PAD = -12; // px — compensate for transparent padding below wheels in the PNG
+const CAR_H = 60; // px
+const CAR_BOTTOM_PAD = -16; // px — compensate for transparent padding below wheels in the PNG
 
 function Lane({
   label,
