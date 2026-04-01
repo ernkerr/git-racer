@@ -11,7 +11,6 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { validateGitHubUser } from "../services/github.js";
 import { refreshCommitData, getUserStatsFast } from "../services/commits.js";
-import { computeStreaks } from "../services/streaks.js";
 import { renderStatsBadge, renderErrorBadge, type BadgeTheme } from "../services/badge-svg.js";
 import { env } from "../lib/env.js";
 
@@ -40,16 +39,11 @@ badgeRoutes.get("/:username", async (c) => {
     console.error(`[badge] refreshCommitData failed for ${ghUser.login}:`, e);
   }
 
-  // Fetch stats and streaks in parallel
-  const [stats, streaks] = await Promise.all([
-    getUserStatsFast(ghUser.login),
-    computeStreaks(ghUser.login),
-  ]);
+  const stats = await getUserStatsFast(ghUser.login);
 
   const svg = renderStatsBadge({
     username: ghUser.login,
     stats,
-    streaks,
     siteUrl,
     theme,
   });

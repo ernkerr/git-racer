@@ -18,17 +18,9 @@ interface BadgeStats {
   all_time: number;
 }
 
-interface BadgeStreaks {
-  current_streak: number;
-  longest_streak: number;
-  trend_percent: number;
-  this_week: number;
-}
-
 interface RenderOptions {
   username: string;
   stats: BadgeStats;
-  streaks: BadgeStreaks;
   siteUrl: string;
   theme?: BadgeTheme;
 }
@@ -60,7 +52,7 @@ const THEMES = {
 
 const FONT = "'Segoe UI', Ubuntu, 'Helvetica Neue', sans-serif";
 
-const CAR_PNG_B64 = "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";
+const CAR_PNG_B64 = "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";
 
 function escapeXml(str: string): string {
   return str
@@ -79,43 +71,38 @@ function fmt(n: number): string {
  * Render a stats badge SVG card for a GitHub user.
  */
 export function renderStatsBadge(options: RenderOptions): string {
-  const { username, stats, streaks, siteUrl, theme = "dark" } = options;
+  const { username, stats, siteUrl, theme = "dark" } = options;
   const t = THEMES[theme] ?? THEMES.dark;
   const safe = escapeXml(username);
 
-  const trendSign = streaks.trend_percent >= 0 ? "+" : "";
-  const trendArrow = streaks.trend_percent > 0 ? " ↑" : streaks.trend_percent < 0 ? " ↓" : "";
-  const trendColor =
-    streaks.trend_percent > 0 ? t.accent : streaks.trend_percent < 0 ? t.red : t.muted;
-  const trendText = `${trendSign}${streaks.trend_percent}%${trendArrow}`;
+  // Car: 80x53 source, rendered at 60x40 in SVG for sharpness
+  const carW = 60;
+  const carH = 40;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="700" height="195" viewBox="0 0 700 195" fill="none">
   <rect x="0.5" y="0.5" width="699" height="194" rx="4.5" fill="${t.bg}" stroke="${t.border}"/>
 
   <!-- Title bar -->
   <text x="20" y="32" font-family="${FONT}" font-size="14" font-weight="700" fill="${t.accent}">⚡ ${safe}'s Git Racer Stats</text>
-  <image x="648" y="12" width="30" height="20" href="data:image/png;base64,${CAR_PNG_B64}"/>
+  <image x="${700 - carW - 25}" y="${Math.round((44 - carH) / 2)}" width="${carW}" height="${carH}" href="data:image/png;base64,${CAR_PNG_B64}"/>
   <line x1="20" y1="44" x2="680" y2="44" stroke="${t.accent}" stroke-opacity="0.3" stroke-width="1"/>
 
-  <!-- Row 1: This Week | Current Streak | Longest Streak -->
-  <text x="20" y="72" font-family="${FONT}" font-size="11" fill="${t.muted}" text-transform="uppercase" letter-spacing="0.5">THIS WEEK</text>
-  <text x="20" y="92" font-family="${FONT}" font-size="18" font-weight="700" fill="${t.value}">${fmt(stats.this_week)}</text>
+  <!-- Row 1: Today | This Week | This Month -->
+  <text x="20" y="72" font-family="${FONT}" font-size="11" fill="${t.muted}" letter-spacing="0.5">TODAY</text>
+  <text x="20" y="92" font-family="${FONT}" font-size="18" font-weight="700" fill="${t.value}">${fmt(stats.today)}</text>
 
-  <text x="250" y="72" font-family="${FONT}" font-size="11" fill="${t.muted}" letter-spacing="0.5">CURRENT STREAK</text>
-  <text x="250" y="92" font-family="${FONT}" font-size="18" font-weight="700" fill="${t.value}">${streaks.current_streak} <tspan font-size="12" fill="${t.muted}">days</tspan></text>
+  <text x="250" y="72" font-family="${FONT}" font-size="11" fill="${t.muted}" letter-spacing="0.5">THIS WEEK</text>
+  <text x="250" y="92" font-family="${FONT}" font-size="18" font-weight="700" fill="${t.value}">${fmt(stats.this_week)}</text>
 
-  <text x="480" y="72" font-family="${FONT}" font-size="11" fill="${t.muted}" letter-spacing="0.5">LONGEST STREAK</text>
-  <text x="480" y="92" font-family="${FONT}" font-size="18" font-weight="700" fill="${t.value}">${streaks.longest_streak} <tspan font-size="12" fill="${t.muted}">days</tspan></text>
+  <text x="480" y="72" font-family="${FONT}" font-size="11" fill="${t.muted}" letter-spacing="0.5">THIS MONTH</text>
+  <text x="480" y="92" font-family="${FONT}" font-size="18" font-weight="700" fill="${t.value}">${fmt(stats.this_month)}</text>
 
-  <!-- Row 2: All-Time | This Year | Trend -->
-  <text x="20" y="122" font-family="${FONT}" font-size="11" fill="${t.muted}" letter-spacing="0.5">ALL-TIME</text>
-  <text x="20" y="142" font-family="${FONT}" font-size="18" font-weight="700" fill="${t.value}">${fmt(stats.all_time)}</text>
+  <!-- Row 2: This Year | All Time -->
+  <text x="20" y="122" font-family="${FONT}" font-size="11" fill="${t.muted}" letter-spacing="0.5">THIS YEAR</text>
+  <text x="20" y="142" font-family="${FONT}" font-size="18" font-weight="700" fill="${t.value}">${fmt(stats.this_year)}</text>
 
-  <text x="250" y="122" font-family="${FONT}" font-size="11" fill="${t.muted}" letter-spacing="0.5">THIS YEAR</text>
-  <text x="250" y="142" font-family="${FONT}" font-size="18" font-weight="700" fill="${t.value}">${fmt(stats.this_year)}</text>
-
-  <text x="480" y="122" font-family="${FONT}" font-size="11" fill="${t.muted}" letter-spacing="0.5">WEEK TREND</text>
-  <text x="480" y="142" font-family="${FONT}" font-size="18" font-weight="700" fill="${trendColor}">${escapeXml(trendText)}</text>
+  <text x="250" y="122" font-family="${FONT}" font-size="11" fill="${t.muted}" letter-spacing="0.5">ALL TIME</text>
+  <text x="250" y="142" font-family="${FONT}" font-size="18" font-weight="700" fill="${t.value}">${fmt(stats.all_time)}</text>
 
   <!-- Footer -->
   <line x1="20" y1="160" x2="680" y2="160" stroke="${t.muted}" stroke-opacity="0.3" stroke-width="1"/>
