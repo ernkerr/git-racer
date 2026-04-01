@@ -52,7 +52,7 @@ function HeadToHead({
           <p className="font-pixel text-xs text-arcade-gray">{you.github_username}</p>
           <p
             className="font-pixel text-4xl tabular-nums mt-1"
-            style={{ color: youWin ? "#00C853" : tied ? "#EAB308" : "var(--arcade-white)" }}
+            style={{ color: youWin ? "#00C853" : tied ? "#EAB308" : "var(--text)" }}
           >
             {you.commit_count.toLocaleString()}
           </p>
@@ -66,7 +66,7 @@ function HeadToHead({
           <p className="font-pixel text-xs text-arcade-gray">{them.github_username}</p>
           <p
             className="font-pixel text-4xl tabular-nums mt-1"
-            style={{ color: !youWin && !tied ? "#00C853" : tied ? "#EAB308" : "var(--arcade-white)" }}
+            style={{ color: !youWin && !tied ? "#00C853" : tied ? "#EAB308" : "var(--text)" }}
           >
             {them.commit_count.toLocaleString()}
           </p>
@@ -264,16 +264,11 @@ export default function Challenge() {
             {challenge.name}
           </h1>
           <p className="font-mono text-xs text-arcade-gray">
-            {challenge.refresh_period === "daily"
-              ? "Resets daily"
-              : challenge.refresh_period === "weekly"
-              ? "Resets every Monday"
-              : `Since ${new Date(challenge.start_date).toLocaleDateString()}`}
             {challenge.end_date
-              ? ` · ends ${new Date(challenge.end_date).toLocaleDateString()}`
+              ? `Ends ${new Date(challenge.end_date).toLocaleDateString()}`
               : isGoal
-              ? ` · first to ${challenge.goal_target} ${challenge.goal_metric}`
-              : ""}
+              ? `First to ${challenge.goal_target} ${challenge.goal_metric}`
+              : `Since ${new Date(challenge.start_date).toLocaleDateString()}`}
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
@@ -474,9 +469,12 @@ export default function Challenge() {
         </div>
       )}
 
-      <p className="font-mono text-xs text-arcade-gray mt-4 text-center">
-        Stats refresh automatically every 60 seconds. Commit data cached for up to 4 hours.
-      </p>
+      <div className="font-mono text-xs text-arcade-gray mt-4 text-center space-y-1">
+        {challenge.refresh_period === "daily" && <p>Counts reset daily at midnight UTC.</p>}
+        {challenge.refresh_period === "weekly" && <p>Counts reset every Monday at midnight UTC.</p>}
+        <p>Stats refresh automatically every 60 seconds.</p>
+        <p>Commit data cached for up to 4 hours.</p>
+      </div>
 
       {/* Creator controls at bottom */}
       {isCreator && (
