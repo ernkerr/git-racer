@@ -19,9 +19,9 @@ function Lane({
 }) {
   return (
     <div>
-      <div className="flex items-end h-8 sm:h-10 md:h-[60px]">
+      <div className="flex items-end h-5 sm:h-8 md:h-[60px]">
         <span
-          className="font-pixel text-[9px] w-10 shrink-0 uppercase truncate"
+          className="font-pixel text-[7px] sm:text-[8px] md:text-[9px] w-6 sm:w-8 md:w-10 shrink-0 uppercase truncate"
           style={{ color: isWinner ? "var(--green)" : "var(--muted)" }}
         >
           {label}
@@ -36,7 +36,7 @@ function Lane({
           <img
             src={carSrc}
             alt={`${label} car`}
-            className="absolute z-10 transition-all duration-500 h-8 sm:h-10 md:h-[60px] w-auto bottom-0"
+            className="absolute z-10 transition-all duration-500 h-5 sm:h-8 md:h-[60px] w-auto bottom-0"
             style={{
               left: `${pct}%`,
               imageRendering: "pixelated",
@@ -46,10 +46,10 @@ function Lane({
       </div>
       {/* Commit count */}
       <div className="flex items-center">
-        <span className="w-10 shrink-0" />
-        <div className="flex-1 relative h-4">
+        <span className="w-6 sm:w-8 md:w-10 shrink-0" />
+        <div className="flex-1 relative h-3 sm:h-4">
           <span
-            className="font-mono text-[10px] absolute"
+            className="font-mono text-[8px] sm:text-[10px] absolute"
             style={{
               left: `${pct}%`,
               color: isWinner ? "var(--green)" : "var(--muted)",
@@ -72,9 +72,9 @@ export default function RaceTrack({ yourCommits, theirCommits, theirLabel = "the
   const youWin = yourCommits >= theirCommits;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
       {/* Track lanes */}
-      <div className="flex-1 space-y-2">
+      <div className="flex-1 space-y-1 sm:space-y-2">
         <Lane
           label="you"
           carSrc={youWin ? "/car-green.png" : "/car-gray.png"}
@@ -96,7 +96,7 @@ export default function RaceTrack({ yourCommits, theirCommits, theirLabel = "the
         <img
           src="/finish-line.png"
           alt="finish"
-          className="h-16 sm:h-20 md:h-28 w-auto"
+          className="h-10 sm:h-16 md:h-28 w-auto"
           style={{ imageRendering: "pixelated" }}
         />
       </div>
