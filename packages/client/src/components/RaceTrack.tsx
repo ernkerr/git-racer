@@ -4,9 +4,6 @@ interface RaceTrackProps {
   theirLabel?: string;
 }
 
-const CAR_H = 60; // px
-const CAR_BOTTOM_PAD = 0; // px — images are now cropped to content
-
 function Lane({
   label,
   carSrc,
@@ -22,7 +19,7 @@ function Lane({
 }) {
   return (
     <div>
-      <div className="flex items-end" style={{ height: `${CAR_H}px` }}>
+      <div className="flex items-end h-8 sm:h-10 md:h-[60px]">
         <span
           className="font-pixel text-[9px] w-10 shrink-0 uppercase truncate"
           style={{ color: isWinner ? "var(--green)" : "var(--muted)" }}
@@ -39,12 +36,9 @@ function Lane({
           <img
             src={carSrc}
             alt={`${label} car`}
-            className="absolute z-10 transition-all duration-500"
+            className="absolute z-10 transition-all duration-500 h-8 sm:h-10 md:h-[60px] w-auto bottom-0"
             style={{
               left: `${pct}%`,
-              bottom: `${CAR_BOTTOM_PAD}px`,
-              height: `${CAR_H}px`,
-              width: "auto",
               imageRendering: "pixelated",
             }}
           />
@@ -102,7 +96,7 @@ export default function RaceTrack({ yourCommits, theirCommits, theirLabel = "the
         <img
           src="/finish-line.png"
           alt="finish"
-          className="h-28 w-auto"
+          className="h-16 sm:h-20 md:h-28 w-auto"
           style={{ imageRendering: "pixelated" }}
         />
       </div>
