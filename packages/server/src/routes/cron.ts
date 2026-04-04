@@ -102,17 +102,23 @@ cronRoutes.post("/daily-seed", async (c) => {
 
     // Resume from where we left off (cursor) to handle GitHub rate limits gracefully
     const remaining = usernames.slice(cursor);
-    const from = new Date(dateStr + "T00:00:00Z");
+    // Fetch the full current week (Monday through today) so that league
+    // leaderboards have complete data even if a previous day's run was missed.
+    const dayOfWeek = new Date().getDay() || 7;
+    const monday = new Date();
+    monday.setDate(monday.getDate() - dayOfWeek + 1);
+    const mondayStr = monday.toISOString().slice(0, 10);
+    const from = new Date(mondayStr + "T00:00:00Z");
     const to = new Date(dateStr + "T23:59:59Z");
 
     const { data: contributionData, processed } =
       await fetchBatchContributionDays(remaining, from, to);
 
-    // Flatten the per-user contribution days into snapshot rows for today only
+    // Flatten the per-user contribution days into snapshot rows for the week
     const rows: { github_username: string; date: string; commit_count: number }[] = [];
     for (const [username, days] of contributionData) {
       for (const day of days) {
-        if (day.date === dateStr) {
+        if (day.date >= mondayStr && day.date <= dateStr) {
           rows.push({
             github_username: username,
             date: day.date,
