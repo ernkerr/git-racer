@@ -19,7 +19,7 @@ function Lane({
 }) {
   return (
     <div>
-      <div className="flex items-end h-5 sm:h-[60px]">
+      <div className="flex items-end h-5 sm:h-10">
         <span
           className="font-pixel text-[7px] sm:text-[9px] w-6 sm:w-10 shrink-0 uppercase truncate"
           style={{ color: isWinner ? "var(--green)" : "var(--muted)" }}
@@ -36,7 +36,7 @@ function Lane({
           <img
             src={carSrc}
             alt={`${label} car`}
-            className="absolute z-10 transition-all duration-500 h-5 sm:h-[60px] w-auto bottom-0"
+            className="absolute z-10 transition-all duration-500 h-5 sm:h-10 w-auto bottom-0"
             style={{
               left: `${pct}%`,
               imageRendering: "pixelated",
@@ -96,7 +96,7 @@ export default function RaceTrack({ yourCommits, theirCommits, theirLabel = "the
         <img
           src="/finish-line.png"
           alt="finish"
-          className="h-10 sm:h-28 w-auto"
+          className="h-10 sm:h-20 w-auto"
           style={{ imageRendering: "pixelated" }}
         />
       </div>
