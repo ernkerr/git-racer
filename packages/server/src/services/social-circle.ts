@@ -124,11 +124,13 @@ export async function getSocialCircleRanking(
   }
 
   // Refresh commit data for followed users so numbers are current.
-  // Cap at 50 to stay within GitHub API rate limits; fire-and-forget errors.
+  // Use the user's OAuth token for their own data (includes private repos),
+  // server app token for everyone else. Cap at 50 to stay within rate limits.
   const toRefresh = followingUsernames.slice(0, 50);
-  await Promise.all(
-    toRefresh.map((u) => refreshCommitData(u).catch(() => {}))
-  );
+  await Promise.all([
+    refreshCommitData(username, token).catch(() => {}),
+    ...toRefresh.map((u) => refreshCommitData(u).catch(() => {})),
+  ]);
 
   const currentWeekStart = weekStart();
   const currentDay = today();
