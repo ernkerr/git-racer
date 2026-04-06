@@ -10,6 +10,7 @@ import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { SOCIAL_CIRCLE_CACHE_MS } from "@git-racer/shared";
 import type { SocialCircleData } from "@git-racer/shared";
 import { today, weekStart } from "../lib/dates.js";
+import { refreshCommitData } from "./commits.js";
 
 /**
  * Fetch the full "following" list for a GitHub user and replace the local cache.
@@ -121,6 +122,13 @@ export async function getSocialCircleRanking(
   if (followingUsernames.length === 0) {
     return { entries: [], your_rank: 0, total: 0 };
   }
+
+  // Refresh commit data for followed users so numbers are current.
+  // Cap at 50 to stay within GitHub API rate limits; fire-and-forget errors.
+  const toRefresh = followingUsernames.slice(0, 50);
+  await Promise.all(
+    toRefresh.map((u) => refreshCommitData(u).catch(() => {}))
+  );
 
   const currentWeekStart = weekStart();
   const currentDay = today();

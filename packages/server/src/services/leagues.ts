@@ -32,6 +32,7 @@ import {
   LEAGUE_TIERS,
 } from "@git-racer/shared";
 import type { LeagueTier } from "@git-racer/shared";
+import { refreshCommitData } from "./commits.js";
 
 /**
  * Return the Monday (start of ISO week) for the week containing `d`.
@@ -123,11 +124,17 @@ export async function getUserLeague(userId: number, username: string) {
       )
     );
 
+  // Refresh commit data for all group members so the leaderboard is current.
+  // Each call respects a 4-hour TTL cache, so repeated views are cheap.
+  const memberUsernames = groupMembers.map((m) => m.github_username);
+  await Promise.all(
+    memberUsernames.map((u) => refreshCommitData(u).catch(() => {}))
+  );
+
   // --- Live leaderboard data ---
   // Sum each group member's daily commit snapshots from Monday through today
   // to produce the real-time weekly commit total shown on the leaderboard.
   const todayStr = dateStr(new Date());
-  const memberUsernames = groupMembers.map((m) => m.github_username);
 
   // Query: aggregate commit_snapshots rows for all group members within the
   // current week window (weekStart..today). Uses an IN clause built

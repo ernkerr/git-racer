@@ -10,6 +10,7 @@ import { db } from "../db/index.js";
 import { famousDevs, commitSnapshots, userBenchmarks } from "../db/schema.js";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { periodRange } from "../lib/dates.js";
+import { refreshCommitData } from "./commits.js";
 
 /**
  * Curated list of notable open-source developers.
@@ -145,6 +146,11 @@ export async function getBenchmarks(
   ];
 
   if (allUsernames.length === 0) return [];
+
+  // Refresh commit data for all benchmark devs so numbers are current
+  await Promise.all(
+    allUsernames.map((u) => refreshCommitData(u).catch(() => {}))
+  );
 
   // Step 3: Bulk-fetch commit totals for all benchmark developers in one query.
   // Uses a dynamic IN clause built from the combined username list.

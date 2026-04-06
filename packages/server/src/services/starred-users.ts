@@ -9,6 +9,7 @@ import { db } from "../db/index.js";
 import { userBenchmarks, commitSnapshots, eventCommitters, challenges, challengeParticipants } from "../db/schema.js";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { periodRange } from "../lib/dates.js";
+import { refreshCommitData } from "./commits.js";
 
 /**
  * Build commit-count comparisons between the authenticated user and every
@@ -49,6 +50,11 @@ export async function getStarredComparisons(
 
   // Include the user themselves so we fetch their commits in the same query
   const allUsernames = [username, ...starred.map((s) => s.github_username)];
+
+  // Refresh commit data for all starred users so numbers are current
+  await Promise.all(
+    allUsernames.map((u) => refreshCommitData(u).catch(() => {}))
+  );
 
   // Blending query: we have two independent commit-count sources:
   //   - event_committers: populated from GH Archive (public push events)
