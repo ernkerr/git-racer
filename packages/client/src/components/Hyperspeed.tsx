@@ -797,13 +797,6 @@ export default function Hyperspeed({ effectOptions }: { effectOptions?: Partial<
   const appRef = useRef<HyperspeedApp | null>(null);
 
   useEffect(() => {
-    if (appRef.current) {
-      appRef.current.dispose();
-      appRef.current = null;
-      const container = containerRef.current;
-      if (container) while (container.firstChild) container.removeChild(container.firstChild);
-    }
-
     const container = containerRef.current;
     if (!container) return;
 
@@ -815,12 +808,12 @@ export default function Hyperspeed({ effectOptions }: { effectOptions?: Partial<
     app.init();
 
     return () => {
-      if (appRef.current) {
-        appRef.current.dispose();
-        appRef.current = null;
-      }
+      app.dispose();
+      appRef.current = null;
+      while (container.firstChild) container.removeChild(container.firstChild);
     };
-  }, [effectOptions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div
