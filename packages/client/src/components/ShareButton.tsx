@@ -71,7 +71,7 @@ export default function ShareButton() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-1 retro-box bg-arcade-surface z-50 min-w-[160px]">
+        <div className="absolute right-0 mt-1 retro-box bg-arcade-surface z-50 min-w-[180px]">
           <button
             onClick={handleCopy}
             className="w-full text-left px-3 py-2.5 text-sm font-medium text-arcade-white hover:bg-arcade-bg transition-colors flex items-center gap-2"
@@ -84,6 +84,101 @@ export default function ShareButton() {
             className="w-full text-left px-3 py-2.5 text-sm font-medium text-arcade-white hover:bg-arcade-bg transition-colors flex items-center gap-2"
           >
             Share to X
+          </button>
+          <div className="border-t-2 border-arcade-border" />
+          <button
+            onClick={async () => {
+              const data = shareData || (await fetchShareData());
+              if (!data) return;
+              window.open(
+                `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(data.url)}`,
+                "_blank",
+                "noopener,noreferrer,width=550,height=420"
+              );
+              setOpen(false);
+            }}
+            className="w-full text-left px-3 py-2.5 text-sm font-medium text-arcade-white hover:bg-arcade-bg transition-colors flex items-center gap-2"
+          >
+            LinkedIn
+          </button>
+          <div className="border-t-2 border-arcade-border" />
+          <button
+            onClick={async () => {
+              const data = shareData || (await fetchShareData());
+              if (!data) return;
+              window.open(
+                `https://www.reddit.com/submit?url=${encodeURIComponent(data.url)}&title=${encodeURIComponent(data.text)}`,
+                "_blank",
+                "noopener,noreferrer,width=550,height=420"
+              );
+              setOpen(false);
+            }}
+            className="w-full text-left px-3 py-2.5 text-sm font-medium text-arcade-white hover:bg-arcade-bg transition-colors flex items-center gap-2"
+          >
+            Reddit
+          </button>
+          <div className="border-t-2 border-arcade-border" />
+          <button
+            onClick={async () => {
+              const data = shareData || (await fetchShareData());
+              if (!data) return;
+              window.open(
+                `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(data.url)}`,
+                "_blank",
+                "noopener,noreferrer,width=550,height=420"
+              );
+              setOpen(false);
+            }}
+            className="w-full text-left px-3 py-2.5 text-sm font-medium text-arcade-white hover:bg-arcade-bg transition-colors flex items-center gap-2"
+          >
+            Facebook
+          </button>
+          <div className="border-t-2 border-arcade-border" />
+          <button
+            onClick={async () => {
+              const data = shareData || (await fetchShareData());
+              if (!data) return;
+              window.open(
+                `https://wa.me/?text=${encodeURIComponent(data.text)}`,
+                "_blank",
+                "noopener,noreferrer"
+              );
+              setOpen(false);
+            }}
+            className="w-full text-left px-3 py-2.5 text-sm font-medium text-arcade-white hover:bg-arcade-bg transition-colors flex items-center gap-2"
+          >
+            WhatsApp
+          </button>
+          <div className="border-t-2 border-arcade-border" />
+          <button
+            onClick={async () => {
+              const data = shareData || (await fetchShareData());
+              if (!data) return;
+              window.open(
+                `https://t.me/share/url?url=${encodeURIComponent(data.url)}&text=${encodeURIComponent(data.text)}`,
+                "_blank",
+                "noopener,noreferrer"
+              );
+              setOpen(false);
+            }}
+            className="w-full text-left px-3 py-2.5 text-sm font-medium text-arcade-white hover:bg-arcade-bg transition-colors flex items-center gap-2"
+          >
+            Telegram
+          </button>
+          <div className="border-t-2 border-arcade-border" />
+          <button
+            onClick={async () => {
+              const data = shareData || (await fetchShareData());
+              if (!data) return;
+              window.open(
+                `mailto:?subject=${encodeURIComponent("Check out my Git Racer stats!")}&body=${encodeURIComponent(data.text)}`,
+                "_self"
+              );
+              setOpen(false);
+            }}
+            className="w-full text-left px-3 py-2.5 text-sm font-medium text-arcade-white hover:bg-arcade-bg transition-colors flex items-center gap-2"
+          >
+            Email
           </button>
         </div>
       )}
