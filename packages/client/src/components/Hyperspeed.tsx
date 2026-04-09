@@ -795,10 +795,21 @@ class HyperspeedApp {
 export default function Hyperspeed({ effectOptions }: { effectOptions?: Partial<EffectOptions> }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<HyperspeedApp | null>(null);
+  const disposeTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
+    // If a previous instance still exists (StrictMode re-mount), keep it
+    if (appRef.current && !appRef.current.disposed) {
+      // Cancel any pending disposal from the StrictMode fake unmount
+      if (disposeTimerRef.current !== null) {
+        clearTimeout(disposeTimerRef.current);
+        disposeTimerRef.current = null;
+      }
+      return;
+    }
 
     const merged = { ...GIT_RACER_PRESET, ...effectOptions, colors: { ...GIT_RACER_PRESET.colors, ...effectOptions?.colors } };
     const resolved = { ...merged, distortion: distortions[merged.distortion] ?? distortions.xyDistortion };
@@ -808,9 +819,12 @@ export default function Hyperspeed({ effectOptions }: { effectOptions?: Partial<
     app.init();
 
     return () => {
-      app.dispose();
-      appRef.current = null;
-      while (container.firstChild) container.removeChild(container.firstChild);
+      // Defer disposal so StrictMode re-mount can cancel it
+      disposeTimerRef.current = window.setTimeout(() => {
+        app.dispose();
+        appRef.current = null;
+        while (container.firstChild) container.removeChild(container.firstChild);
+      }, 0);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
