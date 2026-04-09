@@ -172,5 +172,6 @@ export interface ShareData {
   text: string;
   tweet: string;
   url: string;
+  og_image: string;
   week_label: string;
 }

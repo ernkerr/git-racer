@@ -235,10 +235,13 @@ meRoutes.get("/share", async (c) => {
     : "";
   const tweet = `I made ${totalWeekCommits} commits this week${streakText}. Think you can keep up?\n\n${env.CLIENT_URL}`;
 
+  const siteUrl = env.SITE_URL || env.CLIENT_URL;
+
   return c.json({
     text: shareText,
     tweet,
     url: env.CLIENT_URL,
+    og_image: `${siteUrl}/api/og/u/${username}/image`,
     week_label: weekLabel,
   });
 });
