@@ -609,6 +609,9 @@ class HyperspeedApp {
     this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
     this.renderer.setSize(initW, initH, false);
     this.renderer.setPixelRatio(window.devicePixelRatio);
+    // Ensure canvas fills container regardless of initial buffer size
+    this.renderer.domElement.style.width = "100%";
+    this.renderer.domElement.style.height = "100%";
     this.composer = new EffectComposer(this.renderer);
     container.append(this.renderer.domElement);
 
