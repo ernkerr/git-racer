@@ -16,10 +16,9 @@
  */
 import { Hono } from "hono";
 import { db } from "../db/index.js";
-import { challenges, users } from "../db/schema.js";
+import { challenges } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
 import { env } from "../lib/env.js";
-import { renderChallengeOgImage, renderUserOgImage } from "../services/og-image.js";
 import { getUserStatsFast, refreshCommitData } from "../services/commits.js";
 import { computeStreaks } from "../services/streaks.js";
 import { isoWeek } from "../lib/dates.js";
@@ -156,6 +155,8 @@ ogRoutes.get("/c/:slug/image", async (c) => {
     (r) => ({ username: r.github_username, commits: Number(r.commit_count) })
   );
 
+  // Lazy-load @vercel/og so it doesn't affect cold-start for other routes
+  const { renderChallengeOgImage } = await import("../services/og-image.js");
   const response = renderChallengeOgImage({
     name: challenge.name,
     participants,
@@ -196,6 +197,8 @@ ogRoutes.get("/u/:username/image", async (c) => {
   const now = new Date();
   const weekLabel = `W${isoWeek(now)} ${now.getFullYear()}`;
 
+  // Lazy-load @vercel/og so it doesn't affect cold-start for other routes
+  const { renderUserOgImage } = await import("../services/og-image.js");
   const response = renderUserOgImage({
     username: ghUser.login,
     stats,
