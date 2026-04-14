@@ -77,7 +77,7 @@ function HeadToHead({
       <RaceTrack
         yourCommits={you.commit_count}
         theirCommits={them.commit_count}
-        theirLabel={them.github_username.slice(0, 5)}
+        theirLabel={them.github_username}
       />
 
       {/* Status line */}
