@@ -39,14 +39,10 @@ export interface LeaderboardEntry {
   avatar_url: string | null;
   commit_count: number;
   is_ghost: boolean;
-  unique_repos?: number;
-  push_count?: number;
 }
 
 export interface RaceStats {
   total_commits: number;
-  total_unique_repos: number;
-  total_pushes: number;
   participant_count: number;
 }
 
@@ -119,13 +115,6 @@ export interface StarSuggestion {
   avatar_url: string | null;
   commit_count: number;
 }
-
-/** @deprecated Use StarredUser */
-export type FamousDevBenchmark = StarredUser & {
-  known_for: string;
-  category: string;
-  is_custom: boolean;
-};
 
 export interface SocialCircleEntry {
   github_username: string;

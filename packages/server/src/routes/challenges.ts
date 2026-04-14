@@ -72,7 +72,9 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
 
   await Promise.all(
     participantRows.map((p) =>
-      refreshCommitData(p.github_username).catch(() => {})
+      refreshCommitData(p.github_username).catch((err) =>
+        console.error("[refresh]", p.github_username, err.message)
+      )
     )
   );
 
@@ -114,39 +116,12 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
     ORDER BY commit_count DESC
   `);
 
-  // Build a per-participant stats map from event_committers (repos, pushes)
-  const statsRows = await db.execute(sql`
-    SELECT
-      cp.github_username,
-      COALESCE(SUM(ec.unique_repos), 0)::int AS unique_repos,
-      COALESCE(SUM(ec.push_count), 0)::int AS push_count
-    FROM challenge_participants cp
-    LEFT JOIN event_committers ec
-      ON ec.github_username = cp.github_username
-      AND ec.date >= ${startDate}
-      AND ec.date <= ${endDate}
-    WHERE cp.challenge_id = ${challenge.id}
-    GROUP BY cp.github_username
-  `);
-
-  const perParticipantStats = new Map(
-    (statsRows.rows as any[]).map((r) => [
-      r.github_username,
-      { unique_repos: Number(r.unique_repos), push_count: Number(r.push_count) },
-    ])
-  );
-
-  const leaderboard = rows.rows.map((r: any) => {
-    const pStats = perParticipantStats.get(r.github_username);
-    return {
-      github_username: r.github_username,
-      avatar_url: r.avatar_url,
-      commit_count: Number(r.commit_count),
-      is_ghost: r.is_ghost,
-      unique_repos: pStats?.unique_repos ?? 0,
-      push_count: pStats?.push_count ?? 0,
-    };
-  });
+  const leaderboard = rows.rows.map((r: any) => ({
+    github_username: r.github_username,
+    avatar_url: r.avatar_url,
+    commit_count: Number(r.commit_count),
+    is_ghost: r.is_ghost,
+  }));
 
   // Per-day commit breakdown for each participant (used for Race Path chart).
   const dailyRows = await db.execute(sql`
@@ -169,8 +144,6 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
 
   const race_stats = {
     total_commits: leaderboard.reduce((sum, p) => sum + p.commit_count, 0),
-    total_unique_repos: leaderboard.reduce((sum, p) => sum + (p.unique_repos ?? 0), 0),
-    total_pushes: leaderboard.reduce((sum, p) => sum + (p.push_count ?? 0), 0),
     participant_count: leaderboard.length,
   };
 

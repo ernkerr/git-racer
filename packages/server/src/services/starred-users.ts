@@ -1,12 +1,9 @@
 /**
  * Starred-users comparison service.
- * Lets users "star" GitHub developers and compare commit activity against
- * them. Commit data is blended from two sources (commit_snapshots for app
- * users and event_committers from GH Archive) via a FULL OUTER JOIN to
- * maximize coverage.
+ * Lets users "star" GitHub developers and compare commit activity against them.
  */
 import { db } from "../db/index.js";
-import { userBenchmarks, commitSnapshots, eventCommitters, challenges, challengeParticipants } from "../db/schema.js";
+import { userBenchmarks, commitSnapshots, challenges, challengeParticipants } from "../db/schema.js";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { periodRange } from "../lib/dates.js";
 import { refreshCommitData } from "./commits.js";
@@ -53,46 +50,32 @@ export async function getStarredComparisons(
 
   // Refresh commit data for all starred users so numbers are current
   await Promise.all(
-    allUsernames.map((u) => refreshCommitData(u).catch(() => {}))
+    allUsernames.map((u) =>
+      refreshCommitData(u).catch((err) =>
+        console.error("[refresh]", u, err.message)
+      )
+    )
   );
 
-  // Blending query: we have two independent commit-count sources:
-  //   - event_committers: populated from GH Archive (public push events)
-  //   - commit_snapshots: populated from the GitHub GraphQL API for app users
-  //
-  // A FULL OUTER JOIN on github_username combines them so we get data even
-  // if a user only exists in one source. GREATEST picks the higher total,
-  // which avoids undercounting when one source has incomplete data.
-  const blended = await db.execute(sql`
-    SELECT
-      github_username,
-      GREATEST(COALESCE(ec_total, 0), COALESCE(cs_total, 0))::int AS total
-    FROM (
-      SELECT
-        COALESCE(ec.github_username, cs.github_username) AS github_username,
-        ec.total AS ec_total,
-        cs.total AS cs_total
-      FROM (
-        SELECT github_username, SUM(commit_count)::int AS total
-        FROM event_committers
-        WHERE date >= ${start} AND date <= ${end}
-          AND github_username IN (${sql.join(allUsernames.map((u) => sql`${u}`), sql`, `)})
-        GROUP BY github_username
-      ) ec
-      FULL OUTER JOIN (
-        SELECT github_username, SUM(commit_count)::int AS total
-        FROM commit_snapshots
-        WHERE date >= ${start} AND date <= ${end}
-          AND github_username IN (${sql.join(allUsernames.map((u) => sql`${u}`), sql`, `)})
-        GROUP BY github_username
-      ) cs ON ec.github_username = cs.github_username
-    ) merged
-  `);
+  const commitRows = await db
+    .select({
+      github_username: commitSnapshots.github_username,
+      total: sql<number>`coalesce(sum(${commitSnapshots.commit_count}), 0)`.as("total"),
+    })
+    .from(commitSnapshots)
+    .where(
+      and(
+        gte(commitSnapshots.date, start),
+        lte(commitSnapshots.date, end),
+        sql`${commitSnapshots.github_username} IN (${sql.join(
+          allUsernames.map((u) => sql`${u}`),
+          sql`, `
+        )})`
+      )
+    )
+    .groupBy(commitSnapshots.github_username);
 
-  // Build a lookup map: username -> best-known commit total for the period
-  const commitMap = new Map(
-    (blended.rows as any[]).map((r) => [r.github_username, Number(r.total)])
-  );
+  const commitMap = new Map(commitRows.map((r) => [r.github_username, Number(r.total)]));
 
   const yourCommits = commitMap.get(username) ?? 0;
 

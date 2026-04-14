@@ -10,9 +10,6 @@ const LOCK_IDS: Record<string, number> = {
   "daily-seed": 737001,
   "backfill": 737002,
   "weekly-leagues": 737003,
-  "seed-famous-devs": 737004,
-  "ingest-events": 737005,
-  "poll-events": 737006,
 };
 
 /**

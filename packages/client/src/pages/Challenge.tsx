@@ -287,23 +287,11 @@ export default function Challenge() {
 
       {/* Race Stats */}
       {challenge.race_stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="retro-box bg-arcade-surface p-4">
             <p className="font-pixel text-xs text-arcade-gray mb-1">TOTAL COMMITS</p>
             <p className="font-pixel text-xl tabular-nums text-arcade-white">
               {challenge.race_stats.total_commits.toLocaleString()}
-            </p>
-          </div>
-          <div className="retro-box bg-arcade-surface p-4">
-            <p className="font-pixel text-xs text-arcade-gray mb-1">REPOS</p>
-            <p className="font-pixel text-xl tabular-nums text-arcade-white">
-              {challenge.race_stats.total_unique_repos.toLocaleString()}
-            </p>
-          </div>
-          <div className="retro-box bg-arcade-surface p-4">
-            <p className="font-pixel text-xs text-arcade-gray mb-1">PUSHES</p>
-            <p className="font-pixel text-xl tabular-nums text-arcade-white">
-              {challenge.race_stats.total_pushes.toLocaleString()}
             </p>
           </div>
           <div className="retro-box bg-arcade-surface p-4">
@@ -400,36 +388,6 @@ export default function Challenge() {
                     <span className="font-pixel text-[11px] text-arcade-gray ml-1">(public)</span>
                   )}
                 </span>
-              </div>
-              <span className="font-pixel text-xl tabular-nums text-arcade-white">
-                {p.commit_count.toLocaleString()}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* For 1v1 with no user session, show a plain list */}
-      {challenge.type === "1v1" && !user && (
-        <div className="retro-box bg-arcade-surface overflow-hidden">
-          <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 bg-arcade-bg border-b-4 border-arcade-border">
-            <span className="font-pixel text-xs text-arcade-cyan">#</span>
-            <span className="font-pixel text-xs text-arcade-cyan">RACER</span>
-            <span className="font-pixel text-xs text-arcade-cyan">COMMITS</span>
-          </div>
-          {challenge.participants.map((p, i) => (
-            <div
-              key={p.github_username}
-              className={`grid grid-cols-[auto_1fr_auto] gap-4 px-5 py-3 items-center ${i === 0 ? "bg-arcade-pink/10" : ""}`}
-            >
-              <span className="font-pixel text-xs text-arcade-gray w-6 text-center">{i + 1}</span>
-              <div className="flex items-center gap-3">
-                <img
-                  src={p.avatar_url || `https://github.com/${p.github_username}.png`}
-                  alt={p.github_username}
-                  className="w-8 h-8 rounded-none border-3 border-arcade-border"
-                />
-                <span className="font-mono text-sm text-arcade-white">{p.github_username}</span>
               </div>
               <span className="font-pixel text-xl tabular-nums text-arcade-white">
                 {p.commit_count.toLocaleString()}

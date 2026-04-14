@@ -8,9 +8,6 @@
  *   POST /daily-seed       Refresh the suggested opponents pool and fetch today's contributions
  *   POST /backfill         Backfill contribution data for a configurable date range
  *   POST /weekly-leagues   Finalize the previous week's league standings
- *   POST /seed-famous-devs Populate the famous developers reference table
- *   POST /ingest-events    Ingest push events from GH Archive (one hour per call)
- *   POST /poll-events      Poll the GitHub Events API for near-real-time push data
  */
 import { Hono } from "hono";
 import { env } from "../lib/env.js";
@@ -18,10 +15,7 @@ import { db } from "../db/index.js";
 import { seedState, suggestedOpponents, commitSnapshots } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
 import { fetchTopGitHubUsers, fetchBatchContributionDays } from "../services/github.js";
-import { seedFamousDevs, FAMOUS_DEV_LIST } from "../services/famous-devs.js";
 import { finalizeWeek } from "../services/leagues.js";
-import { ingestGHArchive } from "../services/gharchive.js";
-import { ingestRealtimeEvents } from "../services/github-events.js";
 import { withAdvisoryLock } from "../lib/advisory-lock.js";
 
 export const cronRoutes = new Hono();
@@ -90,9 +84,6 @@ cronRoutes.post("/daily-seed", async (c) => {
       ? (state.metadata as { date?: string }).date
       : null;
     const cursor = lastRunDate === dateStr ? (state?.cursor ?? 0) : 0;
-    if (lastRunDate === dateStr && cursor === 0 && state?.last_run_at) {
-      return { status: "already_seeded" as const, date: dateStr };
-    }
 
     const pool = await db
       .select({ github_username: suggestedOpponents.github_username })
@@ -333,159 +324,3 @@ cronRoutes.post("/weekly-leagues", async (c) => {
   return c.json(lockResult.result);
 });
 
-/**
- * Seed famous devs table and ensure their contribution data is fetched.
- */
-cronRoutes.post("/seed-famous-devs", async (c) => {
-  if (!verifyCronSecret(c.req.header("authorization"))) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  const lockResult = await withAdvisoryLock("seed-famous-devs", async () => {
-    const seeded = await seedFamousDevs();
-
-    // Also add famous devs to the suggested_opponents table so they appear
-    // in search results and their commit data gets fetched by the daily seed.
-    const devUsernames = FAMOUS_DEV_LIST.map((d) => d.github_username);
-    const chunkSize = 50;
-    for (let i = 0; i < devUsernames.length; i += chunkSize) {
-      const chunk = devUsernames.slice(i, i + chunkSize);
-      await db
-        .insert(suggestedOpponents)
-        .values(
-          chunk.map((username) => ({
-            github_username: username,
-            avatar_url: `https://github.com/${username}.png`,
-            followers: 0,
-          }))
-        )
-        .onConflictDoNothing();
-    }
-
-    return { status: "completed", famous_devs_seeded: seeded };
-  });
-
-  if (!lockResult.acquired) {
-    return c.json({ status: "skipped", reason: "already_running" });
-  }
-  return c.json(lockResult.result);
-});
-
-/**
- * Ingest GH Archive public push events.
- * Processes one hour per call. Resumable — tracks which hours are done.
- */
-cronRoutes.post("/ingest-events", async (c) => {
-  if (!verifyCronSecret(c.req.header("authorization"))) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  const lockResult = await withAdvisoryLock("ingest-events", async () => {
-    const date = c.req.query("date") || undefined;
-    const result = await ingestGHArchive(date);
-    const enrichResult = await enrichTopUsers(result.date, 150, 7);
-    return { status: "completed", ...result, enriched: enrichResult };
-  });
-
-  if (!lockResult.acquired) {
-    return c.json({ status: "skipped", reason: "already_running" });
-  }
-  return c.json(lockResult.result);
-});
-
-/**
- * Poll GitHub Events API for real-time push data.
- */
-cronRoutes.post("/poll-events", async (c) => {
-  if (!verifyCronSecret(c.req.header("authorization"))) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  const lockResult = await withAdvisoryLock("poll-events", async () => {
-    const result = await ingestRealtimeEvents();
-    return { status: "completed", ...result };
-  });
-
-  if (!lockResult.acquired) {
-    return c.json({ status: "skipped", reason: "already_running" });
-  }
-  return c.json(lockResult.result);
-});
-
-/**
- * Fetch accurate commit counts for top committers from the GitHub GraphQL
- * contributions API and store them in commit_snapshots.
- *
- * GH Archive push events give us an approximate count; this enrichment
- * step replaces those estimates with the user's real contribution numbers.
- * Enriches the top N users by archive commit count over the past `daysBack`
- * days so that week/month views also get accurate data.
- *
- * @param date - ISO date string (YYYY-MM-DD) — the anchor date (today)
- * @param topN - Number of top committers to enrich (default: 10)
- * @param daysBack - How many days back to cover (default: 1 = today only)
- * @returns The number of users whose snapshots were updated
- */
-async function enrichTopUsers(
-  date: string,
-  topN: number = 10,
-  daysBack: number = 1
-): Promise<{ users_enriched: number }> {
-  try {
-    // Build the date range: from (daysBack-1) days before `date` through `date`
-    const toDate = new Date(date + "T23:59:59Z");
-    const fromDate = new Date(date + "T00:00:00Z");
-    fromDate.setDate(fromDate.getDate() - (daysBack - 1));
-    const fromStr = fromDate.toISOString().slice(0, 10);
-
-    // Enrich from the suggested_opponents pool (real developers, top by followers)
-    // rather than from event_committers (dominated by green-square farmers).
-    // Aggregate over the full daysBack range so weekly top committers are enriched.
-    const topRows = await db.execute(sql`
-      SELECT so.github_username
-      FROM suggested_opponents so
-      INNER JOIN event_committers ec
-        ON ec.github_username = so.github_username
-        AND ec.date >= ${fromStr} AND ec.date <= ${date}
-      GROUP BY so.github_username
-      ORDER BY SUM(ec.commit_count) DESC
-      LIMIT ${topN}
-    `);
-
-    const usernames = topRows.rows.map((r: any) => r.github_username as string);
-    if (usernames.length === 0) return { users_enriched: 0 };
-
-    const { data: contribData } = await fetchBatchContributionDays(usernames, fromDate, toDate);
-
-    const rows: { github_username: string; date: string; commit_count: number }[] = [];
-    for (const [username, days] of contribData) {
-      for (const day of days) {
-        if (day.date === date && day.count > 0) {
-          rows.push({
-            github_username: username,
-            date: day.date,
-            commit_count: day.count,
-          });
-        }
-      }
-    }
-
-    if (rows.length > 0) {
-      await db
-        .insert(commitSnapshots)
-        .values(rows)
-        .onConflictDoUpdate({
-          target: [commitSnapshots.github_username, commitSnapshots.date],
-          set: {
-            commit_count: sql`excluded.commit_count`,
-            fetched_at: sql`now()`,
-          },
-        });
-    }
-
-    return { users_enriched: rows.length };
-  } catch (err) {
-    console.error("[enrich] Failed to enrich top users:", err);
-    return { users_enriched: 0 };
-  }
-}

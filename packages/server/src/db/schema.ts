@@ -86,30 +86,6 @@ export const commitSnapshots = pgTable(
   ]
 );
 
-/**
- * Aggregated push event data from GH Archive and real-time GitHub Events API.
- * Covers every public GitHub user. Updated hourly via cron.
- */
-export const eventCommitters = pgTable(
-  "event_committers",
-  {
-    id: serial("id").primaryKey(),
-    github_username: varchar("github_username", { length: 255 }).notNull(),
-    avatar_url: text("avatar_url"),
-    date: date("date").notNull(),
-    commit_count: integer("commit_count").notNull().default(0),
-    push_count: integer("push_count").notNull().default(0),
-    single_commit_pushes: integer("single_commit_pushes").notNull().default(0),
-    unique_repos: integer("unique_repos").notNull().default(0),
-    last_seen_at: timestamp("last_seen_at").defaultNow().notNull(),
-  },
-  (t) => [
-    unique().on(t.github_username, t.date),
-    index("idx_ec_date_commits").on(t.date, t.commit_count),
-    index("idx_ec_username").on(t.github_username),
-  ]
-);
-
 // ─── Weekly leagues ───────────────────────────────────────────────
 
 export const leagueMemberships = pgTable(
@@ -193,18 +169,6 @@ export const seedState = pgTable("seed_state", {
   cursor: integer("cursor").notNull().default(0),
   metadata: jsonb("metadata"),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
-
-/** Curated list of well-known developers for benchmarking. */
-export const famousDevs = pgTable("famous_devs", {
-  id: serial("id").primaryKey(),
-  github_username: varchar("github_username", { length: 255 }).notNull().unique(),
-  display_name: varchar("display_name", { length: 255 }).notNull(),
-  known_for: text("known_for").notNull(),
-  avatar_url: text("avatar_url"),
-  category: varchar("category", { length: 50 }), // "legends", "ceos", "indie-hackers", etc.
-  active: boolean("active").default(true),
-  created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
 // ─── Social features ──────────────────────────────────────────────

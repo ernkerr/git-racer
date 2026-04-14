@@ -2,12 +2,9 @@
  * GitHub API integration layer.
  *
  * Wraps both the GitHub GraphQL API (for contribution/commit data) and the
- * REST API (for user search/validation). The main complexity lives in
- * `scaleToCommits`, which converts the all-contribution calendar counts into
- * commit-only counts using the ratio GitHub provides, and in
- * `fetchBatchContributionDays`, which constructs a single batched GraphQL
- * query with aliased fragments to fetch many users at once without hitting
- * per-request overhead.
+ * REST API (for user search/validation). `fetchBatchContributionDays`
+ * constructs a single batched GraphQL query with aliased fragments to fetch
+ * many users at once without hitting per-request overhead.
  */
 
 import { env } from "../lib/env.js";
@@ -71,26 +68,6 @@ const YEARS_QUERY = `
   }
 `;
 
-/**
- * Return per-day contribution counts as-is.
- *
- * GitHub's contributionCalendar already includes private repo commits for
- * the authenticated user. Previously we scaled these down by the
- * totalCommitContributions / totalContributions ratio to isolate "commits
- * only", but this under-counted actual commits because the calendar counts
- * already reflect the user's real activity (including private repos).
- *
- * We keep the function signature so callers don't need to change, but now
- * just pass through the raw counts which are more accurate.
- */
-function scaleToCommits(
-  days: { date: string; count: number }[],
-  _totalCommits: number,
-  _totalContribs: number
-): { date: string; count: number }[] {
-  return days;
-}
-
 /** Send a typed GraphQL request to the GitHub API and return the parsed JSON. */
 async function graphql<T>(query: string, variables: Record<string, unknown>, token: string): Promise<T> {
   const res = await fetch("https://api.github.com/graphql", {
@@ -112,8 +89,7 @@ async function graphql<T>(query: string, variables: Record<string, unknown>, tok
 /**
  * Fetch per-day commit counts for a single user within a date range.
  *
- * Queries the GitHub GraphQL API for the contribution calendar, then scales
- * the raw counts down to commit-only values using `scaleToCommits`.
+ * Queries the GitHub GraphQL API for the contribution calendar.
  *
  * @param username - GitHub login.
  * @param from - Start of the date range (inclusive).
@@ -158,7 +134,7 @@ export async function fetchContributionDays(
     }
   }
 
-  return scaleToCommits(rawDays, totalCommits, totalContribs);
+  return rawDays;
 }
 
 /**
@@ -259,8 +235,8 @@ export async function searchGitHubUsers(
 
 /**
  * Fetch the most-followed GitHub users, paginating through the search API
- * until `count` results have been collected. Used to seed the "famous devs"
- * suggestion list.
+ * until `count` results have been collected. Used to seed the suggested
+ * opponents pool.
  *
  * @param count - Desired number of users (default 150). Capped by the GitHub
  *                search API's maximum of 1000 total results.
@@ -400,14 +376,7 @@ export async function fetchBatchContributionDays(
               rawDays.push({ date: day.date, count: day.contributionCount });
             }
           }
-          resultsMap.set(
-            username,
-            scaleToCommits(
-              rawDays,
-              collection.totalCommitContributions,
-              collection.contributionCalendar.totalContributions
-            )
-          );
+          resultsMap.set(username, rawDays);
         }
       });
 

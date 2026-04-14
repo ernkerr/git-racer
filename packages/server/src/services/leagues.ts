@@ -128,7 +128,11 @@ export async function getUserLeague(userId: number, username: string) {
   // Each call respects a 4-hour TTL cache, so repeated views are cheap.
   const memberUsernames = groupMembers.map((m) => m.github_username);
   await Promise.all(
-    memberUsernames.map((u) => refreshCommitData(u).catch(() => {}))
+    memberUsernames.map((u) =>
+      refreshCommitData(u).catch((err) =>
+        console.error("[refresh]", u, err.message)
+      )
+    )
   );
 
   // --- Live leaderboard data ---

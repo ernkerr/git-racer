@@ -105,7 +105,9 @@ export async function getSocialCircleRanking(
   // If stale, kick off a background refresh. The .catch() ensures the
   // fire-and-forget promise doesn't cause unhandled rejection warnings.
   if (isStale) {
-    fetchAndCacheFollowing(userId, username, token).catch(() => {});
+    fetchAndCacheFollowing(userId, username, token).catch((err) =>
+      console.error("[social] refresh following failed:", err.message)
+    );
   }
 
   // Always serve from the current cache (even if a refresh is in flight)
@@ -128,8 +130,14 @@ export async function getSocialCircleRanking(
   // server app token for everyone else. Cap at 50 to stay within rate limits.
   const toRefresh = followingUsernames.slice(0, 50);
   await Promise.all([
-    refreshCommitData(username, token).catch(() => {}),
-    ...toRefresh.map((u) => refreshCommitData(u).catch(() => {})),
+    refreshCommitData(username, token).catch((err) =>
+      console.error("[refresh]", username, err.message)
+    ),
+    ...toRefresh.map((u) =>
+      refreshCommitData(u).catch((err) =>
+        console.error("[refresh]", u, err.message)
+      )
+    ),
   ]);
 
   const currentWeekStart = weekStart();

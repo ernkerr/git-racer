@@ -165,8 +165,7 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
 
     api<LeagueGroup>("/leagues/current").then(setLeague).catch(() => {});
-    api<StarredUser[]>("/starred?period=week").then(setStarred).catch(() => []);
-    api<StarSuggestion[]>("/starred/suggestions").then(setSuggestions).catch(() => []);
+    loadStarred();
     api<SocialCircleData>("/social/circle")
       .then(setSocialData)
       .catch(() => {})
