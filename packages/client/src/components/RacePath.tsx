@@ -73,7 +73,7 @@ export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePat
               </span>
               <span className="flex items-center gap-1 font-pixel text-[10px] text-arcade-white">
                 <span className="inline-block w-2 h-2" style={{ backgroundColor: "#00FF87" }} />
-                {rival.username.toUpperCase().slice(0, 8)}
+                {rival.username.toUpperCase()}
               </span>
             </div>
           )}
