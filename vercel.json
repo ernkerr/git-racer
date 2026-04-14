@@ -29,7 +29,7 @@
   "crons": [
     {
       "path": "/api/cron/daily-seed",
-      "schedule": "5 0,4,8,12,16,20 * * *"
+      "schedule": "5 0 * * *"
     },
     {
       "path": "/api/cron/weekly-leagues",
