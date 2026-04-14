@@ -287,7 +287,7 @@ export default function Challenge() {
 
       {/* Race Stats */}
       {challenge.race_stats && (
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-2 gap-3 mt-6 mb-6">
           <div className="retro-box bg-arcade-surface p-4">
             <p className="font-pixel text-xs text-arcade-gray mb-1">TOTAL COMMITS</p>
             <p className="font-pixel text-xl tabular-nums text-arcade-white">
