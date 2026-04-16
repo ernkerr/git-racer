@@ -87,9 +87,8 @@ function RaceCard({ ch }: { ch: ActiveChallenge }) {
 function BadgeEmbed({ username, siteUrl }: { username: string; siteUrl: string }) {
   const [copied, setCopied] = useState(false);
 
-  const darkUrl = `${siteUrl}/api/badge/${username}?theme=dark`;
-  const lightUrl = `${siteUrl}/api/badge/${username}?theme=light`;
-  const markdown = `[![Git Racer Stats](${darkUrl}#gh-dark-mode-only)](${siteUrl})\n[![Git Racer Stats](${lightUrl}#gh-light-mode-only)](${siteUrl})`;
+  const badgeUrl = `${siteUrl}/api/badge/${username}`;
+  const markdown = `[![Git Racer Stats](${badgeUrl})](${siteUrl})`;
 
   const copy = () => {
     navigator.clipboard.writeText(markdown).then(() => {
@@ -106,7 +105,7 @@ function BadgeEmbed({ username, siteUrl }: { username: string; siteUrl: string }
 
       <div className="mb-3 flex justify-center">
         <img
-          src={`/api/badge/${username}?theme=dark`}
+          src={`/api/badge/${username}`}
           alt="Git Racer Stats Badge"
           className="max-w-full"
         />

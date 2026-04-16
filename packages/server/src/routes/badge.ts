@@ -22,7 +22,8 @@ badgeRoutes.use("*", cors({ origin: "*" }));
 
 badgeRoutes.get("/:username", async (c) => {
   const username = c.req.param("username");
-  const theme = (c.req.query("theme") === "light" ? "light" : "dark") as BadgeTheme;
+  const themeParam = c.req.query("theme");
+  const theme: BadgeTheme = themeParam === "dark" ? "dark" : themeParam === "light" ? "light" : "auto";
   const siteUrl = env.SITE_URL || env.CLIENT_URL;
 
   // Validate user exists on GitHub
