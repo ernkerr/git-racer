@@ -210,9 +210,9 @@ meRoutes.get("/share", async (c) => {
     ? `+${streakInfo.trend_percent}%`
     : `${streakInfo.trend_percent}%`;
 
-  const shareText = "Race your commits on Git Racer. Think you can keep up?";
+  const shareText = "";
 
-  const tweet = shareText;
+  const tweet = "";
 
   const siteUrl = env.SITE_URL || env.CLIENT_URL;
 

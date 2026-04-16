@@ -403,13 +403,10 @@ export function renderUserOgImage(data: UserOgData): ImageResponse {
 }
 
 /**
- * Default site OG image — branded card with the pixel car.
+ * Default site OG image — clean branded card with the pixel car.
  * Used for the generic site link preview (index.html og:image).
  */
 export function renderDefaultOgImage(carImageUrl: string): ImageResponse {
-  // Build a checkered bar: alternating green/transparent squares
-  const checkerSquares = Array.from({ length: 48 }, (_, i) => i);
-
   return new ImageResponse(
     (
       <div
@@ -420,87 +417,21 @@ export function renderDefaultOgImage(carImageUrl: string): ImageResponse {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#0C0C0C",
+          backgroundColor: "#1A1A1A",
           fontFamily: "monospace",
-          position: "relative",
         }}
       >
-        {/* Checkered top bar */}
-        <div
-          style={{
-            position: "absolute",
-            top: "0",
-            left: "0",
-            right: "0",
-            display: "flex",
-            height: "8px",
-          }}
-        >
-          {checkerSquares.map((i) => (
-            <div
-              key={i}
-              style={{
-                width: "25px",
-                height: "8px",
-                backgroundColor: i % 2 === 0 ? "#00C853" : "#0C0C0C",
-              }}
-            />
-          ))}
-        </div>
-
         {/* Car image */}
         <img
           src={carImageUrl}
-          width="340"
-          height="100"
-          style={{ marginBottom: "48px", objectFit: "contain" }}
+          width="400"
+          height="118"
+          style={{ marginBottom: "40px", objectFit: "contain" }}
         />
 
         {/* Brand name */}
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
-          <span style={{ fontSize: "56px", color: "#00C853", fontWeight: 700, letterSpacing: "2px" }}>
-            GIT RACER
-          </span>
-        </div>
-
-        {/* Tagline */}
-        <div style={{ fontSize: "24px", color: "#666", letterSpacing: "4px", textTransform: "uppercase" }}>
-          Race Your Commits
-        </div>
-
-        {/* Checkered bottom bar */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "0",
-            left: "0",
-            right: "0",
-            display: "flex",
-            height: "8px",
-          }}
-        >
-          {checkerSquares.map((i) => (
-            <div
-              key={i}
-              style={{
-                width: "25px",
-                height: "8px",
-                backgroundColor: i % 2 === 0 ? "#00C853" : "#0C0C0C",
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Footer */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "24px",
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          <span style={{ fontSize: "16px", color: "#2A2A2A" }}>git-racer.com</span>
+        <div style={{ fontSize: "42px", color: "#F0F0F0", fontWeight: 700, letterSpacing: "6px" }}>
+          GIT RACER
         </div>
       </div>
     ),
