@@ -210,19 +210,11 @@ meRoutes.get("/share", async (c) => {
     ? `+${streakInfo.trend_percent}%`
     : `${streakInfo.trend_percent}%`;
 
-  // Assemble the share card lines
-  const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
-  const lines = [
-    `Git Racer ${weekLabel}`,
-    "",
-    `${totalWeekCommits} commits this week`,
-    dailyCounts.map((count, i) => `${dayLabels[i]}:${count}`).join(" "),
-  ];
-
-  if (streakInfo.current_streak > 0) lines.push(`${streakInfo.current_streak}-day streak`);
-  if (streakInfo.last_week > 0) lines.push(`${trendStr} vs last week`);
-
-  const shareText = lines.join("\n");
+  // Assemble a clean one-liner for sharing
+  const streakPart = streakInfo.current_streak > 0
+    ? `, ${streakInfo.current_streak}-day streak 🔥`
+    : "";
+  const shareText = `Git Racer ${weekLabel} — ${totalWeekCommits} commits this week${streakPart}`;
 
   // Build a Twitter-friendly version (under 280 chars)
   const streakText = streakInfo.current_streak > 0

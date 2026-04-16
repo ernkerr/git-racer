@@ -276,6 +276,22 @@ ogRoutes.get("/u/:username/image", async (c) => {
   });
 });
 
+/** GET /site-image -- Branded default OG image for the site. */
+ogRoutes.get("/site-image", async (c) => {
+  const siteUrl = env.SITE_URL || env.CLIENT_URL;
+  const carImageUrl = `${siteUrl}/car-green.png`;
+
+  const { renderDefaultOgImage } = await import("../services/og-image.js");
+  const response = renderDefaultOgImage(carImageUrl);
+
+  return new Response(response.body, {
+    headers: {
+      "Content-Type": "image/png",
+      "Cache-Control": "public, max-age=86400, s-maxage=86400",
+    },
+  });
+});
+
 /** Escape HTML special characters to prevent XSS in rendered pages. */
 function escapeHtml(str: string): string {
   return str
