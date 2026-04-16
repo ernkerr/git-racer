@@ -16,9 +16,10 @@
  */
 import { Hono } from "hono";
 import { db } from "../db/index.js";
-import { challenges } from "../db/schema.js";
+import { challenges, challengeParticipants, users } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
 import { env } from "../lib/env.js";
+import { DURATION_PRESETS } from "@git-racer/shared";
 import { getUserStatsFast, refreshCommitData } from "../services/commits.js";
 import { computeStreaks } from "../services/streaks.js";
 import { isoWeek } from "../lib/dates.js";
@@ -68,10 +69,20 @@ ogRoutes.get("/c/:slug", async (c) => {
   const participants = rows.rows as { github_username: string; commit_count: number }[];
   const racerCount = participants.length;
 
+  // Get creator username for invite description
+  const [creator] = await db
+    .select({ github_username: users.github_username })
+    .from(users)
+    .where(eq(users.id, challenge.created_by))
+    .limit(1);
+
   // Build a competitive description
   let description: string;
   if (racerCount === 0) {
     description = "No racers yet. Be the first to join!";
+  } else if (racerCount <= 2 && creator) {
+    // Invite-style description for small races
+    description = `${creator.github_username} challenged you to a commit race! Who can ship more code?`;
   } else {
     const leader = participants[0];
     const commitWord = Number(leader.commit_count) === 1 ? "commit" : "commits";
@@ -81,7 +92,11 @@ ogRoutes.get("/c/:slug", async (c) => {
 
   const title = `${challenge.name} | Git Racer`;
   const pageUrl = `${env.CLIENT_URL}/c/${slug}`;
-  const imageUrl = `${siteUrl}/api/og/c/${slug}/image`;
+  // Use invite image for fresh races (low commits), leaderboard image for active ones
+  const totalCommits = participants.reduce((sum, p) => sum + Number(p.commit_count), 0);
+  const imageUrl = totalCommits === 0
+    ? `${siteUrl}/api/og/c/${slug}/invite`
+    : `${siteUrl}/api/og/c/${slug}/image`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -166,6 +181,53 @@ ogRoutes.get("/c/:slug/image", async (c) => {
   // Copy the response headers and body into a Hono response
   c.header("Content-Type", "image/png");
   c.header("Cache-Control", "public, max-age=300, s-maxage=300");
+  return new Response(response.body, {
+    headers: {
+      "Content-Type": "image/png",
+      "Cache-Control": "public, max-age=300, s-maxage=300",
+    },
+  });
+});
+
+/** GET /c/:slug/invite -- 1200x630 PNG invite image for sharing a challenge. */
+ogRoutes.get("/c/:slug/invite", async (c) => {
+  const slug = c.req.param("slug");
+
+  const [challenge] = await db
+    .select()
+    .from(challenges)
+    .where(eq(challenges.share_slug, slug))
+    .limit(1);
+
+  if (!challenge) {
+    return c.text("Not found", 404);
+  }
+
+  // Get the creator's username
+  const [creator] = await db
+    .select({ github_username: users.github_username })
+    .from(users)
+    .where(eq(users.id, challenge.created_by))
+    .limit(1);
+
+  const racerCount = await db
+    .select({ count: sql<number>`COUNT(*)::int` })
+    .from(challengeParticipants)
+    .where(eq(challengeParticipants.challenge_id, challenge.id));
+
+  const preset = challenge.duration_preset as keyof typeof DURATION_PRESETS | null;
+  const durationLabel = preset && preset in DURATION_PRESETS
+    ? DURATION_PRESETS[preset].label
+    : challenge.duration_type === "ongoing" ? "Ongoing" : "Sprint";
+
+  const { renderInviteOgImage } = await import("../services/og-image.js");
+  const response = renderInviteOgImage({
+    challengeName: challenge.name,
+    inviterUsername: creator?.github_username ?? "Someone",
+    durationLabel,
+    racerCount: Number(racerCount[0]?.count ?? 0),
+  });
+
   return new Response(response.body, {
     headers: {
       "Content-Type": "image/png",
