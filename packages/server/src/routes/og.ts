@@ -82,7 +82,7 @@ ogRoutes.get("/c/:slug", async (c) => {
     description = "No racers yet. Be the first to join!";
   } else if (racerCount <= 2 && creator) {
     // Invite-style description for small races
-    description = `${creator.github_username} challenged you to a commit race! Who can ship more code?`;
+    description = `${creator.github_username} challenged you to a race! Who can ship more code?`;
   } else {
     const leader = participants[0];
     const commitWord = Number(leader.commit_count) === 1 ? "commit" : "commits";
