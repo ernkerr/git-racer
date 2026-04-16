@@ -87,52 +87,7 @@ export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePat
       </div>
 
       {/* Bar chart */}
-      <div
-        className="relative flex items-end gap-px mt-4 overflow-hidden"
-        style={{ height: `${BAR_H}px`, gap: `${GAP}px` }}
-        onMouseLeave={() => setHover(null)}
-      >
-        {axis.map((date) => {
-          const y = youMap.get(date) ?? 0;
-          const r = rivalMap?.get(date) ?? 0;
-          const yH = Math.max(1, Math.round((y / peak) * BAR_H));
-          const rH = Math.max(r > 0 ? 1 : 0, Math.round((r / peak) * BAR_H));
-          const isHovered = hover?.date === date;
-
-          const barProps = {
-            onMouseEnter: (e: React.MouseEvent) => {
-              const rect = (e.currentTarget.parentElement?.parentElement as HTMLElement)?.getBoundingClientRect();
-              const barRect = e.currentTarget.getBoundingClientRect();
-              const x = barRect.left + barRect.width / 2 - (rect?.left ?? 0);
-              setHover({ date, x });
-            },
-          };
-
-          if (rival) {
-            return (
-              <div key={date} className="flex items-end gap-px flex-1 min-w-0" {...barProps}>
-                <div
-                  className="flex-1 min-w-0 transition-opacity"
-                  style={{ height: `${yH}px`, backgroundColor: "#00C853", opacity: hover && !isHovered ? 0.4 : 1 }}
-                />
-                <div
-                  className="flex-1 min-w-0 transition-opacity"
-                  style={{ height: `${rH}px`, backgroundColor: "#00FF87", opacity: hover && !isHovered ? 0.4 : 1 }}
-                />
-              </div>
-            );
-          }
-
-          return (
-            <div
-              key={date}
-              className="flex-1 min-w-0 transition-opacity"
-              style={{ height: `${yH}px`, backgroundColor: "#00FF87", opacity: hover && !isHovered ? 0.4 : 1 }}
-              {...barProps}
-            />
-          );
-        })}
-
+      <div className="relative mt-4" onMouseLeave={() => setHover(null)}>
         {/* Tooltip */}
         {hover && (() => {
           const y = youMap.get(hover.date) ?? 0;
@@ -156,6 +111,51 @@ export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePat
             </div>
           );
         })()}
+        <div
+          className="flex items-end gap-px overflow-hidden"
+          style={{ height: `${BAR_H}px`, gap: `${GAP}px` }}
+        >
+          {axis.map((date) => {
+            const y = youMap.get(date) ?? 0;
+            const r = rivalMap?.get(date) ?? 0;
+            const yH = Math.max(1, Math.round((y / peak) * BAR_H));
+            const rH = Math.max(r > 0 ? 1 : 0, Math.round((r / peak) * BAR_H));
+            const isHovered = hover?.date === date;
+
+            const barProps = {
+              onMouseEnter: (e: React.MouseEvent) => {
+                const rect = (e.currentTarget.closest('.relative') as HTMLElement)?.getBoundingClientRect();
+                const barRect = e.currentTarget.getBoundingClientRect();
+                const x = barRect.left + barRect.width / 2 - (rect?.left ?? 0);
+                setHover({ date, x });
+              },
+            };
+
+            if (rival) {
+              return (
+                <div key={date} className="flex items-end gap-px flex-1 min-w-0" {...barProps}>
+                  <div
+                    className="flex-1 min-w-0 transition-opacity"
+                    style={{ height: `${yH}px`, backgroundColor: "#00C853", opacity: hover && !isHovered ? 0.4 : 1 }}
+                  />
+                  <div
+                    className="flex-1 min-w-0 transition-opacity"
+                    style={{ height: `${rH}px`, backgroundColor: "#00FF87", opacity: hover && !isHovered ? 0.4 : 1 }}
+                  />
+                </div>
+              );
+            }
+
+            return (
+              <div
+                key={date}
+                className="flex-1 min-w-0 transition-opacity"
+                style={{ height: `${yH}px`, backgroundColor: "#00FF87", opacity: hover && !isHovered ? 0.4 : 1 }}
+                {...barProps}
+              />
+            );
+          })}
+        </div>
       </div>
 
       {/* Bottom axis labels */}
