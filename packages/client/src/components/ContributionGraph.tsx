@@ -62,11 +62,11 @@ export default memo(function ContributionGraph({ days, totalYear }: Props) {
         </p>
       </div>
 
-      <div className="overflow-x-auto scrollbar-hide">
+      <div className="overflow-x-auto scrollbar-hide flex justify-center">
         <svg
           width={svgWidth}
           height={svgHeight}
-          className="block"
+          className="block shrink-0"
           style={{ minWidth: svgWidth }}
         >
           {/* Month labels */}
