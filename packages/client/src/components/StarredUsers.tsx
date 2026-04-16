@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { StarredUser, StarSuggestion } from "@git-racer/shared";
 import { api } from "../lib/api.ts";
@@ -13,7 +13,7 @@ interface Props {
   showEmpty?: boolean;
 }
 
-export default function StarredUsers({ starred, suggestions, onStar, onUnstar, showEmpty }: Props) {
+export default memo(function StarredUsers({ starred, suggestions, onStar, onUnstar, showEmpty }: Props) {
   const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
   const [adding, setAdding] = useState(false);
@@ -226,4 +226,4 @@ export default function StarredUsers({ starred, suggestions, onStar, onUnstar, s
       )}
     </div>
   );
-}
+});

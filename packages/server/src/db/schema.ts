@@ -107,6 +107,7 @@ export const leagueMemberships = pgTable(
     unique().on(t.week_start, t.github_username),
     index("idx_lm_week_start").on(t.week_start),
     index("idx_lm_user_id").on(t.user_id),
+    index("idx_lm_week_tier_group").on(t.week_start, t.tier, t.group_number),
   ]
 );
 
@@ -137,7 +138,10 @@ export const userBenchmarks = pgTable(
     display_name: varchar("display_name", { length: 255 }),
     created_at: timestamp("created_at").defaultNow().notNull(),
   },
-  (t) => [unique().on(t.user_id, t.github_username)]
+  (t) => [
+    unique().on(t.user_id, t.github_username),
+    index("idx_ub_user_id").on(t.user_id),
+  ]
 );
 
 // ─── Data pipeline & cron infrastructure ──────────────────────────

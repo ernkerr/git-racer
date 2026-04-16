@@ -60,13 +60,12 @@ meRoutes.get("/dashboard", async (c) => {
 
   if (!user) return c.json({ error: "User not found" }, 404);
 
-  // Eagerly refresh commit data from GitHub before building the dashboard.
-  // This is best-effort; if it fails the dashboard still loads with stale data.
-  try {
-    await refreshCommitData(username, user.access_token);
-  } catch (e) {
-    console.error("refreshCommitData failed:", e);
-  }
+  // Fire-and-forget: refresh commit data in the background so the dashboard
+  // returns immediately with cached data. The 4-hour cache TTL means data is
+  // at most slightly stale; the next request will pick up the fresh values.
+  refreshCommitData(username, user.access_token).catch((e) =>
+    console.error("bg refreshCommitData failed:", e)
+  );
 
   const now = new Date();
   const todayStr = today();

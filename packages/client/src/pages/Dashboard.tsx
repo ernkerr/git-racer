@@ -143,8 +143,12 @@ export default function Dashboard() {
   const { user } = useAuth();
 
   const loadStarred = useCallback(() => {
-    api<StarredUser[]>("/starred?period=week").then(setStarred).catch(() => {});
-    api<StarSuggestion[]>("/starred/suggestions").then(setSuggestions).catch(() => {});
+    Promise.all([
+      api<StarredUser[]>("/starred?period=week"),
+      api<StarSuggestion[]>("/starred/suggestions"),
+    ])
+      .then(([s, g]) => { setStarred(s); setSuggestions(g); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {

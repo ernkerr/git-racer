@@ -27,5 +27,6 @@ leagueRoutes.get("/current", async (c) => {
     return c.json({ error: "Could not assign league" }, 500);
   }
 
+  c.header("Cache-Control", "private, max-age=300");
   return c.json(league);
 });

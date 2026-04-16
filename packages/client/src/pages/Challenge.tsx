@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../lib/api.ts";
 import { useAuth } from "../lib/auth.tsx";
@@ -127,10 +127,40 @@ export default function Challenge() {
     }
   };
 
+  // Poll for updates, but pause when the tab is hidden to save bandwidth.
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startPolling = useCallback(() => {
+    if (!intervalRef.current) {
+      intervalRef.current = setInterval(fetchChallenge, CHALLENGE_REFRESH_MS);
+    }
+  }, [slug]);
+
+  const stopPolling = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     fetchChallenge();
-    const interval = setInterval(fetchChallenge, CHALLENGE_REFRESH_MS);
-    return () => clearInterval(interval);
+    startPolling();
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        fetchChallenge();
+        startPolling();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [slug]);
 
   const handleJoin = async () => {
@@ -401,7 +431,6 @@ export default function Challenge() {
         {challenge.refresh_period === "daily" && <p>Counts reset daily at midnight UTC.</p>}
         {challenge.refresh_period === "weekly" && <p>Counts reset every Monday at midnight UTC.</p>}
         <p>Stats refresh automatically every 60 seconds.</p>
-        <p>Commit data cached for up to 4 hours.</p>
       </div>
 
       {/* Creator controls at bottom */}

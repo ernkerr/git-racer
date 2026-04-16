@@ -63,14 +63,14 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
 
   if (!challenge) return c.json({ error: "Challenge not found" }, 404);
 
-  // Refresh commit data for all participants so the leaderboard is up to date.
-  // Each call is individually caught so one failure doesn't block the rest.
+  // Fire-and-forget: refresh commit data for all participants in the background.
+  // The leaderboard returns immediately with cached data (4-hour TTL).
   const participantRows = await db
     .select({ github_username: challengeParticipants.github_username })
     .from(challengeParticipants)
     .where(eq(challengeParticipants.challenge_id, challenge.id));
 
-  await Promise.all(
+  Promise.all(
     participantRows.map((p) =>
       refreshCommitData(p.github_username).catch((err) =>
         console.error("[refresh]", p.github_username, err.message)
@@ -147,6 +147,7 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
     participant_count: leaderboard.length,
   };
 
+  c.header("Cache-Control", "public, max-age=60");
   return c.json({
     id: challenge.id,
     name: challenge.name,

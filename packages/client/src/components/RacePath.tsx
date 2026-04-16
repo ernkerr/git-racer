@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 
 interface DayData {
   date: string;
@@ -37,7 +37,7 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePathProps) {
+export default memo(function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePathProps) {
   const [hover, setHover] = useState<{ date: string; x: number } | null>(null);
   const axis = buildAxis(you, rival?.data);
   const youMap = toMap(you);
@@ -172,4 +172,4 @@ export default function RacePath({ you, rival, label = "LAST 30 DAYS" }: RacePat
       </div>
     </div>
   );
-}
+});

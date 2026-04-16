@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import type { ContributionDay } from "@git-racer/shared";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -8,7 +8,7 @@ interface Props {
   totalYear: number;
 }
 
-export default function ContributionGraph({ days, totalYear }: Props) {
+export default memo(function ContributionGraph({ days, totalYear }: Props) {
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
 
   if (days.length === 0) {
@@ -163,7 +163,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
       )}
     </div>
   );
-}
+});
 
 function levelToColor(level: number): string {
   switch (level) {

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { LeagueGroup, LeagueTier } from "@git-racer/shared";
 
 const TIER_CONFIG: Record<LeagueTier, {
@@ -21,7 +22,7 @@ interface Props {
   league: LeagueGroup;
 }
 
-export default function LeagueCard({ league }: Props) {
+export default memo(function LeagueCard({ league }: Props) {
   const config = TIER_CONFIG[league.tier];
   const totalMembers = league.members.length;
   const tierIndex = ALL_TIERS.indexOf(league.tier);
@@ -134,7 +135,7 @@ export default function LeagueCard({ league }: Props) {
       </div>
     </div>
   );
-}
+});
 
 function formatWeekDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");

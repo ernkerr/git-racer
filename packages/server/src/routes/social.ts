@@ -39,5 +39,6 @@ socialRoutes.get("/circle", async (c) => {
   if (!user) return c.json({ error: "User not found" }, 404);
 
   const data = await getSocialCircleRanking(userId, username, user.access_token);
+  c.header("Cache-Control", "private, max-age=300");
   return c.json(data);
 });

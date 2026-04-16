@@ -29,6 +29,7 @@ starredRoutes.get("/", async (c) => {
   const { sub: userId, username } = c.get("user");
   const period = (c.req.query("period") || "week") as "week" | "month" | "yearly";
   const comparisons = await getStarredComparisons(username, userId, period);
+  c.header("Cache-Control", "private, max-age=120");
   return c.json(comparisons);
 });
 
@@ -36,6 +37,7 @@ starredRoutes.get("/", async (c) => {
 starredRoutes.get("/suggestions", async (c) => {
   const { sub: userId } = c.get("user");
   const suggestions = await getStarSuggestions(userId);
+  c.header("Cache-Control", "public, max-age=3600");
   return c.json(suggestions);
 });
 

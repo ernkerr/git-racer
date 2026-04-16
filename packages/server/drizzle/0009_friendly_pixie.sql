@@ -1,0 +1,2 @@
+CREATE INDEX "idx_lm_week_tier_group" ON "league_memberships" USING btree ("week_start","tier","group_number");--> statement-breakpoint
+CREATE INDEX "idx_ub_user_id" ON "user_benchmarks" USING btree ("user_id");
