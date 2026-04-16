@@ -87,20 +87,31 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
     ? challenge.end_date.toISOString().slice(0, 10)
     : todayStr;
 
+  // Shared daily-breakdown query (used by both finalized and live paths)
+  const dailyQuery = db.execute(sql`
+    SELECT cs.github_username, cs.date, cs.commit_count
+    FROM commit_snapshots cs
+    INNER JOIN challenge_participants cp
+      ON cp.github_username = cs.github_username
+      AND cp.challenge_id = ${challenge.id}
+    WHERE cs.date >= ${startDate}
+      AND cs.date <= ${endDate}
+    ORDER BY cs.github_username, cs.date ASC
+  `);
+
   if (challenge.is_finalized && challenge.final_results) {
-    // Use frozen results -- no refresh, no live queries
-    const participantRows = await db
-      .select()
-      .from(challengeParticipants)
-      .where(eq(challengeParticipants.challenge_id, challenge.id));
+    // Use frozen results -- run all three queries in parallel
+    const [participantRows, userRows, dailyRows] = await Promise.all([
+      db.select()
+        .from(challengeParticipants)
+        .where(eq(challengeParticipants.challenge_id, challenge.id)),
+      db.select({ github_username: users.github_username, avatar_url: users.avatar_url })
+        .from(users)
+        .where(sql`github_username = ANY(${(challenge.final_results as any[]).map((r: any) => r.github_username)})`),
+      dailyQuery,
+    ]);
 
     const participantMap = new Map(participantRows.map((p) => [p.github_username, p]));
-
-    // Look up avatars for finalized results
-    const userRows = await db
-      .select({ github_username: users.github_username, avatar_url: users.avatar_url })
-      .from(users)
-      .where(sql`github_username = ANY(${(challenge.final_results as any[]).map((r: any) => r.github_username)})`);
     const avatarMap = new Map(userRows.map((u) => [u.github_username, u.avatar_url]));
 
     leaderboard = (challenge.final_results as any[]).map((r: any) => ({
@@ -110,25 +121,13 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
       is_ghost: participantMap.get(r.github_username)?.is_ghost ?? false,
     }));
 
-    // Per-day breakdown still comes from commit_snapshots (for the Race Path chart)
-    const dailyRows = await db.execute(sql`
-      SELECT cs.github_username, cs.date, cs.commit_count
-      FROM commit_snapshots cs
-      INNER JOIN challenge_participants cp
-        ON cp.github_username = cs.github_username
-        AND cp.challenge_id = ${challenge.id}
-      WHERE cs.date >= ${startDate}
-        AND cs.date <= ${endDate}
-      ORDER BY cs.github_username, cs.date ASC
-    `);
-
     for (const r of dailyRows.rows as any[]) {
       const u = r.github_username as string;
       if (!daily[u]) daily[u] = [];
       daily[u].push({ date: r.date, count: Number(r.commit_count) });
     }
   } else {
-    // Live race: fire-and-forget refresh for all participants
+    // Live race: fire-and-forget refresh, run leaderboard + daily in parallel
     const participantRows = await db
       .select({ github_username: challengeParticipants.github_username })
       .from(challengeParticipants)
@@ -142,22 +141,25 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
       )
     );
 
-    const rows = await db.execute(sql`
-      SELECT
-        cp.github_username,
-        cp.is_ghost,
-        COALESCE(SUM(cs.commit_count), 0)::int AS commit_count,
-        COALESCE(u.avatar_url, 'https://github.com/' || cp.github_username || '.png') AS avatar_url
-      FROM challenge_participants cp
-      LEFT JOIN commit_snapshots cs
-        ON cs.github_username = cp.github_username
-        AND cs.date >= ${startDate}
-        AND cs.date <= ${endDate}
-      LEFT JOIN users u ON u.id = cp.user_id
-      WHERE cp.challenge_id = ${challenge.id}
-      GROUP BY cp.github_username, cp.is_ghost, u.avatar_url
-      ORDER BY commit_count DESC
-    `);
+    const [rows, dailyRows] = await Promise.all([
+      db.execute(sql`
+        SELECT
+          cp.github_username,
+          cp.is_ghost,
+          COALESCE(SUM(cs.commit_count), 0)::int AS commit_count,
+          COALESCE(u.avatar_url, 'https://github.com/' || cp.github_username || '.png') AS avatar_url
+        FROM challenge_participants cp
+        LEFT JOIN commit_snapshots cs
+          ON cs.github_username = cp.github_username
+          AND cs.date >= ${startDate}
+          AND cs.date <= ${endDate}
+        LEFT JOIN users u ON u.id = cp.user_id
+        WHERE cp.challenge_id = ${challenge.id}
+        GROUP BY cp.github_username, cp.is_ghost, u.avatar_url
+        ORDER BY commit_count DESC
+      `),
+      dailyQuery,
+    ]);
 
     leaderboard = rows.rows.map((r: any) => ({
       github_username: r.github_username,
@@ -165,17 +167,6 @@ challengeRoutes.get("/:slug", optionalAuth, async (c) => {
       commit_count: Number(r.commit_count),
       is_ghost: r.is_ghost,
     }));
-
-    const dailyRows = await db.execute(sql`
-      SELECT cs.github_username, cs.date, cs.commit_count
-      FROM commit_snapshots cs
-      INNER JOIN challenge_participants cp
-        ON cp.github_username = cs.github_username
-        AND cp.challenge_id = ${challenge.id}
-      WHERE cs.date >= ${startDate}
-        AND cs.date <= ${endDate}
-      ORDER BY cs.github_username, cs.date ASC
-    `);
 
     for (const r of dailyRows.rows as any[]) {
       const u = r.github_username as string;
