@@ -210,17 +210,9 @@ meRoutes.get("/share", async (c) => {
     ? `+${streakInfo.trend_percent}%`
     : `${streakInfo.trend_percent}%`;
 
-  // Assemble a clean one-liner for sharing
-  const streakPart = streakInfo.current_streak > 0
-    ? `, ${streakInfo.current_streak}-day streak 🔥`
-    : "";
-  const shareText = `Git Racer ${weekLabel} — ${totalWeekCommits} commits this week${streakPart}`;
+  const shareText = "Race your commits on Git Racer. Think you can keep up?";
 
-  // Build a Twitter-friendly version (under 280 chars)
-  const streakText = streakInfo.current_streak > 0
-    ? ` with a ${streakInfo.current_streak}-day streak`
-    : "";
-  const tweet = `I made ${totalWeekCommits} commits this week${streakText}. Think you can keep up?\n\n${env.CLIENT_URL}`;
+  const tweet = shareText;
 
   const siteUrl = env.SITE_URL || env.CLIENT_URL;
 

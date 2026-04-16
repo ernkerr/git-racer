@@ -24,6 +24,12 @@ import { getUserStatsFast, refreshCommitData } from "../services/commits.js";
 import { computeStreaks } from "../services/streaks.js";
 import { isoWeek } from "../lib/dates.js";
 import { validateGitHubUser } from "../services/github.js";
+import {
+  renderChallengeOgImage,
+  renderInviteOgImage,
+  renderUserOgImage,
+  renderDefaultOgImage,
+} from "../services/og-image.js";
 
 export const ogRoutes = new Hono();
 
@@ -170,8 +176,6 @@ ogRoutes.get("/c/:slug/image", async (c) => {
     (r) => ({ username: r.github_username, commits: Number(r.commit_count) })
   );
 
-  // Lazy-load @vercel/og so it doesn't affect cold-start for other routes
-  const { renderChallengeOgImage } = await import("../services/og-image.js");
   const response = renderChallengeOgImage({
     name: challenge.name,
     participants,
@@ -220,7 +224,7 @@ ogRoutes.get("/c/:slug/invite", async (c) => {
     ? DURATION_PRESETS[preset].label
     : challenge.duration_type === "ongoing" ? "Ongoing" : "Sprint";
 
-  const { renderInviteOgImage } = await import("../services/og-image.js");
+
   const response = renderInviteOgImage({
     challengeName: challenge.name,
     inviterUsername: creator?.github_username ?? "Someone",
@@ -259,8 +263,7 @@ ogRoutes.get("/u/:username/image", async (c) => {
   const now = new Date();
   const weekLabel = `W${isoWeek(now)} ${now.getFullYear()}`;
 
-  // Lazy-load @vercel/og so it doesn't affect cold-start for other routes
-  const { renderUserOgImage } = await import("../services/og-image.js");
+
   const response = renderUserOgImage({
     username: ghUser.login,
     stats,
@@ -281,7 +284,7 @@ ogRoutes.get("/site-image", async (c) => {
   const siteUrl = env.SITE_URL || env.CLIENT_URL;
   const carImageUrl = `${siteUrl}/car-green.png`;
 
-  const { renderDefaultOgImage } = await import("../services/og-image.js");
+
   const response = renderDefaultOgImage(carImageUrl);
 
   return new Response(response.body, {
