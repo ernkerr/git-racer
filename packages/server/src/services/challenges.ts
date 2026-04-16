@@ -10,11 +10,12 @@
 import { nanoid } from "nanoid";
 import { db } from "../db/index.js";
 import { challenges, challengeParticipants, users } from "../db/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { SLUG_LENGTH } from "@git-racer/shared";
 import type { CreateChallengeInput } from "@git-racer/shared";
 import { validateGitHubUser } from "./github.js";
 import { refreshCommitData } from "./commits.js";
+import { today, tomorrow, computeEndDate } from "../lib/dates.js";
 
 /**
  * Create a new commit challenge and register all participants.
@@ -59,24 +60,29 @@ export async function createChallenge(
   // Step 2: Generate a short, URL-safe slug for the shareable invite link
   const shareSlug = nanoid(SLUG_LENGTH);
 
-  // Step 3: Insert the challenge record
+  // Step 3: Compute start/end dates from duration preset
+  const startDateStr = input.include_today ? today() : tomorrow();
+  const endDateStr = computeEndDate(input.duration_preset, startDateStr);
+  const durationType = input.duration_preset === "ongoing" ? "ongoing" : "fixed";
+
+  // Step 4: Insert the challenge record
   const [challenge] = await db
     .insert(challenges)
     .values({
       name: input.name,
       type: input.type,
-      duration_type: input.duration_type,
-      refresh_period: input.refresh_period ?? "weekly",
-      start_date: new Date(),
-      end_date: input.end_date ? new Date(input.end_date) : null,
-      goal_target: input.goal_target ?? null,
-      goal_metric: input.goal_metric ?? null,
+      duration_type: durationType,
+      duration_preset: input.duration_preset,
+      include_today: input.include_today,
+      start_date: new Date(startDateStr + "T00:00:00Z"),
+      end_date: endDateStr ? new Date(endDateStr + "T00:00:00Z") : null,
       created_by: input.created_by,
       share_slug: shareSlug,
+      is_finalized: false,
     })
     .returning({ id: challenges.id });
 
-  // Step 4a: Register the challenge creator as the first participant
+  // Step 5a: Register the challenge creator as the first participant
   await db.insert(challengeParticipants).values({
     challenge_id: challenge.id,
     user_id: input.created_by,
@@ -84,7 +90,7 @@ export async function createChallenge(
     is_ghost: false,
   });
 
-  // Step 4b: Register each opponent as a participant.
+  // Step 5b: Register each opponent as a participant.
   // "Ghost" participants have no local user record yet -- they will be
   // linked to a real account when they sign up and open the challenge link.
   for (const opponent of resolvedOpponents) {
@@ -95,11 +101,78 @@ export async function createChallenge(
       is_ghost: opponent.is_ghost,
     });
 
-    // Step 5: Pre-fetch commit history in the background so the leaderboard
+    // Step 6: Pre-fetch commit history in the background so the leaderboard
     // has data ready immediately. Errors are swallowed -- missing data will
     // be filled in by the next scheduled sync.
     refreshCommitData(opponent.github_username).catch(() => {});
   }
 
   return { share_slug: shareSlug };
+}
+
+/**
+ * Finalize a completed challenge by locking in the final results.
+ *
+ * Force-refreshes commit data for all participants (awaited, not fire-and-forget),
+ * queries the final commit counts for the race date range, and stores them as a
+ * frozen JSON snapshot. Once finalized, results never change.
+ */
+export async function finalizeChallenge(challengeId: number): Promise<void> {
+  // Check if already finalized
+  const [challenge] = await db
+    .select()
+    .from(challenges)
+    .where(eq(challenges.id, challengeId))
+    .limit(1);
+
+  if (!challenge || challenge.is_finalized) return;
+
+  // Get all participants
+  const participants = await db
+    .select({ github_username: challengeParticipants.github_username })
+    .from(challengeParticipants)
+    .where(eq(challengeParticipants.challenge_id, challengeId));
+
+  // Force-refresh commit data for all participants (await to ensure fresh data)
+  await Promise.all(
+    participants.map((p) =>
+      refreshCommitData(p.github_username).catch((err) =>
+        console.error("[finalize-refresh]", p.github_username, err.message)
+      )
+    )
+  );
+
+  // Query final commit counts
+  const startDate = challenge.start_date.toISOString().slice(0, 10);
+  const endDate = challenge.end_date
+    ? challenge.end_date.toISOString().slice(0, 10)
+    : today();
+
+  const rows = await db.execute(sql`
+    SELECT
+      cp.github_username,
+      COALESCE(SUM(cs.commit_count), 0)::int AS commit_count
+    FROM challenge_participants cp
+    LEFT JOIN commit_snapshots cs
+      ON cs.github_username = cp.github_username
+      AND cs.date >= ${startDate}
+      AND cs.date <= ${endDate}
+    WHERE cp.challenge_id = ${challengeId}
+    GROUP BY cp.github_username
+    ORDER BY commit_count DESC
+  `);
+
+  const finalResults = rows.rows.map((r: any) => ({
+    github_username: r.github_username as string,
+    commit_count: Number(r.commit_count),
+  }));
+
+  // Store frozen results
+  await db
+    .update(challenges)
+    .set({
+      is_finalized: true,
+      final_results: finalResults,
+    })
+    .where(eq(challenges.id, challengeId));
 }

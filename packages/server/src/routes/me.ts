@@ -83,7 +83,7 @@ meRoutes.get("/dashboard", async (c) => {
     // the current user's commit total, and the overall leader.
     db.execute(sql`
       WITH user_challenges AS (
-        SELECT c.id, c.name, c.type, c.duration_type, c.refresh_period, c.share_slug, c.end_date, c.start_date, c.created_at
+        SELECT c.id, c.name, c.type, c.duration_type, c.duration_preset, c.share_slug, c.end_date, c.start_date, c.created_at
         FROM challenges c
         INNER JOIN challenge_participants cp ON cp.challenge_id = c.id
         WHERE cp.github_username = ${username}
@@ -97,11 +97,7 @@ meRoutes.get("/dashboard", async (c) => {
         INNER JOIN user_challenges uc ON uc.id = cp.challenge_id
         LEFT JOIN commit_snapshots cs
           ON cs.github_username = cp.github_username
-          AND cs.date >= CASE
-            WHEN uc.refresh_period = 'daily' THEN ${todayStr}
-            WHEN uc.refresh_period = 'weekly' THEN ${weekStart()}
-            ELSE uc.start_date::date::text
-          END
+          AND cs.date >= uc.start_date::date::text
           AND cs.date <= COALESCE(uc.end_date::date::text, ${todayStr})
         GROUP BY cp.challenge_id, cp.github_username
       )
@@ -110,7 +106,7 @@ meRoutes.get("/dashboard", async (c) => {
         uc.name,
         uc.type,
         uc.duration_type,
-        uc.refresh_period,
+        uc.duration_preset,
         uc.share_slug,
         uc.end_date,
         (SELECT COUNT(*)::int FROM challenge_participants cp2 WHERE cp2.challenge_id = uc.id) AS participant_count,
@@ -154,7 +150,7 @@ meRoutes.get("/dashboard", async (c) => {
     name: r.name,
     type: r.type,
     duration_type: r.duration_type,
-    refresh_period: r.refresh_period ?? "ongoing",
+    duration_preset: r.duration_preset ?? null,
     share_slug: r.share_slug,
     end_date: r.end_date?.toISOString?.() ?? r.end_date ?? null,
     your_commits: Number(r.your_commits),

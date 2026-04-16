@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../lib/api.ts";
 import { useAuth } from "../lib/auth.tsx";
 import { CHALLENGE_REFRESH_MS } from "@git-racer/shared";
-import type { ChallengeWithLeaderboard, LeaderboardEntry, RefreshPeriod } from "@git-racer/shared";
+import type { ChallengeWithLeaderboard, LeaderboardEntry } from "@git-racer/shared";
 import RacePath from "../components/RacePath.tsx";
 import RaceTrack from "../components/RaceTrack.tsx";
 import ShareModal from "../components/ShareModal.tsx";
@@ -98,6 +98,13 @@ function HeadToHead({
   );
 }
 
+interface H2HRecord {
+  wins: number;
+  losses: number;
+  ties: number;
+  races: { share_slug: string; name: string; your_count: number; their_count: number; end_date: string }[];
+}
+
 export default function Challenge() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -109,8 +116,8 @@ export default function Challenge() {
   const [showShare, setShowShare] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsEndDate, setSettingsEndDate] = useState("");
-  const [settingsRefreshPeriod, setSettingsRefreshPeriod] = useState<RefreshPeriod>("weekly");
   const [saving, setSaving] = useState(false);
+  const [h2h, setH2H] = useState<H2HRecord | null>(null);
 
   const fetchChallenge = async () => {
     try {
@@ -119,7 +126,6 @@ export default function Challenge() {
       if (data.end_date) {
         setSettingsEndDate(new Date(data.end_date).toISOString().slice(0, 10));
       }
-      setSettingsRefreshPeriod(data.refresh_period ?? "ongoing");
     } catch {
       // Challenge not found or API error
     } finally {
@@ -128,6 +134,7 @@ export default function Challenge() {
   };
 
   // Poll for updates, but pause when the tab is hidden to save bandwidth.
+  // Stop polling entirely for finalized races.
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startPolling = useCallback(() => {
@@ -163,6 +170,24 @@ export default function Challenge() {
     };
   }, [slug]);
 
+  // Stop polling when race is finalized
+  useEffect(() => {
+    if (challenge?.is_finalized) {
+      stopPolling();
+    }
+  }, [challenge?.is_finalized]);
+
+  // Fetch H2H record for 1v1 races
+  useEffect(() => {
+    if (!user || !challenge || challenge.type !== "1v1") return;
+    const opponent = challenge.participants.find((p) => p.github_username !== user.github_username);
+    if (!opponent) return;
+
+    api<H2HRecord>(`/challenges/h2h/${opponent.github_username}`)
+      .then(setH2H)
+      .catch(() => {});
+  }, [user, challenge?.type, challenge?.participants.length]);
+
   const handleJoin = async () => {
     setJoining(true);
     try {
@@ -193,7 +218,6 @@ export default function Challenge() {
       if (settingsEndDate) {
         body.end_date = new Date(settingsEndDate).toISOString();
       }
-      body.refresh_period = settingsRefreshPeriod;
       await api(`/challenges/${slug}`, {
         method: "PATCH",
         body: JSON.stringify(body),
@@ -214,7 +238,7 @@ export default function Challenge() {
   const isParticipant = user && challenge.participants.some(
     (p) => p.github_username === user.github_username
   );
-  const isFinished = challenge.end_date ? new Date(challenge.end_date) < new Date() : false;
+  const isFinished = challenge.is_finalized || (challenge.end_date ? new Date(challenge.end_date) < new Date() : false);
   const isGoal = challenge.duration_type === "goal";
   const goalReached = isGoal && challenge.goal_target &&
     challenge.participants.some((p) => p.commit_count >= challenge.goal_target!);
@@ -230,6 +254,16 @@ export default function Challenge() {
   const show1v1 = challenge.type === "1v1" && you1v1 && them1v1;
 
   const pageLabel = challenge.duration_type === "fixed" ? "SPRINT" : "RACE";
+
+  // Format date range for subtitle
+  const dateLabel = (() => {
+    const startFmt = new Date(challenge.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    if (challenge.end_date) {
+      const endFmt = new Date(challenge.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      return `${startFmt} — ${endFmt}`;
+    }
+    return `Since ${startFmt}`;
+  })();
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -253,7 +287,13 @@ export default function Challenge() {
                 TEAM
               </span>
             )}
-            {(isFinished || goalReached) && (
+            {challenge.is_finalized && (
+              <span className="font-pixel text-[11px] px-2 py-1 text-arcade-pink border-3"
+                style={{ borderColor: "#FFD700", color: "#FFD700" }}>
+                FINAL
+              </span>
+            )}
+            {!challenge.is_finalized && (isFinished || goalReached) && (
               <span className="font-pixel text-[11px] px-2 py-1 text-arcade-pink border-3"
                 style={{ borderColor: "#00C853" }}>
                 FINISHED
@@ -264,11 +304,7 @@ export default function Challenge() {
             {challenge.name}
           </h1>
           <p className="font-mono text-xs text-arcade-gray">
-            {challenge.end_date
-              ? `Ends ${new Date(challenge.end_date).toLocaleDateString()}`
-              : isGoal
-              ? `First to ${challenge.goal_target} ${challenge.goal_metric}`
-              : `Since ${new Date(challenge.start_date).toLocaleDateString()}`}
+            {dateLabel}
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
@@ -292,6 +328,22 @@ export default function Challenge() {
           </button>
         </div>
       </div>
+
+      {/* H2H record for 1v1 */}
+      {show1v1 && h2h && (h2h.wins > 0 || h2h.losses > 0 || h2h.ties > 0) && (
+        <div className="font-pixel text-xs text-center text-arcade-gray mb-4">
+          ALL TIME VS {them1v1!.github_username.toUpperCase()}:{" "}
+          <span style={{ color: "#00C853" }}>{h2h.wins}W</span>
+          {" - "}
+          <span style={{ color: "#EF4444" }}>{h2h.losses}L</span>
+          {h2h.ties > 0 && (
+            <>
+              {" - "}
+              <span style={{ color: "#EAB308" }}>{h2h.ties}T</span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* 1v1 Head-to-Head display */}
       {show1v1 && (
@@ -428,13 +480,13 @@ export default function Challenge() {
       )}
 
       <div className="font-mono text-xs text-arcade-gray mt-4 text-center space-y-1">
-        {challenge.refresh_period === "daily" && <p>Counts reset daily at midnight UTC.</p>}
-        {challenge.refresh_period === "weekly" && <p>Counts reset every Monday at midnight UTC.</p>}
-        <p>Stats refresh automatically every 60 seconds.</p>
+        {!challenge.is_finalized && (
+          <p>Stats refresh automatically every 60 seconds.</p>
+        )}
       </div>
 
       {/* Creator controls at bottom */}
-      {isCreator && (
+      {isCreator && !challenge.is_finalized && (
         <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="flex gap-2 mb-4">
             <button
@@ -456,30 +508,6 @@ export default function Challenge() {
           {showSettings && (
             <div className="retro-box bg-arcade-surface p-4 space-y-4">
               <h3 className="font-pixel text-xs text-arcade-cyan">RACE SETTINGS</h3>
-
-              <div>
-                <label className="block font-pixel text-xs text-arcade-gray mb-2">COUNTING PERIOD</label>
-                <div className="flex gap-2">
-                  {([
-                    { value: "daily", label: "DAILY" },
-                    { value: "weekly", label: "WEEKLY" },
-                    { value: "ongoing", label: "ALL TIME" },
-                  ] as const).map((p) => (
-                    <button
-                      key={p.value}
-                      type="button"
-                      onClick={() => setSettingsRefreshPeriod(p.value)}
-                      className={`btn-arcade flex-1 py-2 font-pixel text-xs ${
-                        settingsRefreshPeriod === p.value
-                          ? "bg-arcade-cyan text-black"
-                          : "bg-arcade-surface text-arcade-gray"
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               <div>
                 <label className="block font-pixel text-xs text-arcade-gray mb-2">END DATE (OPTIONAL)</label>
@@ -508,6 +536,20 @@ export default function Challenge() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Delete button for finalized races */}
+      {isCreator && challenge.is_finalized && (
+        <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--border)" }}>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="btn-arcade font-pixel text-xs px-4 py-2"
+            style={{ borderColor: "#DC2626", backgroundColor: "var(--arcade-zone-demote)", color: "#DC2626" }}
+          >
+            {deleting ? "..." : "DELETE RACE"}
+          </button>
         </div>
       )}
 

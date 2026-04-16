@@ -1,22 +1,30 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api.ts";
-import type { ChallengeType, DurationType, RefreshPeriod, SuggestedOpponent } from "@git-racer/shared";
+import type { ChallengeType, DurationPreset, SuggestedOpponent } from "@git-racer/shared";
+import { DURATION_PRESETS } from "@git-racer/shared";
 import GitHubUserSearch from "../components/GitHubUserSearch.tsx";
+
+function computePreviewEndDate(preset: DurationPreset, includeToday: boolean): string | null {
+  if (preset === "ongoing") return null;
+  const presetInfo = DURATION_PRESETS[preset];
+  if (!presetInfo.days) return null;
+  const start = new Date();
+  if (!includeToday) start.setDate(start.getDate() + 1);
+  start.setDate(start.getDate() + presetInfo.days - 1);
+  return start.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
 export default function CreateChallenge() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [type, setType] = useState<ChallengeType>("1v1");
-  const [durationType, setDurationType] = useState<DurationType>("ongoing");
-  const [refreshPeriod, setRefreshPeriod] = useState<RefreshPeriod>("weekly");
+  const [durationPreset, setDurationPreset] = useState<DurationPreset>("1week");
+  const [includeToday, setIncludeToday] = useState(true);
   const [opponents, setOpponents] = useState<string[]>([""]);
-  const [endDate, setEndDate] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [suggested, setSuggested] = useState<SuggestedOpponent[]>([]);
-
-  const defaultEnd = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 
   useEffect(() => {
     api<SuggestedOpponent[]>("/suggested-opponents?limit=20")
@@ -45,16 +53,13 @@ export default function CreateChallenge() {
     }
 
     try {
-      const body: Record<string, unknown> = {
+      const body = {
         name: name || `vs ${filteredOpponents.join(", ")}`,
         type,
-        duration_type: durationType,
-        refresh_period: refreshPeriod,
+        duration_preset: durationPreset,
+        include_today: includeToday,
         opponents: filteredOpponents,
       };
-      if (durationType === "fixed") {
-        body.end_date = new Date(endDate || defaultEnd).toISOString();
-      }
 
       const result = await api<{ share_slug: string }>("/challenges", {
         method: "POST",
@@ -86,6 +91,8 @@ export default function CreateChallenge() {
       updateOpponent(0, username);
     }
   };
+
+  const previewEnd = computePreviewEndDate(durationPreset, includeToday);
 
   return (
     <div className="max-w-lg mx-auto">
@@ -166,82 +173,55 @@ export default function CreateChallenge() {
           </p>
         </div>
 
-        {/* Race type: Race vs Sprint */}
+        {/* Duration */}
         <div>
           <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
-            Type
+            Duration
           </label>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => setDurationType("ongoing")}
-              className={`btn-arcade flex-1 py-3 font-pixel text-xs ${
-                durationType === "ongoing"
-                  ? "bg-arcade-pink text-black"
-                  : "bg-arcade-surface text-arcade-gray"
-              }`}
-            >
-              <span className="block">RACE</span>
-              <span className="block font-mono text-[10px] mt-1 opacity-70">ongoing · no end date</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setDurationType("fixed")}
-              className={`btn-arcade flex-1 py-3 font-pixel text-xs ${
-                durationType === "fixed"
-                  ? "bg-arcade-cyan text-black"
-                  : "bg-arcade-surface text-arcade-gray"
-              }`}
-            >
-              <span className="block">SPRINT</span>
-              <span className="block font-mono text-[10px] mt-1 opacity-70">time-limited · has end date</span>
-            </button>
+          <div className="grid grid-cols-3 gap-2">
+            {(Object.entries(DURATION_PRESETS) as [DurationPreset, typeof DURATION_PRESETS[DurationPreset]][]).map(
+              ([key, preset]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setDurationPreset(key)}
+                  className={`btn-arcade py-3 font-pixel text-xs ${
+                    durationPreset === key
+                      ? "bg-arcade-cyan text-black"
+                      : "bg-arcade-surface text-arcade-gray"
+                  }`}
+                >
+                  {preset.label.toUpperCase()}
+                </button>
+              )
+            )}
           </div>
+          <p className="font-mono text-xs text-arcade-gray mt-2">
+            {previewEnd
+              ? `Ends ${previewEnd} at midnight UTC`
+              : "No end date"}
+          </p>
         </div>
 
-        {/* Refresh Period */}
+        {/* Include today toggle */}
         <div>
-          <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
-            Counting Period
-          </label>
-          <div className="flex gap-3">
-            {([
-              { value: "daily", label: "DAILY", desc: "resets every day" },
-              { value: "weekly", label: "WEEKLY", desc: "resets every Monday" },
-              { value: "ongoing", label: "ALL TIME", desc: "cumulative from start" },
-            ] as const).map((p) => (
-              <button
-                key={p.value}
-                type="button"
-                onClick={() => setRefreshPeriod(p.value)}
-                className={`btn-arcade flex-1 py-3 font-pixel text-xs ${
-                  refreshPeriod === p.value
-                    ? "bg-arcade-cyan text-black"
-                    : "bg-arcade-surface text-arcade-gray"
-                }`}
-              >
-                <span className="block">{p.label}</span>
-                <span className="block font-mono text-[10px] mt-1 opacity-70">{p.desc}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* End Date (sprint only) */}
-        {durationType === "fixed" && (
-          <div>
-            <label className="block font-pixel text-xs text-arcade-gray mb-2 uppercase">
-              Sprint End Date
-            </label>
+          <label className="flex items-center gap-3 cursor-pointer">
             <input
-              type="date"
-              value={endDate || defaultEnd}
-              onChange={(e) => setEndDate(e.target.value)}
-              required
-              className="input-arcade w-full px-3 py-2"
+              type="checkbox"
+              checked={includeToday}
+              onChange={(e) => setIncludeToday(e.target.checked)}
+              className="w-4 h-4 accent-[#00C853]"
             />
-          </div>
-        )}
+            <span className="font-pixel text-xs text-arcade-gray uppercase">
+              Include today's commits
+            </span>
+          </label>
+          <p className="font-mono text-[10px] text-arcade-gray mt-1 ml-7">
+            {includeToday
+              ? "Counts commits from the start of today (UTC)"
+              : "Only counts commits starting tomorrow (UTC)"}
+          </p>
+        </div>
 
         {/* Race Type: 1v1 vs Team */}
         <div>
@@ -292,7 +272,7 @@ export default function CreateChallenge() {
           disabled={submitting}
           className="btn-arcade w-full bg-arcade-pink text-black font-pixel text-base py-4 uppercase"
         >
-          {submitting ? "STARTING..." : durationType === "fixed" ? "START SPRINT" : "START RACE"}
+          {submitting ? "STARTING..." : durationPreset === "ongoing" ? "START RACE" : "START SPRINT"}
         </button>
       </form>
     </div>

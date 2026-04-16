@@ -32,7 +32,8 @@ export const challenges = pgTable("challenges", {
   duration_type: varchar("duration_type", { length: 10 })
     .notNull()
     .default("fixed"), // "fixed" | "ongoing" | "goal"
-  refresh_period: varchar("refresh_period", { length: 10 }).notNull().default("weekly"), // "daily" | "weekly" | "ongoing"
+  duration_preset: varchar("duration_preset", { length: 20 }), // "1day" | "2days" | "3days" | "1week" | "1quarter" | "ongoing"
+  include_today: boolean("include_today").default(true).notNull(),
   start_date: timestamp("start_date").notNull(),
   end_date: timestamp("end_date"), // null for ongoing challenges
   goal_target: integer("goal_target"), // only for "goal" duration type
@@ -42,6 +43,8 @@ export const challenges = pgTable("challenges", {
     .references(() => users.id),
   share_slug: varchar("share_slug", { length: 20 }).notNull().unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
+  is_finalized: boolean("is_finalized").default(false).notNull(),
+  final_results: jsonb("final_results"), // [{ github_username, commit_count }] frozen at race end
 });
 
 export const challengeParticipants = pgTable(

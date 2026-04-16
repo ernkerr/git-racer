@@ -9,14 +9,15 @@ export interface User {
 
 export type ChallengeType = "1v1" | "team";
 export type DurationType = "fixed" | "ongoing" | "goal";
-export type RefreshPeriod = "daily" | "weekly" | "ongoing";
+export type DurationPreset = "1day" | "2days" | "3days" | "1week" | "1quarter" | "ongoing";
 
 export interface Challenge {
   id: number;
   name: string;
   type: ChallengeType;
   duration_type: DurationType;
-  refresh_period: RefreshPeriod;
+  duration_preset: DurationPreset | null;
+  include_today: boolean;
   start_date: string;
   end_date: string | null;
   goal_target: number | null;
@@ -24,6 +25,8 @@ export interface Challenge {
   created_by: number;
   share_slug: string;
   created_at: string;
+  is_finalized: boolean;
+  final_results: { github_username: string; commit_count: number }[] | null;
 }
 
 export interface UserStats {
@@ -63,7 +66,7 @@ export interface ActiveChallenge {
   name: string;
   type: ChallengeType;
   duration_type: DurationType;
-  refresh_period: RefreshPeriod;
+  duration_preset: DurationPreset | null;
   share_slug: string;
   end_date: string | null;
   your_commits: number;

@@ -16,5 +16,15 @@ export const LEAGUE_PROMOTE_COUNT = 5;
 export const LEAGUE_DEMOTE_COUNT = 5;
 export const LEAGUE_TIERS = ["bronze", "silver", "gold", "platinum", "diamond"] as const;
 
+/** Duration presets for race creation */
+export const DURATION_PRESETS = {
+  "1day": { label: "1 Day", days: 1 },
+  "2days": { label: "2 Days", days: 2 },
+  "3days": { label: "3 Days", days: 3 },
+  "1week": { label: "1 Week", days: 7 },
+  "1quarter": { label: "Quarter", days: 90 },
+  "ongoing": { label: "Ongoing", days: null },
+} as const;
+
 /** Social circle cache duration (6 hours) */
 export const SOCIAL_CIRCLE_CACHE_MS = 6 * 60 * 60 * 1000;

@@ -71,6 +71,13 @@
       "when": 1776340797231,
       "tag": "0009_friendly_pixie",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776537600000,
+      "tag": "0010_duration_presets",
+      "breakpoints": true
     }
   ]
 }
