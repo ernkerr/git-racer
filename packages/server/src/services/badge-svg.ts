@@ -139,13 +139,6 @@ export function renderStatsBadge(options: RenderOptions): string {
 
   <!-- Title bar -->
   <text x="25" y="32" font-family="${FONT}" font-size="14" font-weight="700" fill="${t.accent}">&#x26A1; ${safe}'s Git Racer Stats</text>
-  <!-- Car icon (inline SVG path instead of <image> for cross-origin <img> compat) -->
-  <g transform="translate(${700 - 60}, 8) scale(2)">
-    <rect x="4" y="4" width="16" height="6" rx="1" fill="${t.accent}"/>
-    <rect x="2" y="8" width="20" height="5" rx="1" fill="${t.accent}"/>
-    <circle cx="7" cy="14" r="2" fill="${t.muted}"/>
-    <circle cx="17" cy="14" r="2" fill="${t.muted}"/>
-  </g>
   <line x1="25" y1="44" x2="675" y2="44" stroke="${t.accent}" stroke-opacity="0.3" stroke-width="1"/>
 
   <!-- Row 1: Commit stats -->
