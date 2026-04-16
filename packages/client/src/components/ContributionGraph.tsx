@@ -62,7 +62,7 @@ export default function ContributionGraph({ days, totalYear }: Props) {
         </p>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto scrollbar-hide">
         <svg
           width={svgWidth}
           height={svgHeight}
